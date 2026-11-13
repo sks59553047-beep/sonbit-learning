@@ -128,14 +128,29 @@ p{margin:0;line-height:1.5}
 .chiprow::-webkit-scrollbar{display:none}
 .chiprow .chip{flex:none}
 
-/* 수어 단어 카드 */
-.wordcard{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:14px;display:flex;flex-direction:column;gap:8px}
-.wordcard .top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
-.wordcard h3{font-size:1.0625rem;font-weight:800}
-.acc{font-size:0.6875rem;font-weight:800;color:var(--teal);background:var(--mint);padding:3px 9px;border-radius:999px;white-space:nowrap}
-.wordcard .desc{font-size:0.8438rem;color:var(--muted);line-height:1.55}
-.wordcard .topic{font-size:0.7188rem;color:var(--muted)}
-.wordcard .actions{display:flex;gap:8px;margin-top:2px;flex-wrap:wrap}
+/* 수어 사전: 주제 카드 → 단어 목록(펼치기) */
+[hidden]{display:none!important}
+.topicgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media (min-width:760px){ .topicgrid{grid-template-columns:repeat(3,1fr)} }
+.topiccard{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:14px;cursor:pointer;box-shadow:var(--shadow);color:var(--ink)}
+.topiccard .ti{font-size:1.625rem;line-height:1}
+.topiccard .tn{font-size:0.9375rem;font-weight:800;margin-top:4px}
+.topiccard .tc{font-size:0.75rem;color:var(--muted)}
+.topiccard.urgent{grid-column:1/-1;flex-direction:row;align-items:center;gap:12px;background:var(--amber-bg);border-color:var(--amber)}
+.topiccard.urgent .tn{margin-top:0;flex:1}
+.topichead{display:flex;align-items:center;gap:10px}
+.topichead h2{font-size:1.125rem}
+.wordlist{display:flex;flex-direction:column;gap:8px}
+.wordrow{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md)}
+.wordrow summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:14px;font-weight:800;font-size:1rem}
+.wordrow summary::-webkit-details-marker{display:none}
+.wordrow summary::after{content:'›';margin-left:auto;color:var(--muted);font-size:1.25rem;transition:transform .15s}
+.wordrow[open] summary::after{transform:rotate(90deg)}
+.wordrow .wtopic{font-size:0.7188rem;font-weight:600;color:var(--muted)}
+.wordrow .vbadge{font-size:0.625rem;color:var(--teal);background:var(--mint);border-radius:999px;padding:2px 7px}
+.wordrow .wbody{padding:0 14px 14px;display:flex;flex-direction:column;gap:8px}
+.wordrow .desc{font-size:0.8438rem;color:var(--muted);line-height:1.55}
+.wordrow .actions{display:flex;gap:8px;margin-top:2px;flex-wrap:wrap}
 .cardimg{margin-top:4px;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#fff}
 .cardimg .note{margin:0;padding:6px 10px;background:var(--surface2);color:var(--muted);font-size:0.7188rem}
 .linkbtn{font-size:0.7813rem;font-weight:800;color:var(--teal);background:var(--mint);border:0;border-radius:10px;padding:8px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:5px}

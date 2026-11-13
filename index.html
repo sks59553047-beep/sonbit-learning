@@ -73,14 +73,18 @@
 
     <!-- 수어 -->
     <section class="view" id="view-sign" aria-labelledby="signH">
-      <h1 id="signH" class="visually-hidden">수어 스튜디오</h1>
+      <h1 id="signH" class="visually-hidden">수어 사전</h1>
       <div class="search">
         <span aria-hidden="true" id="signSearchIcon"></span>
-        <input type="search" id="signSearch" placeholder="수어 단어 검색 (예: 감사합니다)" aria-label="수어 단어 검색">
+        <input type="search" id="signSearch" placeholder="단어 검색 (예: 감사합니다, ㄱㅅ)" aria-label="수어 단어 검색">
       </div>
-      <div class="chiprow" id="signTopics" role="group" aria-label="주제별 보기"></div>
-      <p class="note" id="signCount"></p>
-      <div id="signList" style="display:flex;flex-direction:column;gap:12px"></div>
+      <div id="signTopicHead" class="topichead" hidden>
+        <button class="icon-btn" id="signTopicBack" type="button" aria-label="주제 목록으로"></button>
+        <h2 id="signTopicName"></h2>
+      </div>
+      <div class="topicgrid" id="signTopics" role="group" aria-label="주제별 보기"></div>
+      <p class="note" id="signCount" hidden></p>
+      <div id="signList" class="wordlist"></div>
     </section>
 
     <!-- 점자 -->

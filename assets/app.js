@@ -50,7 +50,7 @@ initToggle($('#btnTheme'), 'theme', (matchMedia('(prefers-color-scheme: dark)').
 
 // ---------------- 라우팅 ----------------
 const VIEWS = ['home', 'sign', 'braille', 'quiz', 'player'];
-const TITLES = { home: '손빛 배움터', sign: '수어 스튜디오', braille: '점자 패드', quiz: '도전 퀴즈', player: '영상 보기' };
+const TITLES = { home: '손빛 배움터', sign: '수어 사전', braille: '점자 패드', quiz: '도전 퀴즈', player: '영상 보기' };
 let playerReturnTo = 'home';
 function go(view, opts) {
   opts = opts || {};
@@ -186,30 +186,68 @@ $('#roadTabSign').addEventListener('click', () => { roadTrack = 'sign'; $('#road
 $('#roadTabBraille').addEventListener('click', () => { roadTrack = 'braille'; $('#roadTabBraille').classList.add('active'); $('#roadTabBraille').setAttribute('aria-selected', 'true'); $('#roadTabSign').classList.remove('active'); $('#roadTabSign').setAttribute('aria-selected', 'false'); renderRoadmap('braille'); });
 
 // ---------------- 수어 스튜디오 ----------------
-const TOPICS = [...new Set(KSL_WORDS.map(w => w.t))];
-let signTopic = '전체', signQuery = '';
-$('#signTopics').innerHTML = ['전체', ...TOPICS].map(t => `<button class="chip ${t === '전체' ? 'active' : ''}" data-topic="${esc(t)}" type="button">${esc(t)}</button>`).join('');
-$$('[data-topic]', $('#signTopics')).forEach(b => b.addEventListener('click', () => { signTopic = b.dataset.topic; $$('[data-topic]', $('#signTopics')).forEach(x => x.classList.toggle('active', x === b)); renderSign(); hap(8); }));
-$('#signSearch').addEventListener('input', e => { signQuery = e.target.value.trim(); renderSign(); });
+const TOPIC_ORDER = ['몸·건강·긴급', '인사·예절', '대답·질문', '사람·가족', '감정', '음식', '돈·쇼핑', '장소·이동', '시간·날짜', '날씨·색·크기', '하루 생활', '물건·소지품', '열기·시작·찾기'];
+const TOPIC_ICON = { '몸·건강·긴급': '🚑', '인사·예절': '👋', '대답·질문': '💬', '사람·가족': '👨‍👩‍👧', '감정': '😊', '음식': '🍚', '돈·쇼핑': '🛍️', '장소·이동': '🏫', '시간·날짜': '⏰', '날씨·색·크기': '🌤️', '하루 생활': '🏠', '물건·소지품': '🎒', '열기·시작·찾기': '🔑' };
+const TOPICS = TOPIC_ORDER.filter(t => KSL_WORDS.some(w => w.t === t)).concat([...new Set(KSL_WORDS.map(w => w.t))].filter(t => !TOPIC_ORDER.includes(t)));
+let signTopic = '', signQuery = '';
+const CHO_LIST = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+function choOf(str) {
+  return [...str].map(ch => { const c = ch.charCodeAt(0); return (c >= 0xAC00 && c <= 0xD7A3) ? CHO_LIST[Math.floor((c - 0xAC00) / 588)] : ch; }).join('');
+}
+function hasRealVideo(w) { return typeof SLDICT_LINK === 'object' && !!SLDICT_LINK[w.w]; }
+function matchWord(w, q) {
+  if (!q) return true;
+  if (w.w.toLowerCase().includes(q)) return true;
+  if (/^[ㄱ-ㅎ]+$/.test(q)) return choOf(w.w).includes(q);
+  return (w.d || '').toLowerCase().includes(q);
+}
+function cleanDesc(d) { return String(d || '').replace(/\s*[—-]\s*국립국어원[^)]*\)\s*$/, ''); }
 function descHtml(d) {
   if (!d) return '<p class="desc">(설명 준비 중)</p>';
-  return `<p class="desc">${esc(d)}</p>`;
+  return `<p class="desc">${esc(cleanDesc(d))}</p>`;
+}
+function topicCardHtml(t) {
+  const n = KSL_WORDS.filter(w => w.t === t).length;
+  const urgent = t === '몸·건강·긴급' ? ' urgent' : '';
+  return `<button class="topiccard${urgent}" data-topic="${esc(t)}" type="button"><span class="ti">${TOPIC_ICON[t] || '✋'}</span><span class="tn">${esc(t)}</span><span class="tc">${n}개</span></button>`;
+}
+function wordRowHtml(w, showTopic) {
+  const play = hasRealVideo(w) ? '<span class="vbadge" title="실제 수어 영상 있음">▶</span>' : '';
+  const topic = showTopic ? `<span class="wtopic">${esc(w.t)}</span>` : '';
+  return `<details class="wordrow" data-wid="${esc(w.id)}"><summary><span class="wname">${esc(w.w)}</span>${topic}${play}</summary><div class="wbody"></div></details>`;
+}
+function fillWordBody(det) {
+  const body = det.querySelector('.wbody');
+  if (body.dataset.ready) return;
+  const w = KSL_WORDS.find(x => String(x.id) === det.dataset.wid); if (!w) return;
+  body.innerHTML = descHtml(w.d) + signVisualHtml(w.w, [w.w]);
+  body.dataset.ready = '1';
+  bindSignVisuals(body);
 }
 function renderSign() {
   const q = signQuery.toLowerCase();
-  const list = KSL_WORDS.filter(w => (signTopic === '전체' || w.t === signTopic) && (!q || w.w.toLowerCase().includes(q) || (w.d || '').toLowerCase().includes(q)));
-  $('#signCount').textContent = `${list.length}개 단어 (전체 ${KSL_WORDS.length}개 중 신뢰도 80 이상만 보여 드려요)`;
+  const searching = !!q;
+  const inTopic = !searching && !!signTopic;
+  $('#signTopics').hidden = searching || inTopic;
+  $('#signTopicHead').hidden = !inTopic;
+  const list = searching ? KSL_WORDS.filter(w => matchWord(w, q)) : (inTopic ? KSL_WORDS.filter(w => w.t === signTopic) : []);
+  if (!searching && !inTopic) {
+    $('#signTopics').innerHTML = TOPICS.map(topicCardHtml).join('');
+    $$('[data-topic]', $('#signTopics')).forEach(b => b.addEventListener('click', () => { signTopic = b.dataset.topic; hap(8); renderSign(); window.scrollTo(0, 0); }));
+    $('#signCount').hidden = false; $('#signCount').textContent = `주제를 눌러 단어를 찾아보세요 · 전체 ${KSL_WORDS.length}개`;
+    $('#signList').innerHTML = '';
+    return;
+  }
+  if (inTopic) { $('#signTopicName').textContent = (TOPIC_ICON[signTopic] || '') + ' ' + signTopic; }
+  $('#signCount').hidden = false;
+  $('#signCount').textContent = searching ? `검색 결과 ${list.length}개` : `${list.length}개 단어 · 눌러서 동작 설명과 영상 보기`;
   if (!list.length) { $('#signList').innerHTML = '<div class="empty">찾는 단어가 없어요. 다른 말로 검색해 보세요.</div>'; return; }
-  $('#signList').innerHTML = list.slice(0, 60).map(w => {
-    return `<div class="wordcard">
-      <div class="top"><h3>${esc(w.w)}</h3><span class="acc">정확도 ${w.a}%</span></div>
-      ${descHtml(w.d)}
-      <p class="topic">${esc(w.t)}</p>
-      ${signVisualHtml(w.w, [w.w])}
-    </div>`;
-  }).join('') + (list.length > 60 ? `<p class="note" style="text-align:center">검색어를 더 자세히 적으면 좁혀져요 (${list.length}개 중 60개 표시)</p>` : '');
-  bindSignVisuals($('#signList'));
+  $('#signList').innerHTML = list.slice(0, 80).map(w => wordRowHtml(w, searching)).join('');
 }
+$('#signTopicBack').innerHTML = icon('back', 20);
+$('#signTopicBack').addEventListener('click', () => { signTopic = ''; renderSign(); window.scrollTo(0, 0); });
+$('#signSearch').addEventListener('input', e => { signQuery = e.target.value.trim(); renderSign(); });
+$('#signList').addEventListener('toggle', e => { if (e.target.open) fillWordBody(e.target); }, true);
 
 // ---------------- 점자 패드 ----------------
 let padDots = new Set();
@@ -248,7 +286,7 @@ bindVideoCards($('#brailleVideoGrid'));
 // ---------------- 도전 퀴즈(수어·점자 따로) ----------------
 // 수어 문제 풀: 설명이 있는 단어 전부
 const QUIZ_POOL_SIGN = KSL_WORDS.filter(w => w.d && w.d.length < 130)
-  .map(w => ({ answer: w.w, clueType: 'text', clue: w.d, group: w.t }));
+  .map(w => ({ answer: w.w, clueType: 'text', clue: cleanDesc(w.d), group: w.t }));
 // 점자 문제 풀: 검증된 자모·숫자·문장부호 전부(초성 14 · 종성 14 · 중성 10 · 숫자 10 · 문장부호 9)
 function dotsArr(s) { return s.split('-').map(Number); }
 const QUIZ_POOL_BRAILLE = [

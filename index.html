@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>손빛 배움터 — 수어·점자 함께 배우기</title>
+<meta name="description" content="검증된 한국수어 사전과 한글 점자 변환기, AI 교육 영상으로 수어와 점자를 배우는 사이트">
+<meta name="theme-color" content="#0d1240">
+<style>html,body{background:#faf8ff}</style>
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+<a class="skiplink" href="#main">본문으로 바로가기</a>
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo" aria-hidden="true" id="logoIcon"></div>
+      <div class="tt">
+        <span class="k">손빛 SONBIT</span>
+        <span class="t" id="pageTitle">손빛 배움터</span>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="btnBigText" type="button" aria-pressed="false" aria-label="글자 크게 보기 켜고 끄기"></button>
+      <button class="icon-btn" id="btnTheme" type="button" aria-pressed="false" aria-label="어두운 화면 켜고 끄기"></button>
+    </div>
+  </header>
+
+  <main id="main">
+
+    <!-- 학습(홈) -->
+    <section class="view" id="view-home" aria-labelledby="homeH">
+      <h1 id="homeH" class="visually-hidden">학습 홈</h1>
+      <div class="hero">
+        <span class="tag" style="background:rgba(255,255,255,.18);color:#fff">오늘도 손빛과 함께</span>
+        <h2 style="margin-top:10px">검증된 자료로 배우는<br>수어와 점자</h2>
+        <p>국립국어원 한국수어사전으로 확인한 단어, 점자 규정표, 그리고 AI 목소리로 만든 교육 영상이에요.</p>
+        <div class="stat-row">
+          <div class="stat"><b id="statWords">224</b><span>검증 수어 단어</span></div>
+          <div class="stat"><b>24+10</b><span>점자 자모</span></div>
+          <div class="stat"><b id="statVideos">5</b><span>교육 영상</span></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-h"><h2>교육 영상</h2></div>
+        <div class="vlist-grid" id="homeVideoGrid"></div>
+      </div>
+
+      <div>
+        <div class="section-h"><h2>학습 로드맵</h2></div>
+        <div class="roadtabs" role="tablist" aria-label="학습 트랙 선택">
+          <button class="chip active" id="roadTabSign" role="tab" aria-selected="true" type="button">✋ 수어 트랙</button>
+          <button class="chip" id="roadTabBraille" role="tab" aria-selected="false" type="button">⠿ 점자 트랙</button>
+        </div>
+        <div class="road" id="roadList"></div>
+      </div>
+
+    </section>
+
+    <!-- 수어 -->
+    <section class="view" id="view-sign" aria-labelledby="signH">
+      <h1 id="signH" class="visually-hidden">수어 스튜디오</h1>
+      <div class="search">
+        <span aria-hidden="true" id="signSearchIcon"></span>
+        <input type="search" id="signSearch" placeholder="수어 단어 검색 (예: 감사합니다)" aria-label="수어 단어 검색">
+      </div>
+      <div class="chiprow" id="signTopics" role="group" aria-label="주제별 보기"></div>
+      <p class="note" id="signCount"></p>
+      <div id="signList" style="display:flex;flex-direction:column;gap:12px"></div>
+    </section>
+
+    <!-- 점자 -->
+    <section class="view" id="view-braille" aria-labelledby="brailleH">
+      <h1 id="brailleH" class="visually-hidden">점자 패드</h1>
+
+      <div class="card">
+        <h2 style="font-size:16px;margin-bottom:4px">가상 촉각 점자 패드</h2>
+        <p class="note" style="margin-bottom:14px">점을 눌러 보세요. 몇 번 점이 켜졌는지에 따라 어떤 글자인지 알려 드려요.</p>
+        <div class="braillecell-wrap">
+          <div class="braillecell" id="padCell" role="group" aria-label="점자 6점 패드"></div>
+          <div class="padresult" aria-live="polite">
+            <div class="big" id="padResultChar">점을 눌러 보세요</div>
+            <div class="kind" id="padResultKind"></div>
+          </div>
+          <button class="btn ghost" id="padReset" type="button">↺ 초기화</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 style="font-size:16px;margin-bottom:10px">글자 → 점자 바꾸기</h2>
+        <textarea class="bptext" id="bpInput" placeholder="여기에 한글을 쓰면 점자로 바꿔 드려요" aria-label="점자로 바꿀 글자 입력"></textarea>
+        <div id="bpSummary" class="note" style="margin-top:10px"></div>
+        <div class="cellsrow" id="bpCells" style="margin-top:14px"></div>
+      </div>
+
+      <div class="card">
+        <div class="section-h"><h2 style="font-size:16px">한글 초성 퀵 가이드</h2><span class="tag">기본 13개</span></div>
+        <div class="guide-grid" id="choGuide" style="margin-top:10px"></div>
+        <div class="section-h" style="margin-top:16px"><h2 style="font-size:14px">된소리(쌍자음)</h2><span class="tag amber">5개</span></div>
+        <p class="note" style="margin:8px 0">6번 점(된소리표)을 먼저 쓰고, 뒤에 예사소리를 이어 써요.</p>
+        <div class="guide-grid" id="choDoubleGuide"></div>
+      </div>
+
+      <div class="card">
+        <div class="section-h"><h2 style="font-size:16px">기본 모음 퀵 가이드</h2><span class="tag">10개</span></div>
+        <div class="guide-grid" id="jungGuide" style="margin-top:10px"></div>
+      </div>
+
+      <div>
+        <div class="section-h"><h2>점자 영상으로 배우기</h2></div>
+        <div class="vlist-grid" id="brailleVideoGrid"></div>
+      </div>
+    </section>
+
+    <!-- 도전(퀴즈) -->
+    <section class="view" id="view-quiz" aria-labelledby="quizH">
+      <h1 id="quizH" class="visually-hidden">도전 퀴즈</h1>
+      <div id="quizArea"></div>
+    </section>
+
+    <!-- 영상 플레이어 -->
+    <section class="view" id="view-player" aria-labelledby="playerH">
+      <div class="backrow">
+        <button class="icon-btn" id="playerBack" type="button" aria-label="뒤로 가기"></button>
+        <h1 id="playerH" class="visually-hidden">영상 재생</h1>
+      </div>
+      <div class="player-wrap">
+        <iframe id="playerVideo" allow="autoplay" allowfullscreen frameborder="0"></iframe>
+      </div>
+      <div class="vmeta">
+        <div class="tags" id="playerTags"></div>
+        <h2 id="playerTitle"></h2>
+        <p id="playerDesc"></p>
+      </div>
+      <div class="section-h"><h2 style="font-size:15px">대본(자막) 따라 읽기</h2></div>
+      <div class="transcript" id="playerTranscript"></div>
+    </section>
+
+  </main>
+
+  <nav class="navbar" aria-label="주요 화면 이동">
+    <div class="navinner">
+      <button class="navbtn active" data-nav="home" type="button" aria-current="page"><span class="i" data-icon="home"></span><span>학습</span></button>
+      <button class="navbtn" data-nav="sign" type="button"><span class="i" data-icon="hand"></span><span>수어</span></button>
+      <button class="navbtn" data-nav="braille" type="button"><span class="i" data-icon="braille"></span><span>점자</span></button>
+      <button class="navbtn" data-nav="quiz" type="button"><span class="i" data-icon="quiz"></span><span>도전</span></button>
+    </div>
+  </nav>
+
+</div>
+
+<script src="assets/ksl-data.js"></script>
+<script src="assets/braille.js"></script>
+<script src="assets/video-data.js"></script>
+<script src="assets/sldict-links.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

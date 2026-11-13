@@ -57,14 +57,14 @@ function go(view, opts) {
   VIEWS.forEach(v => $('#view-' + v).classList.toggle('active', v === view));
   $$('.navbtn').forEach(b => { const on = b.dataset.nav === view; b.classList.toggle('active', on); if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
   $('#pageTitle').textContent = TITLES[view] || '손빛 배움터';
-  if (view !== 'player') { $('#main').scrollTop = 0; window.scrollTo(0, 0); $('#playerVideo').src = 'about:blank'; }
+  if (view !== 'player') { $('#main').scrollTop = 0; window.scrollTo(0, 0); setPlayerSrc(''); }
   if (opts.push !== false) history.pushState({ view, arg: opts.arg }, '', '#' + view);
   if (view === 'player' && opts.arg) openPlayer(opts.arg.id);
   if (view === 'quiz' && !quizState.active) renderQuizIntro();
 }
 $$('[data-nav]').forEach(el => el.addEventListener('click', () => { hap(10); if (el.dataset.nav !== 'player') playerReturnTo = el.dataset.nav; go(el.dataset.nav); }));
 window.addEventListener('popstate', e => { const v = (e.state && e.state.view) || 'home'; go(v, { push: false, arg: e.state && e.state.arg }); });
-$('#playerBack').addEventListener('click', () => { $('#playerVideo').src = 'about:blank'; history.back(); });
+$('#playerBack').addEventListener('click', () => { history.back(); });
 
 // ---------------- 단어 하나의 "실제 영상/그림 카드" 블록(수어 사전·학습 페이지 공용) ----------------
 function realVideoBtnHtml(sl, uid, words) {
@@ -356,6 +356,13 @@ function parseVtt(text) {
     return { start: toSec(a), end: toSec(c), text: lines.slice(lines.indexOf(timeLine) + 1).join(' ') };
   });
 }
+function setPlayerSrc(url) {
+  const old = $('#playerVideo');
+  const f = document.createElement('iframe');
+  f.id = 'playerVideo'; f.setAttribute('allow', 'autoplay'); f.setAttribute('allowfullscreen', ''); f.setAttribute('frameborder', '0');
+  if (url) f.src = url;
+  old.replaceWith(f);
+}
 function sizePlayerWrap() {
   const wrap = $('#view-player .player-wrap'); if (!wrap) return;
   wrap.style.height = Math.round(wrap.offsetWidth * 9 / 16 + 48) + 'px';
@@ -367,7 +374,7 @@ async function openPlayer(id) {
   $('#playerDesc').textContent = v.desc;
   $('#playerTags').innerHTML = `<span class="tag">${esc(v.track)}</span><span class="tag amber">${esc(v.level)}</span><span class="tag" style="background:var(--surface2);color:var(--muted)">${fmtTime(v.dur)}</span>`;
   sizePlayerWrap();
-  $('#playerVideo').src = `https://drive.google.com/file/d/${v.driveId}/preview`;
+  setPlayerSrc(`https://drive.google.com/file/d/${v.driveId}/preview`);
   store.set('watched:' + v.id, true);
   $('#playerTranscript').innerHTML = '<p class="note">자막을 불러오는 중…</p>';
   try {

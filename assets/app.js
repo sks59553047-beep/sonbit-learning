@@ -57,7 +57,7 @@ function go(view, opts) {
   VIEWS.forEach(v => $('#view-' + v).classList.toggle('active', v === view));
   $$('.navbtn').forEach(b => { const on = b.dataset.nav === view; b.classList.toggle('active', on); if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
   $('#pageTitle').textContent = TITLES[view] || '손빛 배움터';
-  if (view !== 'player') { $('#main').scrollTop = 0; window.scrollTo(0, 0); }
+  if (view !== 'player') { $('#main').scrollTop = 0; window.scrollTo(0, 0); $('#playerVideo').src = 'about:blank'; }
   if (opts.push !== false) history.pushState({ view, arg: opts.arg }, '', '#' + view);
   if (view === 'player' && opts.arg) openPlayer(opts.arg.id);
   if (view === 'quiz' && !quizState.active) renderQuizIntro();

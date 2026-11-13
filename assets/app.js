@@ -280,6 +280,11 @@ const CHO_DOUBLES = ['ㄲ', 'ㄸ', 'ㅃ', 'ㅆ', 'ㅉ'];
 $('#choGuide').innerHTML = BRAILLE_CHO_ORDER.filter(ch => !CHO_DOUBLES.includes(ch)).map(ch => { const d = BRAILLE_CHO[ch]; return `<div class="guide-card"><div class="ch">${ch}</div>${miniDots(d.split('-').map(Number))}<div class="dn">${d}번</div></div>`; }).join('');
 $('#choDoubleGuide').innerHTML = CHO_DOUBLES.map(ch => { const [a, b] = BRAILLE_CHO[ch]; return `<div class="guide-card"><div class="ch">${ch}</div><div style="display:flex;gap:6px;justify-content:center">${miniDots(a.split('-').map(Number))}${miniDots(b.split('-').map(Number))}</div><div class="dn">${a} · ${b}번</div></div>`; }).join('');
 $('#jungGuide').innerHTML = BRAILLE_JUNG_ORDER.map(ch => { const d = BRAILLE_JUNG[ch]; return `<div class="guide-card"><div class="ch">${ch}</div>${miniDots(d.split('-').map(Number))}<div class="dn">${d}번</div></div>`; }).join('');
+$('#jungCompoundGuide').innerHTML = BRAILLE_JUNG_COMPOUND_ORDER.map(ch => {
+  const raw = BRAILLE_JUNG[ch];
+  if (Array.isArray(raw)) return `<div class="guide-card"><div class="ch">${ch}</div><div style="display:flex;gap:6px;justify-content:center">${raw.map(r => miniDots(r.split('-').map(Number))).join('')}</div><div class="dn">${raw.join(' · ')}번</div></div>`;
+  return `<div class="guide-card"><div class="ch">${ch}</div>${miniDots(raw.split('-').map(Number))}<div class="dn">${raw}번</div></div>`;
+}).join('');
 $('#brailleVideoGrid').innerHTML = VIDEO_LIST.filter(v => v.track === '점자').map(v => vcard(v)).join('');
 bindVideoCards($('#brailleVideoGrid'));
 
@@ -287,15 +292,16 @@ bindVideoCards($('#brailleVideoGrid'));
 // 수어 문제 풀: 설명이 있는 단어 전부
 const QUIZ_POOL_SIGN = KSL_WORDS.filter(w => w.d && w.d.length < 130)
   .map(w => ({ answer: w.w, clueType: 'text', clue: cleanDesc(w.d), group: w.t }));
-// 점자 문제 풀: 검증된 자모·숫자·문장부호 전부(초성 14 · 종성 14 · 중성 10 · 숫자 10 · 문장부호 9)
-function dotsArr(s) { return s.split('-').map(Number); }
+// 점자 문제 풀: 검증된 자모·숫자·문장부호 전부(2칸짜리 된소리·복합모음 포함)
+function cellsOf(v) { return (Array.isArray(v) ? v : [v]).map(x => x.split('-').map(Number)); }
 const QUIZ_POOL_BRAILLE = [
-  ...Object.entries(BRAILLE_CHO).filter(([, d]) => typeof d === 'string').map(([ch, d]) => ({ answer: ch, clueType: 'dots', clue: dotsArr(d), group: '초성' })),
-  ...Object.entries(BRAILLE_JONG).map(([ch, d]) => ({ answer: ch + '(받침)', clueType: 'dots', clue: dotsArr(d), group: '종성' })),
-  ...Object.entries(BRAILLE_JUNG).map(([ch, d]) => ({ answer: ch, clueType: 'dots', clue: dotsArr(d), group: '중성' })),
-  ...Object.entries(BRAILLE_NUMBERS).map(([ch, d]) => ({ answer: ch, clueType: 'dots', clue: dotsArr(d), group: '숫자' })),
-  ...Object.entries(BRAILLE_PUNCTUATION).map(([ch, d]) => ({ answer: ch, clueType: 'dots', clue: dotsArr(d), group: '문장부호' }))
+  ...Object.entries(BRAILLE_CHO).map(([ch, d]) => ({ answer: ch, clueType: 'dots', clue: cellsOf(d), group: '초성' })),
+  ...Object.entries(BRAILLE_JONG).map(([ch, d]) => ({ answer: ch + '(받침)', clueType: 'dots', clue: cellsOf(d), group: '종성' })),
+  ...Object.entries(BRAILLE_JUNG).map(([ch, d]) => ({ answer: ch, clueType: 'dots', clue: cellsOf(d), group: '중성' })),
+  ...Object.entries(BRAILLE_NUMBERS).map(([ch, d]) => ({ answer: ch, clueType: 'dots', clue: cellsOf(d), group: '숫자' })),
+  ...Object.entries(BRAILLE_PUNCTUATION).map(([ch, d]) => ({ answer: ch, clueType: 'dots', clue: cellsOf(d), group: '문장부호' }))
 ];
+function clueCellsHtml(cells) { return '<div style="display:flex;gap:10px;justify-content:center">' + cells.map(miniDots).join('') + '</div>'; }
 let quizState = { active: false };
 function renderQuizIntro() {
   quizState = { active: false };
@@ -339,7 +345,7 @@ function renderQuiz() {
   const q = s.qs[s.i];
   if (!q._opts) q._opts = pickChoices(q, s.type);
   const clueHtml = q.clueType === 'dots'
-    ? `<div class="qclue qclue-dots">이 점자는 무슨 글자(${esc(q.group)})일까요?<div class="quizdots">${miniDots(q.clue)}</div></div>`
+    ? `<div class="qclue qclue-dots">이 점자는 무슨 글자(${esc(q.group)})일까요?<div class="quizdots">${clueCellsHtml(q.clue)}</div></div>`
     : `<div class="qclue">다음 수어 동작이 의미하는 단어는 무엇일까요?<br><br>${esc(q.clue)}</div>`;
   $('#quizArea').innerHTML = `
     <div class="quizhead">

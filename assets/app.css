@@ -144,10 +144,11 @@ p{margin:0;line-height:1.5}
 .wordrow{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md)}
 .wordrow summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:14px;font-weight:800;font-size:1rem}
 .wordrow summary::-webkit-details-marker{display:none}
-.wordrow summary::after{content:'›';margin-left:auto;color:var(--muted);font-size:1.25rem;transition:transform .15s}
+.wordrow summary::after{content:'›';margin-left:8px;color:var(--muted);font-size:1.25rem;transition:transform .15s}
 .wordrow[open] summary::after{transform:rotate(90deg)}
 .wordrow .wtopic{font-size:0.7188rem;font-weight:600;color:var(--muted)}
-.wordrow .vbadge{font-size:0.625rem;color:var(--teal);background:var(--mint);border-radius:999px;padding:2px 7px}
+.wordrow .vbadge{margin-left:auto;flex:none;font-size:0.625rem;color:var(--teal);background:var(--mint);border-radius:999px;padding:2px 7px}
+.wordrow .vbadge.none{visibility:hidden}
 .wordrow .wbody{padding:0 14px 14px;display:flex;flex-direction:column;gap:8px}
 .wordrow .desc{font-size:0.8438rem;color:var(--muted);line-height:1.55}
 .wordrow .actions{display:flex;gap:8px;margin-top:2px;flex-wrap:wrap}

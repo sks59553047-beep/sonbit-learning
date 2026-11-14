@@ -240,7 +240,7 @@ function topicCardHtml(t) {
   return `<button class="topiccard${urgent}" data-topic="${esc(t)}" type="button"><span class="ti">${TOPIC_ICON[t] || '✋'}</span><span class="tn">${esc(t)}</span><span class="tc">${n}개</span></button>`;
 }
 function wordRowHtml(w, showTopic) {
-  const play = hasRealVideo(w) ? '<span class="vbadge" title="실제 수어 영상 있음">▶</span>' : '';
+  const play = hasRealVideo(w) ? '<span class="vbadge" title="실제 수어 영상 있음">▶</span>' : '<span class="vbadge none">▶</span>';
   const topic = showTopic ? `<span class="wtopic">${esc(w.t)}</span>` : '';
   const sub = w.x ? `<span class="wsub">${esc((w.g || '').split(' / ')[0].slice(0, 24))}</span>` : '';
   return `<details class="wordrow" data-wid="${esc(w.id)}"><summary><span class="wname">${esc(w.w)}</span>${sub}${topic}${play}</summary><div class="wbody"></div></details>`;

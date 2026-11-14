@@ -66,58 +66,28 @@ $$('[data-nav]').forEach(el => el.addEventListener('click', () => { hap(10); if 
 window.addEventListener('popstate', e => { const v = (e.state && e.state.view) || 'home'; go(v, { push: false, arg: e.state && e.state.arg }); });
 $('#playerBack').addEventListener('click', () => { history.back(); });
 
-// ---------------- 단어 하나의 "실제 영상/그림 카드" 블록(수어 사전·학습 페이지 공용) ----------------
+// ---------------- 단어 하나의 "실제 영상" 블록(수어 사전·학습 페이지 공용) ----------------
+function kslUrl(k) { return /^https?:/.test(k) ? k : 'https://ksldict.korean.go.kr' + k; }
 function kslVideoBtnHtml(uid) {
   return `<button class="linkbtn primary" data-kvideo="${uid}" aria-expanded="false">${icon('video', 14)} 실제 수어 영상 보기</button>`;
 }
 function kslVideoBoxHtml(uid, k, label) {
-  const poster = k.replace(/\.mp4$/, '.jpg');
+  const isNuri = !/^https?:/.test(k);
+  const poster = isNuri ? ` poster="${esc(kslUrl(k.replace(/\.mp4$/, '.jpg')))}"` : '';
+  const src = isNuri ? '국립국어원 한국수어누리사전' : '국립국어원 한국수어사전';
   return `<div class="realvideo" id="kv-${uid}" hidden>
-      <video class="kslvideo" controls loop muted playsinline preload="none" poster="https://ksldict.korean.go.kr${esc(poster)}" data-src="https://ksldict.korean.go.kr${esc(k)}" aria-label="${esc(label)} 수어 영상"></video>
-      <p class="note">국립국어원 한국수어누리사전 제공 영상 (저작자표시-비영리-변경금지)</p>
+      <video class="kslvideo" controls loop muted playsinline preload="none"${poster} data-src="${esc(kslUrl(k))}" aria-label="${esc(label)} 수어 영상"></video>
+      <p class="note">${src} 제공 영상 (저작자표시-비영리-변경금지)</p>
     </div>`;
 }
-function realVideoBtnHtml(sl, uid, words) {
-  if (sl) return `<button class="linkbtn primary" data-realvideo="${uid}" aria-expanded="false">${icon('video', 14)} 실제 수어 영상 보기</button>`;
-  return `<button class="linkbtn" data-sldict="${esc(words[0])}">${icon('video', 14)} 국립국어원 영상 찾기</button>`;
-}
-function shapeBtnHtml(sl, uid) {
-  if (!sl) return '';
-  return `<button class="linkbtn" data-shape="${uid}" aria-expanded="false">${icon('braille', 14)} 수형 사진·설명 보기</button>`;
-}
-function signVisualHtml(label, synonyms) {
-  const words = (synonyms && synonyms.length ? synonyms : [label]);
-  const slWord = words.find(w => typeof SLDICT_LINK === 'object' && SLDICT_LINK && SLDICT_LINK[w]);
-  const sl = slWord && SLDICT_LINK[slWord];
-  const uid = 'v' + Math.random().toString(36).slice(2, 9);
+function signVisualHtml(label) {
   const kw = KSL_WORDS.find(x => x.w === label);
-  const k = (!sl && kw && kw.k) ? kw.k : '';
-  const src = sl ? `https://sldict.korean.go.kr/front/sign/signContentsView.do?origin_no=${sl.id}&top_category=${sl.cat}` : '';
-  const actions = `<div class="actions">
-      ${k ? kslVideoBtnHtml(uid) : realVideoBtnHtml(sl, uid, words)}
-      ${shapeBtnHtml(sl, uid)}
-    </div>`;
-  const visuals = sl ? `<div class="realvideo" id="rv-${uid}" hidden>
-      <div class="sldict-crop sldict-crop-video"><iframe loading="lazy" src="about:blank" data-src="${esc(src)}" title="${esc(label)} 국립국어원 한국수어사전 실제 영상" allowfullscreen></iframe></div>
-      <p class="note">국립국어원 한국수어사전 제공 영상 (저작자표시-비영리-변경금지)</p>
-    </div>
-    <div class="cardimg" id="ci-${uid}" hidden>
-      <div class="sldict-crop sldict-crop-shape"><iframe loading="lazy" src="about:blank" data-src="${esc(src)}" title="${esc(label)} 수형 사진·설명" allowfullscreen></iframe></div>
-      <p class="note">국립국어원 한국수어사전 제공 수형 사진·설명 (저작자표시-비영리-변경금지)</p>
-    </div>` : '';
-  return actions + visuals + (k ? kslVideoBoxHtml(uid, k, label) : '');
+  const k = kw && kw.k;
+  if (!k) return '';
+  const uid = 'v' + Math.random().toString(36).slice(2, 9);
+  return `<div class="actions">${kslVideoBtnHtml(uid)}</div>` + kslVideoBoxHtml(uid, k, label);
 }
 function bindSignVisuals(root) {
-  $$('[data-sldict]', root).forEach(b => b.addEventListener('click', () => window.open('https://sldict.korean.go.kr/front/search/searchAllList.do?searchKeyword=' + encodeURIComponent(b.dataset.sldict), '_blank', 'noopener')));
-  $$('[data-realvideo]', root).forEach(b => b.addEventListener('click', () => {
-    const box = $('#rv-' + b.dataset.realvideo);
-    const open = box.hidden; box.hidden = !open;
-    const frame = box.querySelector('iframe');
-    if (open && frame.src === 'about:blank') frame.src = frame.dataset.src;
-    b.setAttribute('aria-expanded', String(open));
-    b.innerHTML = (open ? icon('video', 14) + ' 실제 영상 닫기' : icon('video', 14) + ' 실제 수어 영상 보기');
-    hap(8);
-  }));
   $$('[data-kvideo]', root).forEach(b => b.addEventListener('click', () => {
     const box = $('#kv-' + b.dataset.kvideo);
     const open = box.hidden; box.hidden = !open;
@@ -125,15 +95,6 @@ function bindSignVisuals(root) {
     if (open) { if (!v.getAttribute('src')) v.src = v.dataset.src; v.play().catch(() => {}); } else { v.pause(); }
     b.setAttribute('aria-expanded', String(open));
     b.innerHTML = (open ? icon('video', 14) + ' 실제 영상 닫기' : icon('video', 14) + ' 실제 수어 영상 보기');
-    hap(8);
-  }));
-  $$('[data-shape]', root).forEach(b => b.addEventListener('click', () => {
-    const box = $('#ci-' + b.dataset.shape);
-    const open = box.hidden; box.hidden = !open;
-    const frame = box.querySelector('iframe');
-    if (open && frame.src === 'about:blank') frame.src = frame.dataset.src;
-    b.setAttribute('aria-expanded', String(open));
-    b.innerHTML = (open ? icon('braille', 14) + ' 수형 사진 닫기' : icon('braille', 14) + ' 수형 사진·설명 보기');
     hap(8);
   }));
 }
@@ -221,7 +182,7 @@ function choOf(str) {
 }
 function firstCho(w) { const c = choOf(w.w).charAt(0); return CHO_FOLD[c] || c; }
 function byName(a, b) { return a.w.localeCompare(b.w, 'ko'); }
-function hasRealVideo(w) { return !!w.k || (typeof SLDICT_LINK === 'object' && !!SLDICT_LINK[w.w]); }
+function hasRealVideo(w) { return !!w.k; }
 function matchWord(w, q) {
   if (!q) return true;
   if (w.w.toLowerCase().includes(q)) return true;
@@ -256,7 +217,7 @@ function fillWordBody(det) {
   const body = det.querySelector('.wbody');
   if (body.dataset.ready) return;
   const w = ALL_WORDS.find(x => String(x.id) === det.dataset.wid); if (!w) return;
-  body.innerHTML = w.x ? extraBodyHtml(w) : descHtml(w.d) + signVisualHtml(w.w, [w.w]);
+  body.innerHTML = w.x ? extraBodyHtml(w) : descHtml(w.d) + signVisualHtml(w.w);
   body.dataset.ready = '1';
   bindSignVisuals(body);
 }
@@ -397,7 +358,7 @@ function quizOptHtml(o, i) {
 }
 function quizClueHtml(q) {
   if (q.clueType === 'dots') return `<div class="qclue qclue-dots">이 점자는 무슨 글자(${esc(q.group)})일까요?<div class="quizdots">${clueCellsHtml(q.clue)}</div></div>`;
-  if (q.clueType === 'video') return `<div class="qclue">이 수어 영상이 뜻하는 단어는 무엇일까요?<video class="kslvideo qvideo" src="https://ksldict.korean.go.kr${esc(q.clue)}" autoplay loop muted playsinline controls preload="auto"></video></div>`;
+  if (q.clueType === 'video') return `<div class="qclue">이 수어 영상이 뜻하는 단어는 무엇일까요?<video class="kslvideo qvideo" src="${esc(kslUrl(q.clue))}" autoplay loop muted playsinline controls preload="auto"></video></div>`;
   return `<div class="qclue">다음 수어 동작이 의미하는 단어는 무엇일까요?<br><br>${esc(q.clue)}</div>`;
 }
 function renderQuiz() {

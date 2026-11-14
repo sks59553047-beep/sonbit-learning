@@ -71,6 +71,15 @@
       <div id="homeNext"></div>
       <div class="reviewrow" id="homeReview" hidden></div>
 
+      <section id="homeVideos" aria-labelledby="basicVidH">
+        <div class="roadhead">
+          <h2 id="basicVidH" tabindex="-1" style="font-size:1.1875rem;font-weight:800">기초 영상</h2>
+          <span class="roadprog" id="basicProg" aria-live="polite"></span>
+        </div>
+        <p class="note" id="basicSub" style="margin-top:6px"></p>
+        <div class="vlist" id="homeVideoList"></div>
+      </section>
+
       <section aria-labelledby="roadH">
         <div class="roadhead">
           <h2 id="roadH" style="font-size:1.1875rem;font-weight:800">학습 로드맵</h2>
@@ -125,7 +134,6 @@
       <div class="signactions" id="signActions" hidden></div>
       <div class="chiprow" id="signCho" hidden></div>
       <div id="signHome">
-        <div id="signRel"></div>
         <div class="shortcuts" id="signShortcuts"></div>
         <div class="section-h" style="margin:18px 0 10px"><h2 style="font-size:1.0625rem">주제로 찾기</h2></div>
         <div class="topicgrid" id="signTopics" role="group" aria-label="주제별 보기"></div>
@@ -142,6 +150,7 @@
         <button type="button" data-bpanel="convert" aria-pressed="true">글자 바꾸기</button>
         <button type="button" data-bpanel="pad" aria-pressed="false">연습 패드</button>
         <button type="button" data-bpanel="table" aria-pressed="false">점자 표</button>
+        <button type="button" data-bpanel="learn" aria-pressed="false">교육 영상</button>
       </div>
 
       <!-- 글자 → 점자 -->
@@ -152,7 +161,6 @@
           <div class="chiprow" id="bpExamples" style="margin-top:10px" role="group" aria-label="예시 글"></div>
           <label class="bpopt"><input type="checkbox" id="bpContract" checked> 약자·약어 사용 (한국 점자 규정 방식)</label>
           <p class="note" style="margin-top:8px" id="bpModeNote">「한국 점자 규정」(2024년 개정)의 약자(가·나·다…, 억·언·얼…)와 약어(그래서·그러나 등)를 적용해요. 끄면 자음·모음을 모두 풀어서 보여줘요(학습용).</p>
-          <div id="convRel" style="margin-top:10px"></div>
           <p class="note amber" style="margin-top:8px">규정의 한글·약자·약어·숫자·문장 부호 예시 227개로 확인했어요. 아직 점자 전문가의 검수는 받지 않았으니, 실제 점자 인쇄나 점역에 쓰기 전에는 점자 교사나 점자도서관에서 확인받으세요. 로마자·수식·옛 글자 등은 바꿔 주지 않고 표시만 해요.</p>
         </div>
         <div class="card" id="bpResult">
@@ -183,7 +191,6 @@
             <button class="btn ghost" id="padReset" type="button">처음으로</button>
           </div>
           <p class="note" style="margin-top:14px">한 칸만 읽어 줘요. 된소리·겹받침·약어처럼 두 칸 이상으로 쓰는 것은 「글자 바꾸기」에서 확인하세요.</p>
-          <div id="padRel" style="margin-top:14px"></div>
         </div>
       </div>
 
@@ -191,6 +198,16 @@
       <div class="bpanel" id="bp-table" hidden>
         <div class="chiprow" id="tableChips" role="group" aria-label="점자 표 종류"></div>
         <div class="card" id="tableBody"></div>
+      </div>
+
+      <!-- 교육 영상 -->
+      <div class="bpanel" id="bp-learn" hidden>
+        <div class="roadhead">
+          <h2 id="learnH" style="font-size:1.1875rem;font-weight:800">점자 교육 영상</h2>
+          <span class="roadprog" id="learnProg" aria-live="polite"></span>
+        </div>
+        <p class="note" id="learnSub" style="margin-top:6px"></p>
+        <div class="vlist" id="learnList"></div>
       </div>
 
     </section>

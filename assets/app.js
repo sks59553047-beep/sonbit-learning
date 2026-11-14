@@ -75,7 +75,7 @@ function go(view, opts) {
   if (opts.push !== false) history.pushState({ view, arg: opts.arg }, '', '#' + view);
   if (view === 'player' && opts.arg) openPlayer(opts.arg.id);
   if (view === 'home') renderHome();
-  if (view === 'sign' || view === 'braille') refreshRelated(view);
+  if (view === 'braille' && !$('#bp-learn').hidden) renderLearnPanel();   // 영상을 보고 돌아오면 「봤어요」 표시를 새로 그린다
   if (view === 'quiz' && !quizState.active) renderQuizHub();
   if (opts.push !== false) { const h = $('#view-' + view + ' h1'); if (h) h.focus({ preventScroll: true }); }
 }
@@ -207,70 +207,80 @@ function kslVideoBoxHtml(k, label, id) {
 }
 function aliasHtml(w) { return w.al ? `<p class="alias">같은 수어: ${esc(w.al)}</p>` : ''; }
 
-// ---------------- 교육 영상은 필요한 자리에만 ----------------
-// 영상 목록(썸네일 카드)은 어디에도 따로 두지 않는다. 교육 영상은 ① 학습 로드맵의 단계로 한 번,
-// ② 그 내용을 보고 있는 화면(점자 연습 패드·점자 표)에서 관련된 것만 한 줄로 이어 주는 두 군데에서만 나온다.
-function relatedVideosHtml(ids) {
-  const vs = ids.map(id => VIDEO_LIST.find(v => v.id === id)).filter(Boolean);
-  if (!vs.length) return '';
-  return `<div class="relvid"><span class="rvl">관련 영상</span>${vs.map(v => {
-    const seen = store.get('watched:' + v.id, false);
-    return `<button type="button" class="rvbtn" data-open-video="${esc(v.id)}" aria-label="${esc(v.title)} 영상 보기 (${fmtTime(v.dur)})${seen ? ', 시청 완료' : ''}"><span class="rvp" aria-hidden="true">▶</span><span>${esc(v.title)}</span><small>${fmtTime(v.dur)}${seen ? ' · 봤어요' : ''}</small></button>`;
-  }).join('')}</div>`;
+// ---------------- 교육 영상: 두 자리에만 ----------------
+// ① 학습(홈)의 「기초 영상」 3편  ② 점자 탭의 「교육 영상」 칸(나머지 전부).
+// 그 밖의 화면(수어 사전·연습 패드·점자 표 같은 곳)에는 영상 목록이나 링크를 따로 두지 않는다.
+// 기초 영상을 바꾸려면 아래 id 세 개만 고치면 된다(나머지는 자동으로 점자 탭의 교육 칸으로 간다).
+const HOME_VIDEO_IDS = ['v8-ksl-intro', 'v11-ksl-dictionary-guide', 'v5-etiquette'];
+const vById = id => VIDEO_LIST.find(v => v.id === id) || null;
+const homeVideos = () => HOME_VIDEO_IDS.map(vById).filter(Boolean);
+const learnVideos = () => VIDEO_LIST.filter(v => !HOME_VIDEO_IDS.includes(v.id)).sort((a, b) => (a.track === b.track ? a.order - b.order : a.track === '점자' ? -1 : 1));
+const isSeen = id => !!store.get('watched:' + id, false);
+const seenCount = vs => vs.filter(v => isSeen(v.id)).length;
+const totalDur = vs => vs.reduce((n, v) => n + v.dur, 0);
+const fmtSpan = s => { const m = Math.floor(s / 60), r = s % 60; return m + '분' + (r ? ' ' + r + '초' : ''); };
+// 영상 한 편 카드(왼쪽 그림, 오른쪽 제목·설명). 아직 안 본 첫 영상에는 「다음에 볼 영상」 표시
+function vrowHtml(v, nextId) {
+  const seen = isSeen(v.id), isNext = v.id === nextId;
+  const aria = `${v.title}. ${v.track} ${v.level}, ${fmtTime(v.dur)}.${seen ? ' 시청 완료.' : ''}${isNext ? ' 다음에 볼 영상.' : ''} 누르면 영상을 볼 수 있어요`;
+  return `<button type="button" class="vrow${seen ? ' seen' : ''}" data-open-video="${esc(v.id)}" aria-label="${esc(aria)}">
+    <span class="vthumb" aria-hidden="true"><img src="videos/${esc(v.id)}.jpg" alt="" loading="lazy"><span class="vplay">${icon('play', 40)}</span><span class="vdur">${fmtTime(v.dur)}</span></span>
+    <span class="vbody">
+      <span class="vkick"><span class="tag">${esc(v.track)}</span><span class="tag gray">${esc(v.level)}</span>${isNext ? '<span class="tag amber">다음에 볼 영상</span>' : ''}</span>
+      <span class="vtitle">${esc(v.title)}</span>
+      <span class="vdesc">${esc(v.desc)}</span>
+      ${seen ? `<span class="vseen">${icon('check', 13)} 봤어요</span>` : ''}
+    </span>
+  </button>`;
 }
-// 영상을 보고 돌아왔을 때 「봤어요」 표시가 바로 바뀌도록, 화면에 들어올 때마다 관련 영상 줄만 다시 그린다
-function refreshRelated(view) {
-  if (view === 'sign') $('#signRel').innerHTML = relatedVideosHtml(SIGN_RELATED);
-  if (view === 'braille') { renderPadRel(); renderConvRel(); if (!$('#bp-table').hidden) renderTable(tableGroup); }
+// 학습(홈)의 「기초 영상」
+function renderHomeVideos() {
+  const vs = homeVideos(), sec = $('#homeVideos');
+  sec.hidden = !vs.length; if (!vs.length) return;
+  const next = (vs.find(v => !isSeen(v.id)) || {}).id;
+  $('#basicProg').textContent = seenCount(vs) + ' / ' + vs.length + '편 봤어요';
+  $('#basicSub').textContent = `처음이라면 위에서부터 차례로 보세요. ${vs.length}편을 모두 보면 ${fmtSpan(totalDur(vs))}이에요.`;
+  $('#homeVideoList').innerHTML = vs.map(v => vrowHtml(v, next)).join('');
 }
-// 어느 화면에 어떤 교육 영상을 이어 줄지(영상 id). 로드맵 단계(roadmapFor)와 함께 영상이 나오는 자리의 전부다.
-const SIGN_RELATED = ['v8-ksl-intro', 'v11-ksl-dictionary-guide'];     // 수어 사전 첫 화면
-const PAD_RELATED = ['v1-braille-basics'];                              // 점자 연습 패드
-const CONV_RELATED = ['v10-braille-contractions'];                      // 글자 바꾸기(약자·약어 사용 옵션)
-const TABLE_VIDEOS = {                                                  // 점자 표의 묶음별
-  '첫소리': ['v2-braille-initials', 'v9-braille-double'],               // 된소리는 ⑤에서
-  '모음': ['v3-braille-words', 'v9-braille-double'],                    // 겹모음은 ⑤에서
-  '받침': ['v3-braille-words', 'v6-braille-batchim2', 'v9-braille-double'], // 쌍받침·겹받침은 ⑤에서
-  '숫자': ['v7-braille-numbers'],
-  '약자·약어': ['v10-braille-contractions'],
-  '문장부호': ['v7-braille-numbers']
-};
+// 점자 탭의 「교육 영상」 칸
+function renderLearnPanel() {
+  const vs = learnVideos();
+  const next = (vs.find(v => !isSeen(v.id)) || {}).id;
+  $('#learnProg').textContent = seenCount(vs) + ' / ' + vs.length + '편 봤어요';
+  $('#learnSub').textContent = `한글 점자를 차례로 익히는 영상이에요. 위에서부터 보면 돼요. ${vs.length}편을 모두 보면 ${fmtSpan(totalDur(vs))}이에요.`;
+  $('#learnList').innerHTML = vs.map(v => vrowHtml(v, next)).join('');
+}
 function bindVideoLinks(root) {
   root.addEventListener('click', e => { const b = e.target.closest('[data-open-video]'); if (b) go('player', { arg: { id: b.dataset.openVideo } }); });
 }
+bindVideoLinks($('#homeVideoList')); bindVideoLinks($('#learnList'));
 
 // ================= 학습(홈) =================
 let roadTrack = store.get('track', 'sign') === 'braille' ? 'braille' : 'sign';
 const TRACK_NAME = { sign: '수어', braille: '점자' };
+// 학습 로드맵: 영상 목록은 위쪽 「기초 영상」·점자 탭 「교육 영상」에 있으므로, 여기서는 영상 한 편 한 편을 다시 늘어놓지 않고
+// 「영상 보기」를 한 단계로 묶어 진행 상황(몇 편 봤는지)만 알려 준다.
 function roadmapFor(track) {
-  const has = id => VIDEO_LIST.some(v => v.id === id);
+  const hv = homeVideos(), lv = learnVideos().filter(v => v.track === '점자');
+  const prog = vs => seenCount(vs) + ' / ' + vs.length + '편 봤어요';
   let steps;
   if (track === 'sign') {
     steps = [
-      { title: '수어의 시작', sub: '수어가 무엇인지 알아보는 입문 영상', video: 'v8-ksl-intro' },
-      { title: '수어 사전 이렇게 보세요', sub: '찾기·영상·그림·단어장 쓰는 법', video: 'v11-ksl-dictionary-guide' },
+      { title: '기초 영상 보기', sub: `수어의 시작·사전 사용법·소통 예절 ${hv.length}편 · ${prog(hv)}`, vids: hv, act: 'scrollvid' },
       { title: '수어 단어 찾아보기', sub: '수어 ' + ALL_WORDS.length.toLocaleString('ko-KR') + '개 검색, 국립국어원 실제 영상으로 바로 확인', nav: 'sign', did: 'sign' },
-      { title: '수어 퀴즈로 복습', sub: '틀린 문제는 영상과 설명으로 다시 확인', nav: 'quiz', did: 'quiz-sign' },
-      { title: '함께하는 소통 예절', sub: '농인·시각장애인을 만났을 때 알아 두면 좋아요', video: 'v5-etiquette' }
+      { title: '수어 퀴즈로 복습', sub: '틀린 문제는 영상과 설명으로 다시 확인', nav: 'quiz', did: 'quiz-sign' }
     ];
   } else {
     steps = [
-      { title: '점자의 시작', sub: '6개의 점으로 읽는 세상', video: 'v1-braille-basics' },
-      { title: '한글 점자 ①', sub: '초성 자음 14개', video: 'v2-braille-initials' },
-      { title: '한글 점자 ②', sub: '모음·받침·낱말 쓰기', video: 'v3-braille-words' },
-      { title: '한글 점자 ③', sub: '받침 마저 배우기', video: 'v6-braille-batchim2' },
-      { title: '한글 점자 ④', sub: '숫자·문장부호 쓰기', video: 'v7-braille-numbers' },
-      { title: '한글 점자 ⑤', sub: '된소리·겹모음·겹받침(두 칸 글자)', video: 'v9-braille-double' },
-      { title: '한글 점자 ⑥', sub: '약자와 약어, 줄여 쓰기', video: 'v10-braille-contractions' },
+      { title: '점자 교육 영상 보기', sub: `점자의 시작부터 ⑥ 약자·약어까지 ${lv.length}편 · ${prog(lv)} (점자 탭의 「교육 영상」)`, vids: lv, act: 'braillelearn' },
       { title: '점자 연습 패드·변환기 써 보기', sub: '내 이름을 점자로 바꿔 보기', nav: 'braille', did: 'braille' },
-      { title: '점자 퀴즈로 복습', sub: '읽기와 직접 쓰기로 확인하기', nav: 'quiz', did: 'quiz-braille' },
-      { title: '함께하는 소통 예절', sub: '농인·시각장애인을 만났을 때 알아 두면 좋아요', video: 'v5-etiquette' }
+      { title: '점자 퀴즈로 복습', sub: '읽기와 직접 쓰기로 확인하기', nav: 'quiz', did: 'quiz-braille' }
     ];
   }
-  return steps.filter(s => !s.video || has(s.video)).map((s, i) => Object.assign({ label: (i + 1) + '단계' }, s));
+  return steps.filter(s => !s.vids || s.vids.length).map((s, i) => Object.assign({ label: (i + 1) + '단계' }, s));
 }
-function stepDone(s) { return s.video ? !!store.get('watched:' + s.video, false) : (s.did ? didFlag(s.did) : false); }
-function stepAttrs(s) { return s.video ? `data-act="video" data-arg="${esc(s.video)}"` : `data-act="nav" data-arg="${esc(s.nav)}"`; }
+function stepDone(s) { return s.vids ? s.vids.every(v => isSeen(v.id)) : (s.did ? didFlag(s.did) : false); }
+function stepAttrs(s) { return s.act ? `data-act="${s.act}"` : `data-act="nav" data-arg="${esc(s.nav)}"`; }
 function renderRoadmap(track) {
   const steps = roadmapFor(track);
   let nowSet = false, doneN = 0;
@@ -320,13 +330,14 @@ function renderHome() {
   $('#statWords').textContent = ALL_WORDS.length.toLocaleString('ko-KR');
   $('#statVideos').textContent = VIDEO_LIST.length;
   $('#statBraille').textContent = BRAILLE_TEST_COUNT;
-  renderHomeNext(); renderHomeReview(); renderRoadmap(roadTrack);
+  renderHomeNext(); renderHomeReview(); renderHomeVideos(); renderRoadmap(roadTrack);
   $('#roadHint').hidden = hasActivity();
   renderRecords();
 }
 // 홈·수어 화면의 버튼 동작(data-act)
 function dispatchAct(act, arg) {
-  if (act === 'video') go('player', { arg: { id: arg } });
+  if (act === 'scrollvid') { $('#homeVideos').scrollIntoView({ behavior: 'smooth', block: 'start' }); $('#basicVidH').focus({ preventScroll: true }); }
+  else if (act === 'braillelearn') { store.set('track', 'braille'); go('braille'); showBraillePanel('learn', true); }
   else if (act === 'track') { roadTrack = arg === 'braille' ? 'braille' : 'sign'; store.set('track', roadTrack); renderHome(); window.scrollTo(0, 0); }
   else if (act === 'nav') { if (arg === 'sign' || arg === 'braille') store.set('track', arg); go(arg); }
   else if (act === 'resume') resumeQuiz();
@@ -495,7 +506,6 @@ function renderSign() {
   $('#signTopicHead').hidden = !inTopic;
   $('#signActions').hidden = true; $('#signCho').hidden = true;
   if (!searching && !inTopic) {
-    $('#signRel').innerHTML = relatedVideosHtml(SIGN_RELATED);
     $('#signShortcuts').innerHTML = shortcutsHtml();
     $('#signTopics').innerHTML = TOPICS.map(topicCardHtml).join('');
     $('#signCount').hidden = false; $('#signCount').textContent = `주제를 눌러 단어를 찾아보세요 · 전체 ${ALL_WORDS.length.toLocaleString('ko-KR')}개`;
@@ -595,14 +605,14 @@ const READINGS = (() => {
 })();
 const READ_ORDER = ['첫소리', '모음', '받침', '약자', '숫자(수표 뒤)', '수표', '문장부호'];
 // ---- 화면 전환(변환기·연습 패드·점자 표) ----
+const BPANELS = ['convert', 'pad', 'table', 'learn'];
 function showBraillePanel(name, byUser) {
-  if (!['convert', 'pad', 'table'].includes(name)) name = 'convert';
-  ['convert', 'pad', 'table'].forEach(n => { $('#bp-' + n).hidden = n !== name; });
+  if (!BPANELS.includes(name)) name = 'convert';
+  BPANELS.forEach(n => { $('#bp-' + n).hidden = n !== name; });
   $$('[data-bpanel]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.bpanel === name)));
   store.set('bpanel', name);
   if (name === 'table') { renderTable(tableGroup); if (byUser) markDid('braille'); }
-  if (name === 'pad') renderPadRel();
-  if (name === 'convert') renderConvRel();
+  if (name === 'learn') renderLearnPanel();
 }
 $('#bpSeg').addEventListener('click', e => { const b = e.target.closest('[data-bpanel]'); if (b) showBraillePanel(b.dataset.bpanel, true); });
 // ---- 연습 패드 ----
@@ -701,16 +711,12 @@ function tableHtml(g) {
   return subHead('문장 부호', keys.length + '개', '「한국 점자 규정」 제49항의 부호예요. 쉼표(5번)는 첫소리 ㄹ과 점 모양이 같아서 앞뒤 글자를 보고 구분해요.')
     + guideGrid(keys.map(ch => guideCardHtml(ch, brf(T.PUNCT[ch]), PUNCT_NAME[ch])));
 }
-// 점자 표의 각 묶음을 설명하는 교육 영상(있는 것만). 영상 목록은 따로 두지 않고, 그 내용을 보고 있을 때 관련된 영상만 한 줄로 이어 준다.
 function renderTable(g) {
   tableGroup = g; store.set('tgroup', g);
   $('#tableChips').innerHTML = TABLE_GROUPS.map(x => `<button class="chip${x === g ? ' active' : ''}" type="button" data-tg="${esc(x)}" aria-pressed="${x === g}">${esc(x)}</button>`).join('');
-  $('#tableBody').innerHTML = relatedVideosHtml(TABLE_VIDEOS[g] || []) + tableHtml(g);
+  $('#tableBody').innerHTML = tableHtml(g);
 }
 $('#tableChips').addEventListener('click', e => { const b = e.target.closest('[data-tg]'); if (b) renderTable(b.dataset.tg); });
-function renderPadRel() { $('#padRel').innerHTML = relatedVideosHtml(PAD_RELATED); }
-function renderConvRel() { $('#convRel').innerHTML = relatedVideosHtml(CONV_RELATED); }
-bindVideoLinks($('#padRel')); bindVideoLinks($('#convRel')); bindVideoLinks($('#tableBody')); bindVideoLinks($('#signRel'));
 
 // ================= 퀴즈 =================
 // 문제는 assets/quiz-engine.js(QZ)가 만든다: 수어·점자 문제 구성, 난이도 하·중·상 배분, 보기 고르기, 저장·복원.

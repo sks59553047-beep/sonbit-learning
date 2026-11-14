@@ -67,15 +67,21 @@ window.addEventListener('popstate', e => { const v = (e.state && e.state.view) |
 $('#playerBack').addEventListener('click', () => { history.back(); });
 
 // ---------------- 단어 하나의 "실제 영상" 블록(수어 사전·학습 페이지 공용) ----------------
-function kslUrl(k) { return /^https?:/.test(k) ? k : 'https://ksldict.korean.go.kr' + k; }
+function kslUrl(k) { return (/^https?:/.test(k) || k.startsWith('assets/')) ? k : 'https://ksldict.korean.go.kr' + k; }
 function kslVideoBoxHtml(k, label, id) {
+  const local = typeof MEDIA_VIDEO !== 'undefined' && MEDIA_VIDEO.has(id);
+  const hasImg = typeof MEDIA_IMG !== 'undefined' && MEDIA_IMG.has(id);
   const isNuri = !/^https?:/.test(k);
-  const poster = isNuri ? kslUrl(k.replace(/\.mp4$/, '.jpg')) : `assets/posters/${id}.jpg`;
-  const src = isNuri ? '국립국어원 한국수어누리사전' : '국립국어원 한국수어사전';
-  return `<div class="realvideo">
-      <video class="kslvideo" controls loop muted playsinline preload="none" poster="${esc(poster)}" src="${esc(kslUrl(k))}" aria-label="${esc(label)} 수어 영상"></video>
-      <p class="note">${src} 제공 영상 (저작자표시-비영리-변경금지)</p>
-    </div>`;
+  const src = local ? `assets/media/${id}.mp4` : kslUrl(k);
+  const poster = local ? `assets/posters/${id}.jpg` : (isNuri ? kslUrl(k.replace(/\.mp4$/, '.jpg')) : `assets/posters/${id}.jpg`);
+  const credit = (local || !isNuri) ? '국립국어원 한국수어사전' : '국립국어원 한국수어누리사전';
+  const img = hasImg ? `<figure class="shapeimg"><img src="assets/media/${id}.jpg" alt="${esc(label)} 수어 동작 그림" loading="lazy"></figure>` : '';
+  return `<div class="signmedia">
+      <div class="realvideo">
+        <video class="kslvideo" controls loop muted playsinline preload="metadata" poster="${esc(poster)}" src="${esc(src)}" aria-label="${esc(label)} 수어 영상"></video>
+      </div>${img}
+    </div>
+    <p class="note">${credit} 제공 영상·그림 (저작자표시-비영리-변경금지)</p>`;
 }
 function aliasHtml(w) {
   return w.al ? `<p class="alias">같은 수어: ${esc(w.al)}</p>` : '';
@@ -292,7 +298,7 @@ const QUIZ_POOL_SIGN_TEXT = KSL_WORDS.filter(w => w.d && w.d.length < 130 && !cl
   .map(w => ({ answer: w.w, clueType: 'text', clue: cleanDesc(w.d), group: w.t }));
 // 영상 문제 풀: 영상이 있는 단어 전부(영상을 보고 뜻을 맞히기)
 const QUIZ_POOL_SIGN_VIDEO = ALL_WORDS.filter(w => w.k && w.w.length <= 8 && !/[~\-]/.test(w.w))
-  .map(w => ({ answer: w.w, clueType: 'video', clue: w.k, group: w.t }));
+  .map(w => ({ answer: w.w, clueType: 'video', clue: (typeof MEDIA_VIDEO !== 'undefined' && MEDIA_VIDEO.has(w.id)) ? `assets/media/${w.id}.mp4` : w.k, group: w.t }));
 const QUIZ_POOL_SIGN = QUIZ_POOL_SIGN_TEXT.concat(QUIZ_POOL_SIGN_VIDEO);
 // 점자 문제 풀: 검증된 자모·숫자·문장부호 전부(2칸짜리 된소리·복합모음 포함)
 function cellsOf(v) { return (Array.isArray(v) ? v : [v]).map(x => x.split('-').map(Number)); }

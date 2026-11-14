@@ -1,4 +1,4 @@
-// 손빛 배움터 — 메인 로직(순수 자바스크립트, 서버 없음). 데이터: ksl-data.js(검증 수어 224개) · braille.js(점자 변환) · video-data.js(교육 영상 5편)
+// 손빛 배움터 — 메인 로직(순수 자바스크립트, 서버 없음). 데이터: ksl-data.js(수어 단어 사전) · braille.js(점자 변환) · video-data.js(교육 영상 5편)
 (() => {
 'use strict';
 const $ = (s, r) => (r || document).querySelector(s);
@@ -67,6 +67,16 @@ window.addEventListener('popstate', e => { const v = (e.state && e.state.view) |
 $('#playerBack').addEventListener('click', () => { history.back(); });
 
 // ---------------- 단어 하나의 "실제 영상/그림 카드" 블록(수어 사전·학습 페이지 공용) ----------------
+function kslVideoBtnHtml(uid) {
+  return `<button class="linkbtn primary" data-kvideo="${uid}" aria-expanded="false">${icon('video', 14)} 실제 수어 영상 보기</button>`;
+}
+function kslVideoBoxHtml(uid, k, label) {
+  const poster = k.replace(/\.mp4$/, '.jpg');
+  return `<div class="realvideo" id="kv-${uid}" hidden>
+      <video class="kslvideo" controls loop muted playsinline preload="none" poster="https://ksldict.korean.go.kr${esc(poster)}" data-src="https://ksldict.korean.go.kr${esc(k)}" aria-label="${esc(label)} 수어 영상"></video>
+      <p class="note">국립국어원 한국수어누리사전 제공 영상 (저작자표시-비영리-변경금지)</p>
+    </div>`;
+}
 function realVideoBtnHtml(sl, uid, words) {
   if (sl) return `<button class="linkbtn primary" data-realvideo="${uid}" aria-expanded="false">${icon('video', 14)} 실제 수어 영상 보기</button>`;
   return `<button class="linkbtn" data-sldict="${esc(words[0])}">${icon('video', 14)} 국립국어원 영상 찾기</button>`;
@@ -80,9 +90,11 @@ function signVisualHtml(label, synonyms) {
   const slWord = words.find(w => typeof SLDICT_LINK === 'object' && SLDICT_LINK && SLDICT_LINK[w]);
   const sl = slWord && SLDICT_LINK[slWord];
   const uid = 'v' + Math.random().toString(36).slice(2, 9);
+  const kw = KSL_WORDS.find(x => x.w === label);
+  const k = (!sl && kw && kw.k) ? kw.k : '';
   const src = sl ? `https://sldict.korean.go.kr/front/sign/signContentsView.do?origin_no=${sl.id}&top_category=${sl.cat}` : '';
   const actions = `<div class="actions">
-      ${realVideoBtnHtml(sl, uid, words)}
+      ${k ? kslVideoBtnHtml(uid) : realVideoBtnHtml(sl, uid, words)}
       ${shapeBtnHtml(sl, uid)}
     </div>`;
   const visuals = sl ? `<div class="realvideo" id="rv-${uid}" hidden>
@@ -93,7 +105,7 @@ function signVisualHtml(label, synonyms) {
       <div class="sldict-crop sldict-crop-shape"><iframe loading="lazy" src="about:blank" data-src="${esc(src)}" title="${esc(label)} 수형 사진·설명" allowfullscreen></iframe></div>
       <p class="note">국립국어원 한국수어사전 제공 수형 사진·설명 (저작자표시-비영리-변경금지)</p>
     </div>` : '';
-  return actions + visuals;
+  return actions + visuals + (k ? kslVideoBoxHtml(uid, k, label) : '');
 }
 function bindSignVisuals(root) {
   $$('[data-sldict]', root).forEach(b => b.addEventListener('click', () => window.open('https://sldict.korean.go.kr/front/search/searchAllList.do?searchKeyword=' + encodeURIComponent(b.dataset.sldict), '_blank', 'noopener')));
@@ -102,6 +114,15 @@ function bindSignVisuals(root) {
     const open = box.hidden; box.hidden = !open;
     const frame = box.querySelector('iframe');
     if (open && frame.src === 'about:blank') frame.src = frame.dataset.src;
+    b.setAttribute('aria-expanded', String(open));
+    b.innerHTML = (open ? icon('video', 14) + ' 실제 영상 닫기' : icon('video', 14) + ' 실제 수어 영상 보기');
+    hap(8);
+  }));
+  $$('[data-kvideo]', root).forEach(b => b.addEventListener('click', () => {
+    const box = $('#kv-' + b.dataset.kvideo);
+    const open = box.hidden; box.hidden = !open;
+    const v = box.querySelector('video');
+    if (open) { if (!v.getAttribute('src')) v.src = v.dataset.src; v.play().catch(() => {}); } else { v.pause(); }
     b.setAttribute('aria-expanded', String(open));
     b.innerHTML = (open ? icon('video', 14) + ' 실제 영상 닫기' : icon('video', 14) + ' 실제 수어 영상 보기');
     hap(8);
@@ -152,7 +173,7 @@ let roadTrack = 'sign';
 function roadmapFor(track) {
   if (track === 'sign') {
     return [
-      { label: '1단계', title: '수어 단어 찾아보기', sub: '검증된 수어 224개 검색, 실제 영상으로 바로 확인', nav: 'sign' },
+      { label: '1단계', title: '수어 단어 찾아보기', sub: '수어 ' + KSL_WORDS.length + '개 검색, 국립국어원 실제 영상으로 바로 확인', nav: 'sign' },
       { label: '2단계', title: '도전 퀴즈로 복습', sub: '10문제로 실력 확인', nav: 'quiz' }
     ];
   }
@@ -195,14 +216,14 @@ const CHO_LIST = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ',
 function choOf(str) {
   return [...str].map(ch => { const c = ch.charCodeAt(0); return (c >= 0xAC00 && c <= 0xD7A3) ? CHO_LIST[Math.floor((c - 0xAC00) / 588)] : ch; }).join('');
 }
-function hasRealVideo(w) { return typeof SLDICT_LINK === 'object' && !!SLDICT_LINK[w.w]; }
+function hasRealVideo(w) { return !!w.k || (typeof SLDICT_LINK === 'object' && !!SLDICT_LINK[w.w]); }
 function matchWord(w, q) {
   if (!q) return true;
   if (w.w.toLowerCase().includes(q)) return true;
   if (/^[ㄱ-ㅎ]+$/.test(q)) return choOf(w.w).includes(q);
   return (w.d || '').toLowerCase().includes(q);
 }
-function cleanDesc(d) { return String(d || '').replace(/\s*[—-]\s*국립국어원[^)]*\)\s*$/, ''); }
+function cleanDesc(d) { return String(d || '').replace(/\s*[—-]\s*(국립국어원|한국수어누리사전).*$/, ''); }
 function descHtml(d) {
   if (!d) return '<p class="desc">(설명 준비 중)</p>';
   return `<p class="desc">${esc(cleanDesc(d))}</p>`;

@@ -245,3 +245,4 @@ textarea.bptext{width:100%;border:1px solid var(--line);border-radius:14px;paddi
 .skiplink{position:fixed;top:-60px;left:8px;background:var(--navy);color:#fff;padding:10px 16px;border-radius:10px;z-index:100;transition:top .15s}
 .skiplink:focus{top:8px}
 @media (prefers-reduced-motion: reduce){ *{animation:none!important;transition:none!important} }
+.kslvideo{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:contain;background:#000}

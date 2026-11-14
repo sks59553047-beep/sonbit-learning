@@ -107,17 +107,6 @@ main{flex:1;padding:16px 16px calc(100px + env(safe-area-inset-bottom,0px));disp
 .nextcard .nk{font-size:0.7188rem;font-weight:800;color:var(--teal);letter-spacing:.04em}
 .nextcard .nt{font-size:1.0625rem;font-weight:800;margin-top:2px}
 .nextcard .ns{font-size:0.8125rem;color:var(--muted);margin-top:2px}
-.starters{display:grid;grid-template-columns:1fr;gap:12px}
-@media (min-width:560px){ .starters{grid-template-columns:1fr 1fr} }
-.starter{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;border:1px solid var(--line);border-radius:var(--r-lg);padding:18px;cursor:pointer;box-shadow:var(--shadow);background:var(--card);color:var(--ink);position:relative;overflow:hidden}
-.starter.sign{background:linear-gradient(160deg,var(--mint),var(--card) 70%)}
-.starter.braille{background:linear-gradient(160deg,#e3e5ff,var(--card) 70%)}
-:root[data-theme="dark"] .starter.braille{background:linear-gradient(160deg,#1f2559,var(--card) 70%)}
-.starter .si{width:44px;height:44px;border-radius:14px;background:var(--navy);color:#fff;display:grid;place-items:center}
-:root[data-theme="dark"] .starter .si{background:#2a2f6e;color:#fff}
-.starter .stt{font-size:1.125rem;font-weight:800;margin-top:6px}
-.starter .ssub{font-size:0.8125rem;color:var(--muted)}
-.starter .sgo{margin-top:6px;font-size:0.8438rem;font-weight:800;color:var(--teal)}
 .reviewrow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .revchip{display:flex;align-items:center;gap:12px;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:14px;cursor:pointer;box-shadow:var(--shadow)}
 .revchip .rn{font-size:1.5rem;font-weight:900;color:var(--amber);min-width:34px;text-align:center}
@@ -147,20 +136,6 @@ button.rbox{width:100%;text-align:left;font:inherit;color:inherit;background:var
 .sourcelist{margin:10px 0 0;padding-left:18px;font-size:0.8438rem;color:var(--muted);line-height:1.6}
 .sourcelist li{margin-bottom:4px}
 
-/* ---------- 영상 카드 ---------- */
-.vcard{display:block;border-radius:var(--r-md);overflow:hidden;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);cursor:pointer;text-align:left;padding:0;width:100%}
-.vcard .thumb{position:relative;aspect-ratio:16/9;background:var(--navy);overflow:hidden}
-.vcard .thumb img{width:100%;height:100%;object-fit:cover;display:block}
-.vcard .play{position:absolute;inset:0;display:grid;place-items:center;background:linear-gradient(0deg,rgba(0,0,0,.35),transparent 50%)}
-.vcard .play svg{width:46px;height:46px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.4))}
-.vcard .dur{position:absolute;right:8px;bottom:8px;background:rgba(0,0,0,.74);color:#fff;font-size:0.6875rem;font-weight:700;padding:2px 7px;border-radius:7px}
-.vcard .body{padding:12px 14px 14px}
-.vcard .tags{display:flex;gap:6px;margin-bottom:6px}
-.vcard h3{font-size:0.9375rem;font-weight:800;line-height:1.35}
-.vcard .watched{display:inline-flex;align-items:center;gap:4px;font-size:0.7188rem;color:var(--teal);font-weight:700;margin-top:6px}
-.vlist-grid{display:grid;grid-template-columns:1fr;gap:14px}
-@media (min-width:420px){ .vlist-grid{grid-template-columns:1fr 1fr} }
-@media (min-width:1000px){ .vlist-grid{grid-template-columns:repeat(3,1fr)} }
 
 /* ---------- 수어 사전 ---------- */
 .shortcuts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -172,7 +147,7 @@ button.rbox{width:100%;text-align:left;font:inherit;color:inherit;background:var
 .topicgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 @media (min-width:760px){ .topicgrid{grid-template-columns:repeat(3,1fr)} }
 .topiccard{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:14px;cursor:pointer;box-shadow:var(--shadow);color:var(--ink)}
-.topiccard:hover,.shortcut:hover,.starter:hover,.revchip:hover,.qcard:hover{border-color:var(--teal)}
+.topiccard:hover,.shortcut:hover,.revchip:hover,.qcard:hover{border-color:var(--teal)}
 .topiccard .ti{font-size:1.5rem;line-height:1;width:42px;height:42px;border-radius:13px;background:var(--surface2);display:grid;place-items:center}
 .topiccard .tn{font-size:0.9375rem;font-weight:800;margin-top:6px}
 .topiccard .tc{font-size:0.75rem;color:var(--muted)}
@@ -354,15 +329,14 @@ textarea.bptext:focus{border-color:var(--teal);outline:none}
 @media (max-width:380px){ .guide-grid{grid-template-columns:repeat(2,1fr)} .braillecell .dot,.bcell .dot{width:46px;height:46px} }
 
 /* ---------- v3 보충 2: 시작 카드·퀴즈 카드를 가로로 눕혀 세로 길이를 줄인다 ---------- */
-.starter,.qcard{display:grid;grid-template-columns:48px 1fr auto;grid-template-areas:"ic t g" "ic s g";column-gap:14px;row-gap:2px;align-items:center;padding:14px 16px}
-.starter .si,.qcard .qci{grid-area:ic;width:48px;height:48px}
-.starter .stt,.qcard .qct{grid-area:t;margin-top:0;font-size:1.0625rem}
-.starter .ssub,.qcard .qcs{grid-area:s;font-size:0.8125rem;line-height:1.45}
-.starter .sgo,.qcard .qcg{grid-area:g;margin:0;font-size:1.75rem;line-height:1;color:var(--muted);font-weight:400}
+.qcard{display:grid;grid-template-columns:48px 1fr auto;grid-template-areas:"ic t g" "ic s g";column-gap:14px;row-gap:2px;align-items:center;padding:14px 16px}
+.qcard .qci{grid-area:ic;width:48px;height:48px}
+.qcard .qct{grid-area:t;margin-top:0;font-size:1.0625rem}
+.qcard .qcs{grid-area:s;font-size:0.8125rem;line-height:1.45}
+.qcard .qcg{grid-area:g;margin:0;font-size:1.75rem;line-height:1;color:var(--muted);font-weight:400}
 .shortcut.fav .sci{color:var(--amber);font-size:1.375rem}
 
 /* ---------- v3 보충 3 ---------- */
-.vcard .thumb{background:#111848}
 .qexplain .btn.ghost{background:var(--card);border:1px solid var(--line)}
 .qexplain .btn.ghost:hover{border-color:var(--teal)}
 
@@ -391,3 +365,18 @@ textarea.bptext:focus{border-color:var(--teal);outline:none}
   .topbar{background:color-mix(in srgb,var(--surface) 88%,transparent)}
   .navinner{background:color-mix(in srgb,var(--card) 94%,transparent)}
 }
+
+/* ---------- 관련 영상 한 줄(점자 연습 패드·점자 표) / 로드맵의 「지금 할 단계」 표시 ---------- */
+.relvid{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.rvl{font-size:0.75rem;font-weight:800;color:var(--teal)}
+.rvbtn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface2);border-radius:999px;padding:8px 14px;font-weight:700;font-size:0.8125rem;cursor:pointer;color:var(--ink);min-height:40px;text-align:left}
+.rvbtn:hover{border-color:var(--teal)}
+.rvbtn .rvp{color:var(--teal);font-size:0.75rem}
+.rvbtn small{color:var(--muted);font-weight:600;font-size:0.75rem}
+.nowtag{margin-left:8px;vertical-align:middle}
+
+/* ---------- 글줄 나눔: 한국어는 낱말 중간에서 끊지 않는다(긴 낱말만 어쩔 수 없이 끊음) ---------- */
+body{word-break:keep-all;overflow-wrap:break-word}
+.tag,.chip,.qbadge,.navbtn span{white-space:nowrap}
+.tagrow{display:flex;flex-wrap:wrap;gap:8px}
+.rvbtn small,.rvbtn .rvp{flex:none;white-space:nowrap}

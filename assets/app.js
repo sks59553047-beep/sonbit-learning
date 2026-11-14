@@ -219,6 +219,7 @@ function fillWordBody(det) {
 function choChipsHtml(list) {
   const present = new Set(list.map(firstCho));
   const chips = ['전체'].concat(CHO_MAIN.filter(c => present.has(c)));
+  if ([...present].some(c => !CHO_MAIN.includes(c))) chips.push('기타');
   return chips.map(c => `<button class="chip${(signCho || '전체') === c ? ' active' : ''}" data-cho="${c}" type="button">${c}</button>`).join('');
 }
 function renderSign() {
@@ -242,7 +243,8 @@ function renderSign() {
     if (list.length > 40) {
       $('#signCho').hidden = false; $('#signCho').innerHTML = choChipsHtml(list);
       $$('[data-cho]', $('#signCho')).forEach(b => b.addEventListener('click', () => { signCho = b.dataset.cho === '전체' ? '' : b.dataset.cho; hap(8); renderSign(); }));
-      if (signCho) list = list.filter(w => firstCho(w) === signCho);
+      if (signCho === '기타') list = list.filter(w => !CHO_MAIN.includes(firstCho(w)));
+      else if (signCho) list = list.filter(w => firstCho(w) === signCho);
     }
   }
   $('#signCount').hidden = false;

@@ -173,9 +173,16 @@ function toggleFav(id) {
   store.set('fav', l); return i < 0;
 }
 function getWrong() { const w = store.get('wrong', []); return Array.isArray(w) ? w : []; }
-function wrongKey(c) { return c.t + ':' + (c.i != null ? c.i : c.a); }
-function addWrong(q) { const c = compactQ(q, true); const l = getWrong().filter(x => wrongKey(x) !== wrongKey(c)); l.unshift(c); store.set('wrong', l.slice(0, 100)); }
-function dropWrong(q) { const k = wrongKey(compactQ(q, true)); const l = getWrong(); const n = l.filter(x => wrongKey(x) !== k); if (n.length !== l.length) store.set('wrong', n); }
+function wrongKey(c) { return QZ.wrongKey(c); }
+function addWrong(q) { const c = QZ.compact(q, true); const l = getWrong().filter(x => wrongKey(x) !== wrongKey(c)); l.unshift(c); store.set('wrong', l.slice(0, 100)); }
+function dropWrong(q) { const k = wrongKey(QZ.compact(q, true)); const l = getWrong(); const n = l.filter(x => wrongKey(x) !== k); if (n.length !== l.length) store.set('wrong', n); }
+// 옛 방식으로 저장된 틀린 문제(글 단서 문제 등)는 지금 퀴즈로 다시 만들 수 없다. 시작할 때 한 번 정리하고, 같은 문제가 겹쳐 있으면 하나만 남긴다.
+(function migrateWrong() {
+  const l = getWrong(); if (!l.length) return;
+  const seen = new Set(), keep = [];
+  l.forEach(c => { const n = cleanWrongEntry(c); if (n && !seen.has(wrongKey(n))) { seen.add(wrongKey(n)); keep.push(n); } });
+  if (JSON.stringify(keep) !== JSON.stringify(l)) store.set('wrong', keep);
+})();
 function watchedIds() { return store.keys('watched:').filter(k => store.get(k, false)).map(k => k.slice(8)); }
 function hasActivity() { return watchedIds().length > 0 || store.keys('did:').length > 0 || favList().length > 0 || getWrong().length > 0 || !!store.get('quizrun', null); }
 
@@ -294,7 +301,7 @@ function renderHomeNext() {
   const host = $('#homeNext');
   let html = '';
   const run = loadRun();
-  if (run) html = nextcardHtml('이어서 하기', '풀던 퀴즈가 있어요', `${QKINDS[run.kind]} · ${Math.min(run.i + 1, run.qs.length)}번째 문제부터 (${run.mode === 'challenge' ? '도전' : '연습'})`, 'data-act="resume"', '이어서 풀기');
+  if (run) html = nextcardHtml('이어서 하기', '풀던 퀴즈가 있어요', `${QKINDS[run.kind]} · ${Math.min(run.i + 1, run.qs.length)}번째 문제부터 (${run.mode === 'challenge' ? '도전' : '연습'} · ${lvText(run)})`, 'data-act="resume"', '이어서 풀기');
   else if (hasActivity() && roadmapFor(roadTrack).every(stepDone)) {
     const other = roadTrack === 'sign' ? 'braille' : 'sign', st = roadmapFor(other).find(s => !stepDone(s));
     html = st
@@ -348,11 +355,14 @@ $('#recExport').addEventListener('click', () => {
   setTimeout(() => URL.revokeObjectURL(url), 5000);
   setRecStatus('기록 파일(sonbit-record-' + day + '.json)을 내려받았어요. 다른 기기에서 「기록 가져오기」로 불러오세요.');
 });
-function validWrongEntry(c) {
-  if (!c || typeof c !== 'object') return false;
-  if (c.t === 'br' || c.t === 'bu') return typeof c.a === 'string' && !!(c.t === 'bu' ? QUIZ_POOL_BUILD : QUIZ_POOL_BRAILLE).find(x => x.answer === c.a);
-  if (c.t === 'sv' || c.t === 'st') return WORD_BY_ID.has(String(c.i));
-  return false;
+// 가져온 틀린 문제 한 건을 깨끗한 모양으로 다듬는다. 지금 퀴즈로 다시 만들 수 없는 것(옛 방식·없는 단어)은 버린다.
+function cleanWrongEntry(c) {
+  if (!c || typeof c !== 'object') return null;
+  const t = c.t, l = [1, 2, 3].includes(c.l) ? c.l : 2;
+  let n = null;
+  if (t === 'sv' || t === 'pv') n = { t, i: String(c.i), l };
+  else if ((t === 'br' || t === 'bu') && typeof c.a === 'string' && c.a.length <= 30) n = { t, k: typeof c.k === 'string' && c.k ? c.k.slice(0, 1) : 'p', a: c.a, l };
+  return n && QZ.valid(n) ? n : null;
 }
 // 가져오기: 이 기기의 기록은 그대로 두고, 파일에 있는 것을 더한다(합치기). 알 수 없는 값은 버린다.
 function importRecord(text) {
@@ -366,7 +376,7 @@ function importRecord(text) {
   }
   if (Array.isArray(d.wrong)) {
     const cur = getWrong(), keys = new Set(cur.map(wrongKey));
-    d.wrong.slice(0, 300).forEach(c => { if (validWrongEntry(c)) { const n = c.t === 'br' || c.t === 'bu' ? { t: c.t, a: c.a } : { t: c.t, i: String(c.i) }; if (!keys.has(wrongKey(n))) { keys.add(wrongKey(n)); cur.push(n); nWrong++; } } });
+    d.wrong.slice(0, 300).forEach(c => { const n = cleanWrongEntry(c); if (n && !keys.has(wrongKey(n))) { keys.add(wrongKey(n)); cur.push(n); nWrong++; } });
     store.set('wrong', cur.slice(0, 100));
   }
   if (d.watched && typeof d.watched === 'object') {
@@ -703,34 +713,11 @@ function renderConvRel() { $('#convRel').innerHTML = relatedVideosHtml(CONV_RELA
 bindVideoLinks($('#padRel')); bindVideoLinks($('#convRel')); bindVideoLinks($('#tableBody')); bindVideoLinks($('#signRel'));
 
 // ================= 퀴즈 =================
-// ---- 문제 만들기: 수어 ----
-function quizVideoSrc(w) { return (typeof MEDIA_VIDEO !== 'undefined' && MEDIA_VIDEO.has(w.id)) ? `assets/media/${w.id}.mp4` : w.k; }
-function signTextQ(w, loose) { const t = descOf(w); if (!t || t.includes(w.w) || (!loose && t.length >= 130)) return null; return { id: w.id, answer: w.w, clueType: 'text', clue: t, group: w.t }; }
-function signVideoQ(w, loose) { if (!w.k || (!loose && (w.w.length > 8 || /[~\-]/.test(w.w)))) return null; return { id: w.id, answer: w.w, clueType: 'video', clue: quizVideoSrc(w), group: w.t }; }
-const QUIZ_POOL_SIGN_TEXT = ALL_WORDS.map(w => signTextQ(w)).filter(Boolean);
-const QUIZ_POOL_SIGN_VIDEO = ALL_WORDS.map(w => signVideoQ(w)).filter(Boolean);
-const QUIZ_POOL_SIGN = QUIZ_POOL_SIGN_TEXT.concat(QUIZ_POOL_SIGN_VIDEO);
-// ---- 문제 만들기: 점자(규정 2024로 확인한 자모·숫자·약자·약어·문장부호). 점 모양이 같은 것(예: ㄴ 첫소리와 나 약자)은 정답이 둘이 되므로 먼저 나온 하나만 쓴다 ----
-function cellsOf(v) { return (Array.isArray(v) ? v : [v]).map(x => x.split('-').map(Number)); }
-// 쓰기 퀴즈는 정답이 하나로 정해진 글자를 묻기 때문에, 점 모양이 같아도(예: 마침표와 ㅍ 받침) 항목을 모두 넣는다.
-const QUIZ_POOL_BUILD = [];
-const QUIZ_POOL_BRAILLE = (() => {
-  const seen = new Set(), out = [];
-  const add = (answer, cells, group) => { const item = { answer, clueType: 'dots', clue: cells, group }; QUIZ_POOL_BUILD.push(item); const k = cells.map(c => c.join('')).join('|'); if (seen.has(k)) return; seen.add(k); out.push(item); };
-  for (const [ch, d] of Object.entries(BRAILLE_CHO)) add(ch, cellsOf(d), '초성');
-  for (const [ch, d] of Object.entries(BRAILLE_JONG)) add(ch + '(받침)', cellsOf(d), '종성');
-  for (const [ch, d] of Object.entries(BRAILLE_JUNG)) add(ch, cellsOf(d), '중성');
-  for (const [ch, d] of Object.entries(BRAILLE_NUMBERS)) add(ch, [BRAILLE_NUMBER_SIGN.split('-').map(Number), ...cellsOf(d)], '숫자');
-  for (const [k, brf] of Object.entries(T.ABBR1)) add(SYL1[k] + '(약자)', KB.brfCells(brf), '약자');
-  for (const [k, brf] of Object.entries(T.ABBR2)) add(SYL2[k] + '(약자)', KB.brfCells(brf), '약자');
-  add('것(약자)', KB.brfCells('_s'), '약자');
-  for (const [w, brf] of Object.entries(T.ABBR_WORDS)) add(w + '(약어)', KB.brfCells(brf), '약어');
-  for (const ch of ['.', '?', '!', ',', '·', ':', '/', '…', '“', '”', '‘', '’', '(', ')', '[', ']', '「', '」', '―']) add(ch + (ch === ',' ? ' 쉼표' : ''), KB.brfCells(T.PUNCT[ch]), '문장부호');
-  return out;
-})();
+// 문제는 assets/quiz-engine.js(QZ)가 만든다: 수어·점자 문제 구성, 난이도 하·중·상 배분, 보기 고르기, 저장·복원.
+// 여기서는 화면과 풀이 상태(점수·목숨·이어 풀기)만 맡는다.
 function clueCellsHtml(cells) { return '<div class="cellsrow">' + cells.map(c => miniDots(c, true)).join('') + '</div>'; }
 // ---- 점자 문제의 글 설명(화면낭독기용·오답 해설용). 정답 글자는 포함하지 않는다 ----
-const ORD = ['첫째', '둘째', '셋째', '넷째', '다섯째', '여섯째'];
+const ORD = ['첫째', '둘째', '셋째', '넷째', '다섯째', '여섯째', '일곱째', '여덟째'];
 function cellsDescription(cells) {
   if (cells.length === 1) return cells[0].length ? dotsLabel(cells[0]) + '이 있는 점자 한 칸' : '점이 없는 빈칸';
   return '점자 ' + cells.length + '칸. ' + cells.map((c, i) => (ORD[i] || (i + 1) + '번째') + ' 칸 ' + dotsLabel(c)).join(', ');
@@ -750,34 +737,25 @@ function dotsDiffText(ans, got, who) {
 }
 // ---- 풀이 상태 저장(잠시 나가도 이어 풀 수 있게) ----
 const QKINDS = { sign: '수어 퀴즈', braille: '점자 읽기 퀴즈', build: '점자 쓰기 퀴즈', fav: '내 단어장 퀴즈', review: '틀린 문제 복습' };
+const LEVEL_NAME = QZ.LEVELS;
+const lvText = s => (s.kind === 'review' ? '난이도 섞임' : '난이도 ' + LEVEL_NAME[s.lv]);        // 복습은 문제마다 난이도가 달라 「섞임」
+const toLevel = n => '「' + LEVEL_NAME[n] + '」' + (n === 1 ? '로' : '으로');                    // 하→로, 중·상→으로
 let quizState = { active: false };
 const modeNow = () => (store.get('qmode', 'practice') === 'challenge' ? 'challenge' : 'practice');
-function compactQ(q, noOpts) {
-  const c = q.clueType === 'dots' ? { t: 'br', a: q.answer } : q.clueType === 'build' ? { t: 'bu', a: q.answer } : { t: q.clueType === 'video' ? 'sv' : 'st', i: String(q.id) };
-  if (!noOpts && q._opts) c.o = q._opts;
-  return c;
-}
-function restoreQ(c) {
-  if (!c || typeof c !== 'object') return null;
-  if (c.t === 'br' || c.t === 'bu') {
-    const it = (c.t === 'bu' ? QUIZ_POOL_BUILD : QUIZ_POOL_BRAILLE).find(x => x.answer === c.a); if (!it) return null;
-    return Object.assign({}, it, c.t === 'bu' ? { clueType: 'build' } : {}, { _opts: Array.isArray(c.o) ? c.o : undefined });
-  }
-  const w = WORD_BY_ID.get(String(c.i)); if (!w) return null;
-  const q = c.t === 'sv' ? signVideoQ(w, true) : c.t === 'st' ? signTextQ(w, true) : null; if (!q) return null;
-  if (Array.isArray(c.o)) q._opts = c.o;
-  return q;
-}
+const levelNow = () => { const v = Number(store.get('qlevel', 2)); return v === 1 || v === 3 ? v : 2; };
+const scopeNow = () => { const v = store.get('qscope', 'all'); return QZ.SCOPES.some(s => s.key === v) ? v : 'all'; };
+const scopeLabel = k => (QZ.SCOPES.find(s => s.key === k) || QZ.SCOPES[0]).label;
 function saveRun() {
   const s = quizState; if (!s.active) return;
-  store.set('quizrun', { v: 1, kind: s.kind, mode: s.mode, i: s.answered ? s.i + 1 : s.i, score: s.score, lives: s.lives, done: s.done, qs: s.qs.map(q => compactQ(q)), wrong: s.wrong.map(q => compactQ(q, true)) });
+  store.set('quizrun', { v: 2, kind: s.kind, mode: s.mode, lv: s.lv, scope: s.scope, i: s.answered ? s.i + 1 : s.i, score: s.score, lives: s.lives, done: s.done, qs: s.qs.map(q => QZ.compact(q)), wrong: s.wrong.map(q => QZ.compact(q, true)) });
 }
 function loadRun() {
   const r = store.get('quizrun', null);
-  if (!r || r.v !== 1 || !QKINDS[r.kind] || !Array.isArray(r.qs) || !r.qs.length) return null;
-  const qs = r.qs.map(restoreQ); if (qs.some(q => !q)) return null;
+  if (r && r.v !== 2) { store.del('quizrun'); return null; }           // 옛 방식으로 저장된 풀이는 이어 풀 수 없다
+  if (!r || !QKINDS[r.kind] || !Array.isArray(r.qs) || !r.qs.length) return null;
+  const qs = r.qs.map(QZ.restore); if (qs.some(q => !q)) return null;
   const i = Math.max(0, Math.min(Number(r.i) || 0, qs.length));
-  return { active: true, kind: r.kind, mode: r.mode === 'challenge' ? 'challenge' : 'practice', i, score: Number(r.score) || 0, lives: Number.isFinite(Number(r.lives)) ? Number(r.lives) : 3, done: Number(r.done) || 0, qs, answered: false, wrong: (r.wrong || []).map(restoreQ).filter(Boolean) };
+  return { active: true, kind: r.kind, mode: r.mode === 'challenge' ? 'challenge' : 'practice', lv: [1, 2, 3].includes(r.lv) ? r.lv : 2, scope: QZ.SCOPES.some(s => s.key === r.scope) ? r.scope : 'all', i, score: Number(r.score) || 0, lives: Number.isFinite(Number(r.lives)) ? Number(r.lives) : 3, done: Number(r.done) || 0, qs, answered: false, wrong: (r.wrong || []).map(QZ.restore).filter(Boolean) };
 }
 function resumeQuiz() {
   const run = loadRun();
@@ -787,16 +765,16 @@ function resumeQuiz() {
 // 이미 퀴즈 화면이면 기록(뒤로 가기 목록)을 또 쌓지 않는다
 function ensureQuizView() { if (!$('#view-quiz').classList.contains('active')) go('quiz'); }
 function questionsFor(kind) {
-  if (kind === 'sign') return shuffle(shuffle(QUIZ_POOL_SIGN_TEXT).slice(0, 4).concat(shuffle(QUIZ_POOL_SIGN_VIDEO).slice(0, 6)));
-  if (kind === 'braille') return shuffle(QUIZ_POOL_BRAILLE).slice(0, 10);
-  if (kind === 'build') return shuffle(QUIZ_POOL_BUILD).slice(0, 10).map(q => Object.assign({}, q, { clueType: 'build' }));
-  if (kind === 'fav') return shuffle(favWords().map(w => signVideoQ(w, true) || signTextQ(w, true)).filter(Boolean)).slice(0, 10);
-  if (kind === 'review') return shuffle(getWrong().map(restoreQ).filter(Boolean)).slice(0, 10);
+  const lv = levelNow();
+  if (kind === 'sign') return QZ.makeSignQuiz(lv);
+  if (kind === 'braille') return QZ.makeBrailleQuiz('read', scopeNow(), lv);
+  if (kind === 'build') return QZ.makeBrailleQuiz('write', scopeNow(), lv);
+  if (kind === 'fav') return QZ.makeFavQuiz(favWords().map(w => QZ.wordById(w.id)).filter(Boolean), lv);
+  if (kind === 'review') return shuffle(getWrong().map(QZ.restore).filter(Boolean)).slice(0, QZ.SIZE);
   return [];
 }
 function startQuizWith(kind, qs, mode) {
-  // 문제를 복사해서 시작한다(선택지 _opts 가 풀에 남아 다음 퀴즈에서 같은 보기로 나오는 것을 막는다)
-  quizState = { active: true, kind, mode: mode || modeNow(), i: 0, score: 0, lives: 3, done: 0, qs: qs.map(q => Object.assign({}, q, { _opts: undefined })), answered: false, wrong: [] };
+  quizState = { active: true, kind, mode: mode || modeNow(), lv: levelNow(), scope: scopeNow(), i: 0, score: 0, lives: 3, done: 0, qs, answered: false, wrong: [] };
   saveRun(); renderQuiz();
 }
 function startQuiz(kind) {
@@ -806,29 +784,41 @@ function startQuiz(kind) {
 }
 function startQuizFromAnywhere(kind) {
   const qs = questionsFor(kind);
-  if (!qs.length) { toast(kind === 'fav' ? '내 단어장에 단어를 먼저 담아 주세요' : '틀린 문제가 아직 없어요'); return; }
+  if (!qs.length) { toast(kind === 'fav' ? '내 단어장에 단어를 먼저 담아 주세요(영상이 겹치는 단어는 퀴즈에서 빠져요)' : '틀린 문제가 아직 없어요'); return; }
   quizState = { active: false }; ensureQuizView(); startQuizWith(kind, qs);
 }
 // ---- 퀴즈 홈 ----
 function modeNoteText(m) {
   return m === 'challenge' ? '도전: 힌트 없이 10문제, 목숨 3개예요. 목숨이 모두 없어지면 끝나요.' : '연습: 목숨이 없고 힌트를 쓸 수 있어요. 틀려도 설명을 보며 천천히 익혀요.';
 }
+const SCOPE_NOTE = { all: '모든 범위에서 골고루 나와요.', cho: '첫소리 13개를 연습해요. (한글 점자 ①)', vb: '기본 모음·받침과 쉬운 낱말을 연습해요. (②③)', num: '숫자와 문장부호를 연습해요. (④)', two: '된소리·겹모음·겹받침과 낱말을 연습해요. (⑤)', abbr: '약자·약어와 줄여 쓰는 낱말을 연습해요. (⑥)' };
 function renderQuizHub() {
   quizState = { active: false };
-  const run = loadRun(), mode = modeNow();
-  const wrongN = getWrong().filter(c => validWrongEntry(c)).length, favN = favWords().length;
-  const resume = run ? `<div class="resumebar"><div class="rt">풀던 퀴즈가 있어요<small>${esc(QKINDS[run.kind])} · ${Math.min(run.i + 1, run.qs.length)} / ${run.qs.length}번째 · ${run.mode === 'challenge' ? '도전' : '연습'}</small></div><button class="btn primary small" type="button" id="qResume">이어서 풀기</button><button class="btn line small" type="button" id="qDiscard">그만두기</button></div>` : '';
+  const run = loadRun(), mode = modeNow(), lv = levelNow(), scope = scopeNow();
+  const wrongN = getWrong().filter(c => QZ.valid(c)).length, favN = favWords().filter(w => QZ.favOk(QZ.wordById(w.id))).length;
+  const resume = run ? `<div class="resumebar"><div class="rt">풀던 퀴즈가 있어요<small>${esc(QKINDS[run.kind])} · ${Math.min(run.i + 1, run.qs.length)} / ${run.qs.length}번째 · ${run.mode === 'challenge' ? '도전' : '연습'} · ${lvText(run)}</small></div><button class="btn primary small" type="button" id="qResume">이어서 풀기</button><button class="btn line small" type="button" id="qDiscard">그만두기</button></div>` : '';
   $('#quizArea').innerHTML = `<div class="quizhub">${resume}
-    <div class="card"><div class="section-h"><h2>방식 고르기</h2></div>
-      <div class="seg" role="group" aria-label="퀴즈 방식" style="margin:10px 0">
+    <div class="card"><div class="section-h"><h2>방식과 난이도</h2></div>
+      <p class="lbl2">방식</p>
+      <div class="seg" role="group" aria-label="퀴즈 방식">
         <button type="button" data-qmode="practice" aria-pressed="${mode === 'practice'}">연습</button>
         <button type="button" data-qmode="challenge" aria-pressed="${mode === 'challenge'}">도전</button>
       </div>
-      <p class="note" id="qmodeNote">${modeNoteText(mode)}</p></div>
-    <div class="qcards">
-      <button class="qcard" type="button" data-quiz="sign"><span class="qci">${icon('hand', 24)}</span><span class="qct">수어 퀴즈</span><span class="qcs">동작 설명을 읽거나 영상을 보고 뜻을 맞혀요 (문제 ${QUIZ_POOL_SIGN.length.toLocaleString('ko-KR')}개 중 10문제)</span><span class="qcg" aria-hidden="true">›</span></button>
-      <button class="qcard braille" type="button" data-quiz="braille"><span class="qci">${icon('braille', 24)}</span><span class="qct">점자 읽기</span><span class="qcs">점 모양을 보고 어떤 글자인지 맞혀요 (문제 ${QUIZ_POOL_BRAILLE.length}개 중 10문제)</span><span class="qcg" aria-hidden="true">›</span></button>
-      <button class="qcard braille" type="button" data-quiz="build"><span class="qci">${icon('pencil', 24)}</span><span class="qct">점자 쓰기</span><span class="qcs">글자를 보고 점을 직접 눌러 써 봐요</span><span class="qcg" aria-hidden="true">›</span></button>
+      <p class="note" id="qmodeNote" style="margin-top:8px">${modeNoteText(mode)}</p>
+      <p class="lbl2">난이도</p>
+      <div class="seg" role="group" aria-label="퀴즈 난이도">
+        ${[1, 2, 3].map(n => `<button type="button" data-qlevel="${n}" aria-pressed="${lv === n}">${LEVEL_NAME[n]}</button>`).join('')}
+      </div>
+      <p class="note" id="qlevelNote" style="margin-top:8px">${esc(QZ.LEVEL_NOTES[lv])}</p></div>
+    <div class="qcards c1">
+      <button class="qcard" type="button" data-quiz="sign"><span class="qci">${icon('hand', 24)}</span><span class="qct">수어 퀴즈</span><span class="qcs">영상을 보고 뜻을 맞히고, 뜻을 보고 알맞은 영상을 골라요. (수어 ${QZ.eligible.length.toLocaleString('ko-KR')}개에서 10문제)</span><span class="qcg" aria-hidden="true">›</span></button>
+    </div>
+    <div class="card"><div class="section-h"><h2>점자 범위</h2></div>
+      <div class="chiprow wrap" role="group" aria-label="점자 범위" style="margin-top:10px">${QZ.SCOPES.map(s => `<button type="button" class="chip${s.key === scope ? ' active' : ''}" data-qscope="${s.key}" aria-pressed="${s.key === scope}">${esc(s.label)}</button>`).join('')}</div>
+      <p class="note" id="qscopeNote" style="margin-top:10px">${esc(SCOPE_NOTE[scope])}</p></div>
+    <div class="qcards c2">
+      <button class="qcard braille" type="button" data-quiz="braille"><span class="qci">${icon('braille', 24)}</span><span class="qct">점자 읽기</span><span class="qcs">점 모양을 보고 글자·숫자·낱말을 맞혀요.</span><span class="qcg" aria-hidden="true">›</span></button>
+      <button class="qcard braille" type="button" data-quiz="build"><span class="qci">${icon('pencil', 24)}</span><span class="qct">점자 쓰기</span><span class="qcs">글자·숫자·낱말을 보고 점을 직접 눌러 써 봐요.</span><span class="qcg" aria-hidden="true">›</span></button>
     </div>
     <div class="reviewrow">
       <button class="revchip" type="button" data-quiz="review"><span class="rn">${wrongN}</span><span class="rl">틀린 문제 복습<span class="rs">${wrongN ? '틀린 문제를 다시 풀어요' : '틀린 문제가 여기에 모여요'}</span></span></button>
@@ -841,26 +831,22 @@ $('#quizArea').addEventListener('click', e => {
   if (q && !quizState.active) { const k = q.dataset.quiz; if (k === 'review' || k === 'fav') startQuizFromAnywhere(k); else startQuiz(k); return; }
   const m = t.closest('[data-qmode]');
   if (m) { store.set('qmode', m.dataset.qmode); $$('[data-qmode]').forEach(b => b.setAttribute('aria-pressed', String(b === m))); $('#qmodeNote').textContent = modeNoteText(m.dataset.qmode); return; }
+  const lb = t.closest('[data-qlevel]');
+  if (lb) { const n = Number(lb.dataset.qlevel); store.set('qlevel', n); $$('[data-qlevel]').forEach(b => b.setAttribute('aria-pressed', String(b === lb))); $('#qlevelNote').textContent = QZ.LEVEL_NOTES[n]; return; }
+  const sb = t.closest('[data-qscope]');
+  if (sb) { store.set('qscope', sb.dataset.qscope); $$('[data-qscope]').forEach(b => { const on = b === sb; b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); }); $('#qscopeNote').textContent = SCOPE_NOTE[sb.dataset.qscope]; return; }
   if (t.closest('#qResume')) { resumeQuiz(); return; }
   if (t.closest('#qDiscard')) { store.del('quizrun'); renderQuizHub(); return; }
 });
 // ---- 문제 화면 ----
-function pickChoices(correct) {
-  const pool = correct.clueType === 'dots' ? QUIZ_POOL_BRAILLE : QUIZ_POOL_SIGN;
-  const sameGroup = pool.filter(w => w.group === correct.group && w.answer !== correct.answer);
-  const others = pool.filter(w => w.answer !== correct.answer);
-  const src = sameGroup.length >= 3 ? sameGroup : others;
-  const picks = []; const used = new Set([correct.answer]);
-  while (picks.length < 3 && used.size < src.length + 1) { const c = src[Math.floor(Math.random() * src.length)]; if (!used.has(c.answer)) { used.add(c.answer); picks.push(c.answer); } }
-  return shuffle([correct.answer, ...picks]);
-}
 function livesHtml(lives) { return Array.from({ length: 3 }, (_, i) => `<span class="life${i < lives ? ' on' : ''}">${icon('star', 16)}</span>`).join(''); }
 function quizOptHtml(o, i) { return `<button class="qopt" type="button" data-opt="${esc(o)}"><span class="num" aria-hidden="true">${i + 1}</span><span>${esc(o)}</span></button>`; }
+function clipHtml(c, i) { return `<button type="button" class="vopt" data-opt="${esc(c.id)}" aria-label="영상 ${i + 1}번"><video src="${esc(kslUrl(c.src))}" autoplay loop muted playsinline preload="auto" tabindex="-1" aria-hidden="true"></video><span class="vn" aria-hidden="true">${i + 1}</span></button>`; }
 function quizClueHtml(q) {
-  if (q.clueType === 'dots') return `<div class="qclue qclue-dots">이 점자는 무슨 글자(${esc(q.group)})일까요?<div class="quizdots" role="img" aria-label="${esc(cellsDescription(q.clue))}">${clueCellsHtml(q.clue)}</div></div>`;
-  if (q.clueType === 'build') return `<div class="qclue">다음 글자를 점자로 써 보세요.<div style="font-size:1.75rem;font-weight:900;margin:10px 0 2px">「${esc(q.answer)}」</div><div style="font-size:.8125rem;opacity:.85">${esc(q.group)} · ${q.clue.length}칸</div></div>`;
-  if (q.clueType === 'video') return `<div class="qclue">이 수어 영상이 뜻하는 단어는 무엇일까요?<video class="kslvideo qvideo" id="quizClueVideo" src="${esc(kslUrl(q.clue))}" autoplay loop muted playsinline controls preload="auto" aria-label="수어 영상 문제"></video></div>`;
-  return `<div class="qclue">다음 수어 동작이 의미하는 단어는 무엇일까요?<br><br>${esc(q.clue)}</div>`;
+  if (q.clueType === 'dots') return `<div class="qclue qclue-dots">${esc(q.prompt)}<div class="quizdots" role="img" aria-label="${esc(cellsDescription(q.clue))}">${clueCellsHtml(q.clue)}</div></div>`;
+  if (q.clueType === 'build') return `<div class="qclue">다음을 점자로 써 보세요.<div style="font-size:1.75rem;font-weight:900;margin:10px 0 2px">「${esc(q.answer)}」</div><div style="font-size:.8125rem;opacity:.85">${esc(q.group)} · ${q.clue.length}칸</div></div>`;
+  if (q.clueType === 'pickvideo') return `<div class="qclue">다음 뜻의 수어는 어느 영상일까요?<div style="font-size:1.75rem;font-weight:900;margin:10px 0 2px">「${esc(q.answer)}」</div>${q.gloss ? `<div style="font-size:.8125rem;opacity:.85">${esc(q.gloss)}</div>` : ''}</div>`;
+  return `<div class="qclue">이 수어 영상이 뜻하는 단어는 무엇일까요?<video class="kslvideo qvideo" id="quizClueVideo" src="${esc(kslUrl(q.clue))}" autoplay loop muted playsinline controls preload="auto" aria-label="수어 영상 문제"></video></div>`;
 }
 function buildCellsHtml(q) {
   return `<div class="buildcells" id="buildCells">${q.clue.map((c, ci) => `<div class="bcell" data-cell="${ci}"><div class="bgrid" role="group" aria-label="${q.clue.length > 1 ? ORD[ci] + ' 칸' : '점자 한 칸'}">${[1, 2, 3, 4, 5, 6].map(n => `<button type="button" class="dot" data-bdot="${n}" aria-pressed="false" aria-label="${q.clue.length > 1 ? ORD[ci] + ' 칸 ' : ''}${n}번 점">${n}</button>`).join('')}</div>${q.clue.length > 1 ? `<span class="bl">${ORD[ci]} 칸</span>` : ''}</div>`).join('')}</div>`;
@@ -869,14 +855,16 @@ function renderQuiz() {
   const s = quizState; if (!s.active) return;
   const total = s.qs.length, chal = s.mode === 'challenge';
   if (s.i >= total || (chal && s.lives <= 0)) return renderQuizResult();
-  const q = s.qs[s.i], build = q.clueType === 'build';
+  const q = s.qs[s.i], build = q.clueType === 'build', pick = q.clueType === 'pickvideo';
   s.answered = false;
-  if (!build && !q._opts) q._opts = pickChoices(q);
   saveRun();
   const hints = chal ? '' : `${build ? '' : '<button class="btn ghost small" type="button" id="hintCut">보기 하나 지우기</button>'}<button class="btn ghost small" type="button" id="hintText">힌트 보기</button>`;
+  const opts = build ? `<div style="margin-top:16px">${buildCellsHtml(q)}</div><button class="btn primary block" type="button" id="buildCheck" style="margin-top:16px">확인하기</button>`
+    : pick ? `<div class="vgrid" id="quizOpts" role="group" aria-label="영상 4개 중에서 고르세요" style="margin-top:16px">${q.clips.map(clipHtml).join('')}</div>`
+      : `<div style="display:flex;flex-direction:column;gap:10px;margin-top:16px" id="quizOpts">${q._opts.map(quizOptHtml).join('')}</div>`;
   $('#quizArea').innerHTML = `
     <div class="quizhead">
-      <div><span class="qbadge${chal ? ' chal' : ''}">${chal ? '도전' : '연습'}</span> <span id="quizQ" tabindex="-1" style="font-weight:800;margin-left:6px">${esc(QKINDS[s.kind])} · ${s.i + 1} / ${total}</span></div>
+      <div><span class="qbadge${chal ? ' chal' : ''}">${chal ? '도전' : '연습'}</span> <span class="qbadge lv">${lvText(s)}</span> <span id="quizQ" tabindex="-1" style="font-weight:800;margin-left:6px">${esc(QKINDS[s.kind])} · ${s.i + 1} / ${total}</span></div>
       ${chal ? `<span class="lives" role="img" aria-label="남은 목숨 ${s.lives}개">${livesHtml(s.lives)}</span>` : ''}
     </div>
     <div class="progress" style="margin:10px 0 12px"><b style="width:${s.done / total * 100}%"></b></div>
@@ -884,8 +872,7 @@ function renderQuiz() {
     <div class="qconfirm" id="quizEndConfirm" hidden style="margin-top:10px"><span>지금까지 푼 ${s.done}문제의 결과를 보고 끝낼까요?</span><button class="btn danger small" type="button" id="quizEndYes">끝내기</button><button class="btn ghost small" type="button" id="quizEndNo">계속 풀기</button></div>
     <div id="quizHint" class="note" hidden aria-live="polite" style="margin-top:10px"></div>
     <div style="margin-top:14px">${quizClueHtml(q)}</div>
-    ${build ? `<div style="margin-top:16px">${buildCellsHtml(q)}</div><button class="btn primary block" type="button" id="buildCheck" style="margin-top:16px">확인하기</button>`
-      : `<div style="display:flex;flex-direction:column;gap:10px;margin-top:16px" id="quizOpts">${q._opts.map(quizOptHtml).join('')}</div>`}
+    ${opts}
     <div id="quizFeedback" tabindex="-1" style="margin-top:14px" aria-live="polite"></div>`;
   const qq = $('#quizQ'); if (qq && s.i > 0) qq.focus({ preventScroll: true });
 }
@@ -908,17 +895,32 @@ $('#quizArea').addEventListener('click', e => {
   if (t.closest('#quizReplay')) { const v = $('#quizClueVideo'); if (v) { v.currentTime = 0; v.play(); } return; }
 });
 // ---- 힌트(연습 방식에서만) ----
+const isRightOpt = (q, v) => (q.clueType === 'pickvideo' ? String(v) === String(q.id) : v === q.answer);
 function cutOption(q) {
   const left = $$('[data-opt]', $('#quizOpts')).filter(b => !b.disabled);
   if (left.length <= 2) { $('#hintCut').disabled = true; return; }
-  const wrong = left.filter(b => b.dataset.opt !== q.answer);
+  const wrong = left.filter(b => !isRightOpt(q, b.dataset.opt));
   const b = wrong[Math.floor(Math.random() * wrong.length)];
-  b.disabled = true; b.classList.add('gone'); b.setAttribute('aria-label', b.dataset.opt + ' (지운 보기)');
+  b.disabled = true; b.classList.add('gone'); b.setAttribute('aria-label', (b.classList.contains('vopt') ? b.getAttribute('aria-label') : b.dataset.opt) + ' (지운 보기)');
+  const v = b.querySelector('video'); if (v) v.pause();
   if (left.length - 1 <= 2) $('#hintCut').disabled = true;
 }
 function hintTextFor(q) {
-  if (q.clueType === 'dots') { const n = q.clue[0].length; return `점이 ${n}개 있는 칸으로 시작해요.${q.clue.length > 1 ? ` 모두 ${q.clue.length}칸이에요.` : ''}`; }
-  if (q.clueType === 'build') return '점 개수: ' + q.clue.map((c, i) => `${q.clue.length > 1 ? ORD[i] + ' 칸 ' : ''}${c.length}개`).join(', ') + '예요.';
+  if (q.clueType === 'pickvideo') {
+    const w = WORD_BY_ID.get(String(q.id)), inf = w && typeof KSL_INFO !== 'undefined' && String(w.id).charAt(0) === 'N' ? KSL_INFO[String(w.id).slice(1)] : null;
+    if (inf) { const pos = KSL_POS_NAME[inf[2]] || ''; return `정답 영상은 ${inf[0] === 1 ? '한 손' : '두 손'}으로 하는 수어예요${pos ? ', 손 위치는 ' + pos + ' 쪽이에요' : ''}.`; }
+    return `정답은 ${q.answer.replace(/\s+/g, '').length}글자 낱말이에요.`;
+  }
+  if (q.clueType === 'dots') {
+    if (q.bk === 'n') return `첫 칸은 수표(3·4·5·6번 점)예요. 숫자는 모두 ${q.answer.length}개예요.`;
+    if (q.bk === 'w' || q.bk === 'c') return `${q.answer.length}글자 낱말이에요. 모두 ${q.clue.length}칸이에요.`;
+    const n = q.clue[0].length; return q.clue.length > 1 ? `첫 칸에는 점이 ${n}개 있고, 모두 ${q.clue.length}칸이에요.` : `점이 ${n}개 있는 칸이에요.`;
+  }
+  if (q.clueType === 'build') {
+    if (q.bk === 'n') return `수표(3·4·5·6번 점)로 시작하고, 그다음 숫자 ${q.answer.length}개를 이어 써요.`;
+    if (q.bk === 'w' || q.bk === 'c') return `${q.answer.length}글자 낱말이고, 모두 ${q.clue.length}칸이에요.`;
+    return '점 개수: ' + q.clue.map((c, i) => `${q.clue.length > 1 ? ORD[i] + ' 칸 ' : ''}${c.length}개`).join(', ') + '예요.';
+  }
   const cho = choOf(q.answer).replace(/\s+/g, '').charAt(0);
   return `정답은 ${q.answer.replace(/\s+/g, '').length}글자예요. 첫 글자는 ${/[ㄱ-ㅎ]/.test(cho) ? '자음 「' + cho + '」으로 시작해요.' : '「' + cho + '」이에요.'}`;
 }
@@ -932,7 +934,9 @@ function recordAnswer(q, correct) {
 }
 function feedbackMsgHtml(correct, q) {
   if (correct) return '정답이에요! 잘하셨어요.';
-  return q.clueType === 'build' ? `아쉬워요. 「${esc(q.answer)}」의 점 모양은 아래 설명을 확인해 보세요.` : `아쉬워요. 정답은 「${esc(q.answer)}」예요.`;
+  if (q.clueType === 'build') return `아쉬워요. 「${esc(q.answer)}」의 점 모양은 아래 설명을 확인해 보세요.`;
+  if (q.clueType === 'pickvideo') return `아쉬워요. 「${esc(q.answer)}」 수어는 「정답」이라고 표시된 영상이에요.`;
+  return `아쉬워요. 정답은 「${esc(q.answer)}」예요.`;
 }
 function showFeedback(q, correct, explainHtml) {
   const s = quizState;
@@ -944,10 +948,19 @@ function showFeedback(q, correct, explainHtml) {
   if (s.mode === 'challenge' && !correct) { const lv = $('.lives'); if (lv) { lv.innerHTML = livesHtml(s.lives); lv.setAttribute('aria-label', '남은 목숨 ' + s.lives + '개'); } }
   f.focus({ preventScroll: true }); f.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
+// 영상 고르기 문제는 답한 뒤 각 영상이 어느 단어인지 이름표를 붙이고, 정답·내 선택을 글자로도 알려 준다(색만으로 알리지 않는다)
+function revealClips(q, chosenBtn) {
+  $$('.vopt', $('#quizOpts')).forEach((b, i) => {
+    const c = q.clips[i], right = String(c.id) === String(q.id), mine = b === chosenBtn && !right;
+    b.insertAdjacentHTML('beforeend', `<span class="vname">${esc(c.name)}</span>${right ? '<span class="vtag">정답</span>' : mine ? '<span class="vtag bad">내 선택</span>' : ''}`);
+    b.setAttribute('aria-label', `영상 ${i + 1}번: ${c.name}${right ? ' (정답)' : mine ? ' (내 선택)' : ''}`);
+  });
+}
 function answerChoice(btn, q) {
   if (quizState.answered) return;
-  const chosen = btn.dataset.opt, correct = chosen === q.answer;
-  $$('[data-opt]', $('#quizOpts')).forEach(b => { b.disabled = true; if (b.dataset.opt === q.answer) b.classList.add('correct'); else if (b === btn) b.classList.add('wrong'); });
+  const chosen = btn.dataset.opt, correct = isRightOpt(q, chosen);
+  $$('[data-opt]', $('#quizOpts')).forEach(b => { b.disabled = true; if (isRightOpt(q, b.dataset.opt)) b.classList.add('correct'); else if (b === btn) b.classList.add('wrong'); });
+  if (q.clueType === 'pickvideo') revealClips(q, btn);
   recordAnswer(q, correct);
   showFeedback(q, correct, q.clueType === 'dots' ? brailleExplainHtml(q, chosen, correct) : signExplainHtml(q));
 }
@@ -960,19 +973,25 @@ function answerBuild(q) {
   showFeedback(q, correct, buildExplainHtml(q, entered, correct));
 }
 // ---- 정답 해설 ----
+// 한 칸 글자는 자리에 따라 여러 가지로 읽히므로(예: ㄴ 첫소리 = 나 약자 = 수표 뒤 숫자 3), 그 목록을 해설에 덧붙인다
+function readingsNote(q) {
+  if (q.bk !== 'p' || q.clue.length !== 1) return '';
+  const rs = READINGS[q.clue[0].join('-')] || [];
+  return rs.length > 1 ? `<p class="qx">같은 점 모양이 글자 안의 자리에 따라 이렇게도 읽혀요: ${esc(rs.map(r => r.label + '(' + r.kind + ')').join(', '))}.</p>` : '';
+}
 function brailleExplainHtml(q, chosen, correct) {
   let html = `<p class="qx">정답 「${esc(q.answer)}」: ${esc(cellsDescription(q.clue))}.</p>`;
   let cmp = `<div><span class="qcl">정답 ${esc(q.answer)}</span>${clueCellsHtml(q.clue)}</div>`;
   if (!correct) {
-    const item = QUIZ_POOL_BRAILLE.find(x => x.answer === chosen);
-    if (item) {
-      html += `<p class="qx">고른 「${esc(chosen)}」: ${esc(cellsDescription(item.clue))}.</p>`;
-      const d = dotsDiffText(q.clue, item.clue);
+    const got = q.optCells && q.optCells[chosen];
+    if (got) {
+      html += `<p class="qx">고른 「${esc(chosen)}」: ${esc(cellsDescription(got))}.</p>`;
+      const d = dotsDiffText(q.clue, got);
       if (d) html += `<p class="qx">차이: ${esc(d)}.</p>`;
-      cmp += `<div><span class="qcl">내가 고른 ${esc(chosen)}</span>${clueCellsHtml(item.clue)}</div>`;
+      cmp += `<div><span class="qcl">내가 고른 ${esc(chosen)}</span>${clueCellsHtml(got)}</div>`;
     }
   }
-  return `<div class="qexplain">${html}<div class="qcompare" aria-hidden="true">${cmp}</div><div class="qexbtns"><button class="btn ghost" id="quizPad" type="button">연습 패드에서 눌러 보기</button></div></div>`;
+  return `<div class="qexplain">${html}${readingsNote(q)}<div class="qcompare" aria-hidden="true">${cmp}</div><div class="qexbtns"><button class="btn ghost" id="quizPad" type="button">연습 패드에서 눌러 보기</button></div></div>`;
 }
 function buildExplainHtml(q, entered, correct) {
   let html = `<p class="qx">정답 「${esc(q.answer)}」: ${esc(cellsDescription(q.clue))}.</p>`;
@@ -982,7 +1001,7 @@ function buildExplainHtml(q, entered, correct) {
     const d = dotsDiffText(q.clue, entered, '내가 쓴 것'); if (d) html += `<p class="qx">차이: ${esc(d)}.</p>`;
     cmp += `<div><span class="qcl">내가 쓴 것</span>${clueCellsHtml(entered)}</div>`;
   }
-  return `<div class="qexplain">${html}<div class="qcompare" aria-hidden="true">${cmp}</div><div class="qexbtns"><button class="btn ghost" id="quizPad" type="button">연습 패드에서 눌러 보기</button></div></div>`;
+  return `<div class="qexplain">${html}${readingsNote(q)}<div class="qcompare" aria-hidden="true">${cmp}</div><div class="qexbtns"><button class="btn ghost" id="quizPad" type="button">연습 패드에서 눌러 보기</button></div></div>`;
 }
 function signMeaning(w) {
   if (w.x && w.g) { const s = w.g.split(' / ').slice(0, 2).join(' · '); return s.length > 70 ? s.slice(0, 70) + '…' : s; }
@@ -993,13 +1012,8 @@ function signExplainHtml(q) {
   let meaning = signMeaning(w); if (meaning === w.w) meaning = '';
   const motion = descOf(w);
   let html = `<p class="qx"><b>${esc(w.w)}</b>${meaning ? ' — ' + esc(meaning) : ''}</p>`;
-  if (q.clueType === 'text') {
-    // 설명을 보고 맞히는 문제는 정답의 영상을 보여 준다(영상이 있는 단어만)
-    const src = quizVideoSrc(w);
-    if (src) html += `<video class="kslvideo qvideo" src="${esc(kslUrl(src))}" autoplay loop muted playsinline controls preload="auto" aria-label="${esc(w.w)} 수어 영상"></video>`;
-  } else if (motion) {
-    html += `<p class="qx">동작 설명: ${esc(motion)}</p>${officialNoteHtml(w)}`;
-  }
+  if (q.clueType === 'pickvideo') html += `<p class="qx">보기 영상: ${q.clips.map((c, i) => `${i + 1}번 ${esc(c.name)}`).join(' · ')}</p>`;
+  if (motion) html += `<p class="qx">동작 설명: ${esc(motion)}</p>${officialNoteHtml(w)}`;
   const btns = (q.clueType === 'video' ? '<button class="btn ghost" id="quizReplay" type="button">영상 다시 재생</button>' : '') + '<button class="btn ghost" id="quizRelearn" type="button">사전에서 다시 보기</button>';
   return `<div class="qexplain">${html}<div class="qexbtns">${btns}</div></div>`;
 }
@@ -1012,20 +1026,31 @@ function renderQuizResult() {
   const msg = !s.done ? '푼 문제가 없어요. 다시 시작해 볼까요?' : pct >= 80 ? '정말 잘했어요! 다음에도 도전해 보세요.' : pct >= 50 ? '좋아요! 조금만 더 연습하면 돼요.' : '틀린 문제를 다시 풀면서 익혀 보세요.';
   const wrongList = wrongN ? `<p class="note" style="margin:10px 0;text-align:left">틀린 문제: ${s.wrong.map(q => esc(q.answer)).join(' · ')}<br>틀린 문제는 퀴즈 첫 화면의 「틀린 문제 복습」에 저장돼요.</p>` : '';
   const study = s.kind === 'braille' || s.kind === 'build' ? ['braille', '점자 표 보기'] : ['sign', '수어 사전 보기'];
+  const scopeTxt = (s.kind === 'braille' || s.kind === 'build') ? ' · ' + scopeLabel(s.scope) : '';
+  // 점수에 맞춰 난이도를 바꿔 볼 것을 권한다(끝까지 푼 퀴즈만)
+  const full = s.done === total && s.done > 0;
+  const canTune = full && s.kind !== 'review';
+  const up = canTune && pct >= 90 && s.lv < 3, down = canTune && pct < 50 && s.lv > 1;
+  const lvBtn = up ? `<button class="btn line block" id="quizLvUp" type="button">난이도를 ${toLevel(s.lv + 1)} 올려서 풀기</button>` : down ? `<button class="btn line block" id="quizLvDown" type="button">난이도를 ${toLevel(s.lv - 1)} 낮춰서 풀기</button>` : '';
   $('#quizArea').innerHTML = `<div class="card qresult">
-    <div class="qbadge${s.mode === 'challenge' ? ' chal' : ''}">${esc(QKINDS[s.kind])} · ${s.mode === 'challenge' ? '도전' : '연습'}</div>
+    <div class="qbadge${s.mode === 'challenge' ? ' chal' : ''}">${esc(QKINDS[s.kind])} · ${s.mode === 'challenge' ? '도전' : '연습'} · ${lvText(s)}${esc(scopeTxt)}</div>
     <div class="score" role="status" tabindex="-1">${s.score} / ${s.done}</div>
     <p class="note" style="margin:14px 0">${esc(why ? why + '. ' : '')}${esc(msg)}</p>${wrongList}
     <div style="display:flex;flex-direction:column;gap:10px">
       ${wrongN ? `<button class="btn primary block" id="quizRetryWrong" type="button">틀린 문제 ${wrongN}개 다시 풀기</button>` : ''}
+      ${lvBtn}
       <button class="btn ${wrongN ? 'ghost' : 'primary'} block" id="quizRetry" type="button">같은 퀴즈 새로 풀기</button>
       <button class="btn ghost block" id="quizToStudy" type="button">${study[1]}</button>
       <button class="btn line block" id="quizToHub" type="button">퀴즈 첫 화면으로</button>
     </div></div>`;
-  $('#quizRetry').addEventListener('click', () => { if (s.kind === 'review' || s.kind === 'fav') startQuizFromAnywhere(s.kind); else startQuiz(s.kind); });
+  const again = () => { if (s.kind === 'review' || s.kind === 'fav') startQuizFromAnywhere(s.kind); else startQuiz(s.kind); };
+  $('#quizRetry').addEventListener('click', again);
   $('#quizToStudy').addEventListener('click', () => { if (study[0] === 'braille') { go('braille'); showBraillePanel('table'); } else go('sign'); });
   $('#quizToHub').addEventListener('click', renderQuizHub);
-  const rw = $('#quizRetryWrong'); if (rw) rw.addEventListener('click', () => startQuizWith(s.kind === 'build' ? 'build' : s.kind, s.wrong, s.mode));
+  const lu = $('#quizLvUp'), ld = $('#quizLvDown');
+  if (lu) lu.addEventListener('click', () => { store.set('qlevel', s.lv + 1); toast('난이도를 ' + toLevel(s.lv + 1) + ' 바꿨어요'); again(); });
+  if (ld) ld.addEventListener('click', () => { store.set('qlevel', s.lv - 1); toast('난이도를 ' + toLevel(s.lv - 1) + ' 바꿨어요'); again(); });
+  const rw = $('#quizRetryWrong'); if (rw) rw.addEventListener('click', () => startQuizWith(s.kind, s.wrong.map(q => QZ.restore(QZ.compact(q, true))).filter(Boolean), s.mode));
   const sc = $('.score', $('#quizArea')); if (sc) sc.focus({ preventScroll: true });
 }
 

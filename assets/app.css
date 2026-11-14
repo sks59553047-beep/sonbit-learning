@@ -380,3 +380,23 @@ body{word-break:keep-all;overflow-wrap:break-word}
 .tag,.chip,.qbadge,.navbtn span{white-space:nowrap}
 .tagrow{display:flex;flex-wrap:wrap;gap:8px}
 .rvbtn small,.rvbtn .rvp{flex:none;white-space:nowrap}
+
+/* ---------- 퀴즈 난이도(하·중·상) / 점자 범위 / 영상 4개 중에서 고르는 문제 ---------- */
+.chiprow.wrap{flex-wrap:wrap;overflow-x:visible}
+.qcards.c1,.qcards.c2{grid-template-columns:1fr}
+@media (min-width:760px){ .qcards.c2{grid-template-columns:repeat(2,minmax(0,1fr))} }
+.lbl2{font-size:0.75rem;font-weight:800;color:var(--teal);margin:14px 0 6px;letter-spacing:.02em}
+.lbl2:first-of-type{margin-top:10px}
+.qbadge.lv{background:var(--surface2);color:var(--ink);border:1px solid var(--line)}
+.vgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;max-width:560px;margin-left:auto;margin-right:auto}
+.vopt{position:relative;display:flex;flex-direction:column;padding:0;overflow:hidden;background:var(--card);border:2px solid var(--line);border-radius:14px;cursor:pointer;color:var(--ink);text-align:center}
+.vopt video{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;background:#000;pointer-events:none}
+.vopt:hover:not([disabled]){border-color:var(--teal)}
+.vopt[disabled]{cursor:default}
+.vopt .vn{position:absolute;left:8px;top:8px;width:28px;height:28px;border-radius:50%;background:var(--navy);color:var(--surface);display:grid;place-items:center;font-size:0.8125rem;font-weight:800}
+.vopt .vname{padding:9px 8px;font-size:0.875rem;font-weight:800;line-height:1.35}
+.vopt .vtag{position:absolute;right:8px;top:8px;padding:3px 10px;border-radius:999px;font-size:0.75rem;font-weight:800;background:var(--mint);color:var(--mint-ink);border:1.5px solid var(--teal)}
+.vopt .vtag.bad{background:var(--danger-bg);color:var(--danger);border-color:var(--danger)}
+.vopt.correct{border-color:var(--teal);background:var(--mint)}
+.vopt.wrong{border-color:var(--danger);background:var(--danger-bg)}
+.vopt.gone{opacity:.35}

@@ -188,7 +188,7 @@ function matchWord(w, q) {
 }
 function cleanDesc(d) { return String(d || '').replace(/\s*[—-]\s*(국립국어원|한국수어누리사전).*$/, ''); }
 function descHtml(d) {
-  if (!d) return '<p class="desc">(설명 준비 중)</p>';
+  if (!d) return '';
   return `<p class="desc">${esc(cleanDesc(d))}</p>`;
 }
 function topicCardHtml(t) {

@@ -202,14 +202,12 @@ function wordRowHtml(w, showTopic) {
   const sub = w.x ? `<span class="wsub">${esc((w.g || '').split(' / ')[0].slice(0, 24))}</span>` : (w.al ? `<span class="wsub">${esc(w.al.replace(/, /g, ' · '))}</span>` : '');
   return `<details class="wordrow" data-wid="${esc(w.id)}"><summary><span class="wname">${esc(w.w)}</span>${sub}${topic}${play}</summary><div class="wbody"></div></details>`;
 }
-// 누리사전 공식 정보(한 손/두 손, 손모양, 손 위치) + 영상을 보고 정리한 동작 설명
+// 누리사전 공식 정보(한 손/두 손, 손모양, 손 위치) — 국립국어원 자료 그대로
 function signInfoHtml(w) {
   const inf = typeof KSL_INFO !== 'undefined' ? KSL_INFO[String(w.id).slice(1)] : null;
-  const motion = typeof KSL_MOTION !== 'undefined' ? KSL_MOTION[w.id] : '';
-  if (!inf && !motion) return '';
+  if (!inf) return '';
   let html = '<div class="signinfo">';
-  if (motion) html += `<p class="lbl">동작 설명</p><p class="motion">${esc(motion)}</p><p class="mnote">영상을 보고 정리한 설명이에요. 정확한 동작은 영상으로 확인하세요.</p>`;
-  if (inf) {
+  {
     const names = inf[1].map(b => KSL_HAND_NAME[b]).filter(Boolean);
     const pos = KSL_POS_NAME[inf[2]] || '';
     const hands = inf[1].map(b => `<span class="hs"><img src="assets/hand/${b}.jpg" alt="" loading="lazy"><b>${esc(KSL_HAND_NAME[b] || '')}</b></span>`).join('');

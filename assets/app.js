@@ -263,18 +263,19 @@ const TRACK_NAME = { sign: '수어', braille: '점자' };
 function roadmapFor(track) {
   const hv = homeVideos(), lv = learnVideos().filter(v => v.track === '점자');
   const prog = vs => seenCount(vs) + ' / ' + vs.length + '편 봤어요';
+  const wrongOf = kinds => getWrong().filter(c => kinds.includes(c.t)).length;   // 퀴즈를 마쳤어도 틀려서 복습할 문제가 남았는지(완료와 숙달을 구분)
   let steps;
   if (track === 'sign') {
     steps = [
       { title: '기초 영상 보기', sub: `수어의 시작·사전 사용법·소통 예절 ${hv.length}편 · ${prog(hv)}`, vids: hv, act: 'scrollvid' },
       { title: '수어 단어 찾아보기', sub: '수어 ' + ALL_WORDS.length.toLocaleString('ko-KR') + '개 검색, 국립국어원 실제 영상으로 바로 확인', nav: 'sign', did: 'sign' },
-      { title: '수어 퀴즈로 복습', sub: '틀린 문제는 영상과 설명으로 다시 확인', nav: 'quiz', did: 'quiz-sign' }
+      { title: '수어 퀴즈로 복습', sub: '틀린 문제는 영상과 설명으로 다시 확인', nav: 'quiz', did: 'quiz-sign', review: wrongOf(['sv', 'pv']) }
     ];
   } else {
     steps = [
       { title: '점자 교육 영상 보기', sub: `점자의 시작부터 ⑥ 약자·약어까지 ${lv.length}편 · ${prog(lv)} (점자 탭의 「교육 영상」)`, vids: lv, act: 'braillelearn' },
       { title: '점자 연습 패드·변환기 써 보기', sub: '내 이름을 점자로 바꿔 보기', nav: 'braille', did: 'braille' },
-      { title: '점자 퀴즈로 복습', sub: '읽기와 직접 쓰기로 확인하기', nav: 'quiz', did: 'quiz-braille' }
+      { title: '점자 퀴즈로 복습', sub: '읽기와 직접 쓰기로 확인하기', nav: 'quiz', did: 'quiz-braille', review: wrongOf(['br', 'bu']) }
     ];
   }
   return steps.filter(s => !s.vids || s.vids.length).map((s, i) => Object.assign({ label: (i + 1) + '단계' }, s));
@@ -287,11 +288,11 @@ function renderRoadmap(track) {
   $('#roadList').innerHTML = steps.map(s => {
     const done = stepDone(s); if (done) doneN++;
     const now = !done && !nowSet ? (nowSet = true) : false;
-    const aria = `${s.label} ${s.title}. ${s.sub}.${done ? ' 완료.' : ''}${now ? ' 지금 할 단계.' : ''}`;
+    const aria = `${s.label} ${s.title}. ${s.sub}.${done ? ' 완료.' : ''}${now ? ' 지금 할 단계.' : ''}${s.review ? ` 복습할 문제 ${s.review}개 있음.` : ''}`;
     return `<div class="rstep ${done ? 'done' : now ? 'now' : ''}">
       <div class="dot" aria-hidden="true">${done ? icon('check', 14) : ''}</div>
       <button type="button" class="rbox" ${stepAttrs(s)} aria-label="${esc(aria)}">
-        <span><span class="tt">${esc(s.label)} · ${esc(s.title)}${now ? '<span class="tag amber nowtag">지금 할 단계</span>' : ''}</span><span class="sub">${esc(s.sub)}</span></span>
+        <span><span class="tt">${esc(s.label)} · ${esc(s.title)}${now ? '<span class="tag amber nowtag">지금 할 단계</span>' : ''}${s.review ? `<span class="tag amber nowtag">복습할 문제 ${s.review}개</span>` : ''}</span><span class="sub">${esc(s.sub)}</span></span>
         <span class="rarrow" aria-hidden="true">›</span>
       </button>
     </div>`;
@@ -643,7 +644,9 @@ function renderBraillePanel() {
   const contract = $('#bpContract').checked;
   const r = KB.convert(text, { contract });
   const cells = r.cells.filter(c => c.kind !== '줄바꿈');
-  $('#bpSummary').textContent = text ? `${cells.length}칸으로 바뀌었어요${r.unsupported.length ? ` · 바꾸지 못한 글자 ${r.unsupported.length}개` : ''}` : '글자를 입력하면 여기에 몇 칸인지 나와요';
+  // 칸 수에는 바꾸지 못한 글자 자리(점선 칸)를 넣지 않고, 띄어쓰기 칸은 따로 밝힌다
+  const real = cells.filter(c => !c.unsupported), spaces = real.filter(c => c.kind === '띄어쓰기').length, bad = r.unsupported.length;
+  $('#bpSummary').textContent = text ? `점자 ${real.length}칸${spaces ? `(띄어쓰기 ${spaces}칸 포함)` : ''}으로 바뀌었어요${bad ? ` · 바꾸지 못한 글자 ${bad}개` : ''}` : '글자를 입력하면 여기에 몇 칸인지 나와요';
   const warn = r.warnings.slice(); if (r.unsupported.length) warn.unshift(`바꿔 주지 않는 글자가 있어요: ${[...new Set(r.unsupported)].join(' ')} (로마자·그리스 문자·수식 기호·옛 글자 등은 규정이 따로 있어 지원하지 않아요. 점선 칸으로 표시했어요.)`);
   $('#bpWarn').hidden = !warn.length; $('#bpWarn').textContent = warn.join(' ');
   $('#bpCells').innerHTML = cells.map(c => {
@@ -652,7 +655,7 @@ function renderBraillePanel() {
     return `<div class="ccell ${c.unsupported ? 'unverified' : ''}" title="${esc(tip)}">${miniDots(c.dots)}<label>${esc(label)}</label><small>${esc(c.kind === '띄어쓰기' || c.unsupported ? c.kind : c.kind.replace(/\(.*\)/, ''))}</small></div>`;
   }).join('');
   const uni = cells.map(c => (c.kind === '띄어쓰기' ? ' ' : (c.unsupported ? '?' : dotsToUnicode(c.dots)))).join('');
-  $('#bpOutWrap').hidden = !text; $('#bpOut').textContent = uni;
+  $('#bpOutWrap').hidden = !text; $('#bpOut').textContent = uni; $('#bpOutNote').hidden = !bad;
   if (text) markDid('braille');
 }
 $('#bpInput').addEventListener('input', renderBraillePanel);
@@ -783,14 +786,26 @@ function startQuizWith(kind, qs, mode) {
   quizState = { active: true, kind, mode: mode || modeNow(), lv: levelNow(), scope: scopeNow(), i: 0, score: 0, lives: 3, done: 0, qs, answered: false, wrong: [] };
   saveRun(); renderQuiz();
 }
-function startQuiz(kind) {
+// 풀던 퀴즈가 남아 있는데 다른 퀴즈를 새로 시작하려 하면, 풀던 진행이 사라진다는 것을 먼저 알리고 고르게 한다(알렸으면 true)
+const eulReul = name => { const c = name.charCodeAt(name.length - 1) - 0xAC00; return c >= 0 && c % 28 !== 0 ? '을' : '를'; };
+function askSwitch(kind) {
+  const run = loadRun(); if (!run) return false;
+  quizState = { active: false }; ensureQuizView(); renderQuizHub();
+  const box = $('#qSwitch'); box.dataset.kind = kind;
+  $('#qSwitchText').textContent = `풀던 「${QKINDS[run.kind]}」(${Math.min(run.i + 1, run.qs.length)} / ${run.qs.length}번째)가 있어요. 「${QKINDS[kind]}」${eulReul(QKINDS[kind])} 새로 시작하면 풀던 진행은 사라져요.`;
+  box.hidden = false; box.scrollIntoView({ block: 'nearest' }); $('#qSwitchNew').focus({ preventScroll: true });
+  return true;
+}
+function startQuiz(kind, force) {
   const qs = questionsFor(kind);
   if (!qs.length) { toast(kind === 'fav' ? '단어장에 퀴즈로 낼 수 있는 단어가 아직 없어요' : '풀 문제가 아직 없어요'); return false; }
+  if (!force && askSwitch(kind)) return false;
   startQuizWith(kind, qs); return true;
 }
-function startQuizFromAnywhere(kind) {
+function startQuizFromAnywhere(kind, force) {
   const qs = questionsFor(kind);
   if (!qs.length) { toast(kind === 'fav' ? '내 단어장에 단어를 먼저 담아 주세요(영상이 겹치는 단어는 퀴즈에서 빠져요)' : '틀린 문제가 아직 없어요'); return; }
+  if (!force && askSwitch(kind)) return;
   quizState = { active: false }; ensureQuizView(); startQuizWith(kind, qs);
 }
 // ---- 퀴즈 홈 ----
@@ -804,6 +819,7 @@ function renderQuizHub() {
   const wrongN = getWrong().filter(c => QZ.valid(c)).length, favN = favWords().filter(w => QZ.favOk(QZ.wordById(w.id))).length;
   const resume = run ? `<div class="resumebar"><div class="rt">풀던 퀴즈가 있어요<small>${esc(QKINDS[run.kind])} · ${Math.min(run.i + 1, run.qs.length)} / ${run.qs.length}번째 · ${run.mode === 'challenge' ? '도전' : '연습'} · ${lvText(run)}</small></div><button class="btn primary small" type="button" id="qResume">이어서 풀기</button><button class="btn line small" type="button" id="qDiscard">그만두기</button></div>` : '';
   $('#quizArea').innerHTML = `<div class="quizhub">${resume}
+    <div class="qconfirm qswitch" id="qSwitch" role="alert" hidden><span id="qSwitchText"></span><span class="qsbtns"><button class="btn primary small" type="button" id="qSwitchNew">새로 시작</button><button class="btn line small" type="button" id="qSwitchResume">풀던 퀴즈 이어서 풀기</button><button class="btn ghost small" type="button" id="qSwitchNo">취소</button></span></div>
     <div class="card"><div class="section-h"><h2>방식과 난이도</h2></div>
       <p class="lbl2">방식</p>
       <div class="seg" role="group" aria-label="퀴즈 방식">
@@ -843,6 +859,9 @@ $('#quizArea').addEventListener('click', e => {
   if (sb) { store.set('qscope', sb.dataset.qscope); $$('[data-qscope]').forEach(b => { const on = b === sb; b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); }); $('#qscopeNote').textContent = SCOPE_NOTE[sb.dataset.qscope]; return; }
   if (t.closest('#qResume')) { resumeQuiz(); return; }
   if (t.closest('#qDiscard')) { store.del('quizrun'); renderQuizHub(); return; }
+  if (t.closest('#qSwitchNew')) { const k = $('#qSwitch').dataset.kind; store.del('quizrun'); if (k === 'review' || k === 'fav') startQuizFromAnywhere(k, true); else startQuiz(k, true); return; }
+  if (t.closest('#qSwitchResume')) { resumeQuiz(); return; }
+  if (t.closest('#qSwitchNo')) { $('#qSwitch').hidden = true; return; }
 });
 // ---- 문제 화면 ----
 function livesHtml(lives) { return Array.from({ length: 3 }, (_, i) => `<span class="life${i < lives ? ' on' : ''}">${icon('star', 16)}</span>`).join(''); }

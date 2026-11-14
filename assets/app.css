@@ -406,6 +406,10 @@ body{word-break:keep-all;overflow-wrap:break-word}
   #homeVideoList .vthumb{width:100%}
 }
 
+/* 풀던 퀴즈가 있는데 다른 퀴즈를 시작하려 할 때 뜨는 안내 */
+.qswitch{background:var(--amber-bg);border:1px solid var(--amber);border-radius:var(--r-md);padding:12px 14px;color:var(--ink);line-height:1.55;scroll-margin-top:76px}
+.qswitch .qsbtns{display:flex;gap:8px;flex-wrap:wrap;width:100%}
+
 /* ---------- 퀴즈 난이도(하·중·상) / 점자 범위 / 영상 4개 중에서 고르는 문제 ---------- */
 .chiprow.wrap{flex-wrap:wrap;overflow-x:visible}
 .qcards.c1,.qcards.c2{grid-template-columns:1fr}

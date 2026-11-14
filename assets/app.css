@@ -404,7 +404,14 @@ body{word-break:keep-all;overflow-wrap:break-word}
   #homeVideoList{grid-template-columns:repeat(3,minmax(0,1fr))}
   #homeVideoList .vrow{flex-direction:column;align-items:stretch;gap:10px}
   #homeVideoList .vthumb{width:100%}
+  #homeVideoList.n4{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+@media (min-width:1000px){ #homeVideoList.n4{grid-template-columns:repeat(4,minmax(0,1fr))} }
+
+/* 영상을 불러오지 못했을 때 안내 + 「다시 불러오기」 */
+.vfail{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px;text-align:left}
+.vfail span{flex:1 1 200px}
+.realvideo .vfail{margin-top:0}
 
 /* 풀던 퀴즈가 있는데 다른 퀴즈를 시작하려 할 때 뜨는 안내 */
 .qswitch{background:var(--amber-bg);border:1px solid var(--amber);border-radius:var(--r-md);padding:12px 14px;color:var(--ink);line-height:1.55;scroll-margin-top:76px}

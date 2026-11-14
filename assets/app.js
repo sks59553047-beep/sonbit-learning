@@ -211,7 +211,9 @@ function aliasHtml(w) { return w.al ? `<p class="alias">같은 수어: ${esc(w.a
 // ① 학습(홈)의 「기초 영상」 3편  ② 점자 탭의 「교육 영상」 칸(나머지 전부).
 // 그 밖의 화면(수어 사전·연습 패드·점자 표 같은 곳)에는 영상 목록이나 링크를 따로 두지 않는다.
 // 기초 영상을 바꾸려면 아래 id 세 개만 고치면 된다(나머지는 자동으로 점자 탭의 교육 칸으로 간다).
-const HOME_VIDEO_IDS = ['v8-ksl-intro', 'v11-ksl-dictionary-guide', 'v5-etiquette'];
+const HOME_VIDEO_IDS = ['v8-ksl-intro', 'v1-braille-basics', 'v11-ksl-dictionary-guide', 'v5-etiquette'];
+const VIDEO_SHORT = { 'v8-ksl-intro': '수어의 시작', 'v1-braille-basics': '점자의 시작', 'v11-ksl-dictionary-guide': '사전 사용법', 'v5-etiquette': '소통 예절' };   // 로드맵 설명에 쓰는 짧은 이름
+const shortName = v => VIDEO_SHORT[v.id] || v.title.split(' — ')[0];
 const vById = id => VIDEO_LIST.find(v => v.id === id) || null;
 const homeVideos = () => HOME_VIDEO_IDS.map(vById).filter(Boolean);
 const learnVideos = () => VIDEO_LIST.filter(v => !HOME_VIDEO_IDS.includes(v.id)).sort((a, b) => (a.track === b.track ? a.order - b.order : a.track === '점자' ? -1 : 1));
@@ -241,13 +243,15 @@ function renderHomeVideos() {
   $('#basicProg').textContent = seenCount(vs) + ' / ' + vs.length + '편 봤어요';
   $('#basicSub').textContent = `처음이라면 위에서부터 차례로 보세요. ${vs.length}편을 모두 보면 ${fmtSpan(totalDur(vs))}이에요.`;
   $('#homeVideoList').innerHTML = vs.map(v => vrowHtml(v, next)).join('');
+  $('#homeVideoList').classList.toggle('n4', vs.length >= 4);   // 4편이면 컴퓨터 화면에서 한 줄에 4개(조금 좁은 화면은 2개씩)
 }
 // 점자 탭의 「교육 영상」 칸
 function renderLearnPanel() {
   const vs = learnVideos();
   const next = (vs.find(v => !isSeen(v.id)) || {}).id;
   $('#learnProg').textContent = seenCount(vs) + ' / ' + vs.length + '편 봤어요';
-  $('#learnSub').textContent = `한글 점자를 차례로 익히는 영상이에요. 위에서부터 보면 돼요. ${vs.length}편을 모두 보면 ${fmtSpan(totalDur(vs))}이에요.`;
+  const intro = homeVideos().filter(v => v.track === '점자');   // 학습 페이지 「기초 영상」에 있는 점자 영상(점자의 시작)을 먼저 보라고 알려 준다
+  $('#learnSub').textContent = `한글 점자를 차례로 익히는 영상이에요. 위에서부터 보면 돼요. ${vs.length}편을 모두 보면 ${fmtSpan(totalDur(vs))}이에요.${intro.length ? ` 처음이라면 학습 페이지 「기초 영상」의 「${shortName(intro[0])}」부터 보세요.` : ''}`;
   $('#learnList').innerHTML = vs.map(v => vrowHtml(v, next)).join('');
 }
 function bindVideoLinks(root) {
@@ -264,16 +268,19 @@ function roadmapFor(track) {
   const hv = homeVideos(), lv = learnVideos().filter(v => v.track === '점자');
   const prog = vs => seenCount(vs) + ' / ' + vs.length + '편 봤어요';
   const wrongOf = kinds => getWrong().filter(c => kinds.includes(c.t)).length;   // 퀴즈를 마쳤어도 틀려서 복습할 문제가 남았는지(완료와 숙달을 구분)
+  // 첫 단계 「기초 영상 보기」는 두 트랙이 같다(수어·점자의 시작, 사전 사용법, 소통 예절은 모두에게 기초)
+  const basic = { title: '기초 영상 보기', sub: `${hv.map(shortName).join('·')} ${hv.length}편 · ${prog(hv)}`, vids: hv, act: 'scrollvid' };
   let steps;
   if (track === 'sign') {
     steps = [
-      { title: '기초 영상 보기', sub: `수어의 시작·사전 사용법·소통 예절 ${hv.length}편 · ${prog(hv)}`, vids: hv, act: 'scrollvid' },
+      basic,
       { title: '수어 단어 찾아보기', sub: '수어 ' + ALL_WORDS.length.toLocaleString('ko-KR') + '개 검색, 국립국어원 실제 영상으로 바로 확인', nav: 'sign', did: 'sign' },
       { title: '수어 퀴즈로 복습', sub: '틀린 문제는 영상과 설명으로 다시 확인', nav: 'quiz', did: 'quiz-sign', review: wrongOf(['sv', 'pv']) }
     ];
   } else {
     steps = [
-      { title: '점자 교육 영상 보기', sub: `점자의 시작부터 ⑥ 약자·약어까지 ${lv.length}편 · ${prog(lv)} (점자 탭의 「교육 영상」)`, vids: lv, act: 'braillelearn' },
+      basic,
+      { title: '점자 교육 영상 보기', sub: `한글 점자 ①부터 ⑥ 약자·약어까지 ${lv.length}편 · ${prog(lv)} (점자 탭의 「교육 영상」)`, vids: lv, act: 'braillelearn' },
       { title: '점자 연습 패드·변환기 써 보기', sub: '내 이름을 점자로 바꿔 보기', nav: 'braille', did: 'braille' },
       { title: '점자 퀴즈로 복습', sub: '읽기와 직접 쓰기로 확인하기', nav: 'quiz', did: 'quiz-braille', review: wrongOf(['br', 'bu']) }
     ];
@@ -570,11 +577,10 @@ $('#signList').addEventListener('click', e => {
   if (sg) { signQuery = sg.dataset.suggest; signPinId = ''; $('#signSearch').value = signQuery; renderSign(); return; }
   const ac = e.target.closest('[data-act]'); if (ac) dispatchAct(ac.dataset.act, ac.dataset.arg);
 });
+// 그림을 못 불러오면 빈 틀을 치운다. 영상을 못 불러온 경우는 아래 「영상을 불러오지 못했을 때」에서 모든 화면을 함께 처리한다(그림·설명은 그대로 둔다).
 $('#signList').addEventListener('error', e => {
   const el = e.target;
-  if (el.tagName === 'VIDEO') {
-    const box = el.closest('.signmedia'); if (box && !box.dataset.failed) { box.dataset.failed = '1'; box.innerHTML = '<p class="note amber" style="flex:1 1 100%">영상을 불러오지 못했어요. 잠시 뒤에 다시 열어 주세요.</p>'; }
-  } else if (el.tagName === 'IMG' && el.closest('.shapeimg')) { el.closest('.shapeimg').remove(); }
+  if (el.tagName === 'IMG' && el.closest('.shapeimg')) el.closest('.shapeimg').remove();
 }, true);
 
 // ================= 점자 =================
@@ -769,7 +775,7 @@ function loadRun() {
 function resumeQuiz() {
   const run = loadRun();
   if (!run) { store.del('quizrun'); toast('풀던 퀴즈를 찾지 못했어요'); renderHome(); return; }
-  quizState = run; ensureQuizView(); renderQuiz();
+  quizState = run; ensureQuizView(); renderQuiz(); window.scrollTo(0, 0);
 }
 // 이미 퀴즈 화면이면 기록(뒤로 가기 목록)을 또 쌓지 않는다
 function ensureQuizView() { if (!$('#view-quiz').classList.contains('active')) go('quiz'); }
@@ -784,7 +790,7 @@ function questionsFor(kind) {
 }
 function startQuizWith(kind, qs, mode) {
   quizState = { active: true, kind, mode: mode || modeNow(), lv: levelNow(), scope: scopeNow(), i: 0, score: 0, lives: 3, done: 0, qs, answered: false, wrong: [] };
-  saveRun(); renderQuiz();
+  saveRun(); renderQuiz(); window.scrollTo(0, 0);
 }
 // 풀던 퀴즈가 남아 있는데 다른 퀴즈를 새로 시작하려 하면, 풀던 진행이 사라진다는 것을 먼저 알리고 고르게 한다(알렸으면 true)
 const eulReul = name => { const c = name.charCodeAt(name.length - 1) - 0xAC00; return c >= 0 && c % 28 !== 0 ? '을' : '를'; };
@@ -899,7 +905,8 @@ function renderQuiz() {
     <div style="margin-top:14px">${quizClueHtml(q)}</div>
     ${opts}
     <div id="quizFeedback" tabindex="-1" style="margin-top:14px" aria-live="polite"></div>`;
-  const qq = $('#quizQ'); if (qq && s.i > 0) qq.focus({ preventScroll: true });
+  // 첫 문제도 포함해 늘 문제 제목으로 포커스를 옮긴다(키보드·화면낭독기 사용자가 시작하자마자 위치를 잃지 않게)
+  const qq = $('#quizQ'); if (qq) qq.focus({ preventScroll: true });
 }
 $('#quizArea').addEventListener('click', e => {
   const s = quizState; if (!s.active) return;
@@ -1093,6 +1100,7 @@ function parseVtt(text) {
 // 영상을 끝까지(또는 85% 이상) 봤을 때만 '시청 완료'로 기록한다. 열어 보기만 한 것은 완료가 아니다.
 function markWatched(id) { if (!store.get('watched:' + id, false)) store.set('watched:' + id, true); }
 function setPlayerSrc(id) {
+  $$('.vfail', $('#view-player')).forEach(n => n.remove());   // 앞 영상에서 남은 「불러오지 못했어요」 안내는 지운다
   const old = $('#playerVideo');
   const f = document.createElement('video');
   f.id = 'playerVideo'; f.controls = true; f.playsInline = true; f.preload = 'auto';
@@ -1124,6 +1132,28 @@ async function openPlayer(id) {
 function renderTranscript() {
   $('#playerTranscript').innerHTML = transcriptCues.map(c => `<p class="tline">${esc(c.text)}</p>`).join('') || '<p class="note">자막이 없어요.</p>';
 }
+
+// ================= 영상을 불러오지 못했을 때(모든 화면 공통) =================
+// 인터넷이 끊기거나 파일을 받지 못하면 검은 화면만 남지 않게, 그 자리에 까닭·다른 방법·「다시 불러오기」를 띄운다.
+const VFAIL_EXTRA = [
+  ['.player-wrap', ' 아래 대본(자막)으로 내용을 먼저 읽을 수 있어요.'],
+  ['.signmedia', ' 옆의 그림과 동작 설명으로도 확인할 수 있어요.'],
+  ['#quizArea', ' 계속 안 나오면 「끝내기」로 마치고 나중에 다시 풀어 주세요.']
+];
+document.addEventListener('error', e => {
+  const v = e.target;
+  if (!v || v.tagName !== 'VIDEO' || !v.getAttribute('src')) return;
+  const host = v.closest('.player-wrap') || v.closest('.vgrid') || v, next = host.nextElementSibling;
+  if (next && next.classList.contains('vfail')) return;
+  const extra = (VFAIL_EXTRA.find(([sel]) => v.closest(sel)) || ['', ''])[1];
+  host.insertAdjacentHTML('afterend', `<div class="note amber vfail" role="alert"><span>영상을 불러오지 못했어요. 인터넷 연결을 확인해 주세요.${extra}</span><button type="button" class="btn line small" data-vretry>다시 불러오기</button></div>`);
+}, true);
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-vretry]'); if (!b) return;
+  const note = b.closest('.vfail'), host = note && note.previousElementSibling; if (!host) return;
+  note.remove();
+  (host.matches('video') ? [host] : [...host.querySelectorAll('video')]).forEach(v => { if (v.error) { v.load(); if (v.autoplay) v.play().catch(() => {}); } });
+});
 
 // ================= 처음 화면 =================
 renderPadCell(); renderPadResult();

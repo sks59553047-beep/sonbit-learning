@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>손빛 배움터 — 수어·점자 함께 배우기</title>
-<meta name="description" content="국립국어원 한국수어사전 자료와 한국 점자 규정(2024)을 바탕으로 한 수어 사전, 점자 변환기, 교육 영상으로 수어와 점자를 배우는 사이트">
-<meta name="theme-color" content="#0d1240">
+<meta name="description" content="국립국어원 한국수어사전 자료와 한국 점자 규정(2024)을 바탕으로 한 수어 사전, 점자 변환기, 교육 영상, 퀴즈로 수어와 점자를 배우는 사이트">
+<meta name="theme-color" content="#f5f6fa">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
@@ -18,7 +18,19 @@
 <meta property="og:url" content="https://sonbit.pages.dev/">
 <meta property="og:image" content="https://sonbit.pages.dev/og-image.png">
 <meta name="twitter:card" content="summary_large_image">
-<style>html,body{background:#faf8ff}</style>
+<script>
+/* 화면이 그려지기 전에 어두운 화면·큰 글자 설정을 먼저 적용해서, 켜자마자 번쩍이는 일을 막는다 */
+(function () {
+  try {
+    var t = JSON.parse(localStorage.getItem('sonbit:theme'));
+    var dark = (t === null || t === undefined) ? matchMedia('(prefers-color-scheme: dark)').matches : !!t;
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    if (JSON.parse(localStorage.getItem('sonbit:bigtext'))) document.documentElement.classList.add('big-text');
+    var m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', dark ? '#0b1020' : '#f5f6fa');
+  } catch (e) { }
+})();
+</script>
+<style>html,body{background:#f5f6fa}html[data-theme="dark"],html[data-theme="dark"] body{background:#0b1020}</style>
 <link rel="stylesheet" href="assets/app.css">
 </head>
 <body>
@@ -41,146 +53,174 @@
 
   <main id="main">
 
-    <!-- 학습(홈) -->
+    <!-- ===== 학습(홈) ===== -->
     <section class="view" id="view-home" aria-labelledby="homeH">
-      <h1 id="homeH" class="visually-hidden">학습 홈</h1>
+      <h1 id="homeH" class="visually-hidden" tabindex="-1">학습 홈</h1>
+
       <div class="hero">
-        <span class="tag" style="background:rgba(255,255,255,.18);color:#fff">오늘도 손빛과 함께</span>
-        <h2 style="margin-top:10px">공식 자료로 배우는<br>수어와 점자</h2>
-        <p>국립국어원 한국수어사전의 영상·그림·설명, 「한국 점자 규정」(2024)을 따른 점자 변환기, 그리고 AI 목소리로 만든 교육 영상이에요.</p>
-        <div class="stat-row">
-          <div class="stat"><b id="statWords">191</b><span>영상 확인 수어</span></div>
-          <div class="stat"><b id="statBraille">53</b><span>점자 자모</span></div>
-          <div class="stat"><b id="statVideos">5</b><span>교육 영상</span></div>
+        <span class="kick">오늘도 손빛과 함께</span>
+        <h2>공식 자료로 배우는<br>수어와 점자</h2>
+        <p class="hsub">국립국어원 한국수어사전의 영상·그림·설명, 「한국 점자 규정」(2024)을 따른 점자 변환기, 퀴즈와 교육 영상으로 익혀요.</p>
+        <div class="hstats">
+          <span><b id="statWords">1,190</b> 수어 표현</span>
+          <span><b id="statVideos">6</b> 교육 영상</span>
+          <span><b id="statBraille">227</b> 점자 규정 예시 확인</span>
         </div>
       </div>
 
-      <div>
-        <div class="section-h"><h2>교육 영상</h2></div>
-        <div class="vlist-grid" id="homeVideoGrid"></div>
-      </div>
+      <div id="homeNext"></div>
+      <div class="reviewrow" id="homeReview" hidden></div>
 
-      <div>
-        <div class="section-h"><h2>학습 로드맵</h2></div>
-        <div class="roadtabs" role="tablist" aria-label="학습 트랙 선택">
-          <button class="chip active" id="roadTabSign" role="tab" aria-selected="true" type="button">✋ 수어 트랙</button>
-          <button class="chip" id="roadTabBraille" role="tab" aria-selected="false" type="button">⠿ 점자 트랙</button>
+      <section aria-labelledby="roadH">
+        <div class="roadhead">
+          <h2 id="roadH" style="font-size:1.1875rem;font-weight:800">학습 로드맵</h2>
+          <span class="roadprog" id="roadProg" aria-live="polite"></span>
+        </div>
+        <div class="roadtabs" role="group" aria-label="학습 트랙 선택" style="margin:10px 0 14px">
+          <button class="chip active" id="roadTabSign" type="button" aria-pressed="true">수어 트랙</button>
+          <button class="chip" id="roadTabBraille" type="button" aria-pressed="false">점자 트랙</button>
         </div>
         <div class="road" id="roadList"></div>
-      </div>
+      </section>
 
-      <div class="card" id="sourceCard">
-        <div class="section-h"><h2 style="font-size:16px">자료 출처와 확인 범위</h2></div>
-        <ul class="exlist" style="margin-top:8px">
+      <section aria-labelledby="vidH">
+        <div class="section-h"><h2 id="vidH">교육 영상</h2></div>
+        <div class="vlist-grid" id="homeVideoGrid" style="margin-top:10px"></div>
+      </section>
+
+      <section class="card" id="recordCard" aria-labelledby="recH">
+        <div class="section-h"><h2 id="recH">내 학습 기록</h2><span class="tag gray">이 기기에만 저장</span></div>
+        <div class="reccounts" id="recCounts"></div>
+        <div class="recbtns">
+          <button class="btn line small" id="recExport" type="button">기록 내보내기</button>
+          <button class="btn line small" id="recImport" type="button">기록 가져오기</button>
+          <button class="btn danger small" id="recClear" type="button">기록 지우기</button>
+        </div>
+        <div class="qconfirm" id="recConfirm" hidden style="margin-top:12px">
+          <span>단어장·틀린 문제·본 영상 기록이 모두 사라져요. 지울까요?</span>
+          <button class="btn danger small" id="recClearYes" type="button">지우기</button>
+          <button class="btn ghost small" id="recClearNo" type="button">취소</button>
+        </div>
+        <p class="note" id="recStatus" style="margin-top:12px" aria-live="polite">기록은 로그인 없이 이 브라우저에만 저장돼요. 다른 기기에서 이어서 하려면 내보내기 → 그 기기에서 가져오기를 쓰세요.</p>
+      </section>
+
+      <section class="card" id="sourceCard" aria-labelledby="srcH">
+        <div class="section-h"><h2 id="srcH">자료 출처와 확인 범위</h2></div>
+        <ul class="sourcelist">
           <li>수어 영상·수형 그림: 국립국어원 한국수어사전, 한국수어누리사전(저작자표시-비영리-변경금지). 누리사전 영상은 용량을 줄여 올렸어요.</li>
           <li>수어 동작 설명: 공공데이터포털 「한국수어사전 한국어대응표현정보」의 수형 설명. 설명이 없는 단어는 영상과 그림으로 확인해 주세요. 단어 주제 분류는 손빛이 규칙으로 나눈 것이라 틀릴 수 있어요.</li>
           <li>점자: 「한국 점자 규정」(문화체육관광부고시 제2024-0005호)의 한글·약자·약어·숫자와 일부 문장 부호. 규정 예시 227개로 확인했지만 점자 전문가의 검수는 아직 받지 않았어요.</li>
           <li>교육 영상: 손빛이 만들고 AI 목소리가 읽어요. 점검에서 오류가 확인된 영상은 고칠 때까지 내려 둬요.</li>
         </ul>
-      </div>
-
+      </section>
     </section>
 
-    <!-- 수어 -->
+    <!-- ===== 수어 사전 ===== -->
     <section class="view" id="view-sign" aria-labelledby="signH">
-      <h1 id="signH" class="visually-hidden">수어 사전</h1>
+      <h1 id="signH" class="visually-hidden" tabindex="-1">수어 사전</h1>
       <div class="search">
         <span aria-hidden="true" id="signSearchIcon"></span>
-        <input type="search" id="signSearch" placeholder="단어 검색 (예: 감사합니다, ㄱㅅ)" aria-label="수어 단어 검색">
+        <input type="search" id="signSearch" placeholder="단어 검색 (예: 감사, ㄱㅅ)" aria-label="수어 단어 검색" autocomplete="off">
       </div>
       <div id="signTopicHead" class="topichead" hidden>
-        <button class="icon-btn" id="signTopicBack" type="button" aria-label="주제 목록으로"></button>
+        <button class="icon-btn backbtn" id="signTopicBack" type="button" aria-label="주제 목록으로"></button>
         <h2 id="signTopicName"></h2>
       </div>
+      <div class="signactions" id="signActions" hidden></div>
       <div class="chiprow" id="signCho" hidden></div>
-      <div class="topicgrid" id="signTopics" role="group" aria-label="주제별 보기"></div>
+      <div id="signHome">
+        <div class="shortcuts" id="signShortcuts"></div>
+        <div class="section-h" style="margin:18px 0 10px"><h2 style="font-size:1.0625rem">주제로 찾기</h2></div>
+        <div class="topicgrid" id="signTopics" role="group" aria-label="주제별 보기"></div>
+      </div>
       <p class="note" id="signCount" hidden></p>
       <div id="signList" class="wordlist"></div>
     </section>
 
-    <!-- 점자 -->
+    <!-- ===== 점자 ===== -->
     <section class="view" id="view-braille" aria-labelledby="brailleH">
-      <h1 id="brailleH" class="visually-hidden">점자 패드</h1>
+      <h1 id="brailleH" class="visually-hidden" tabindex="-1">점자</h1>
 
-      <div class="card">
-        <h2 style="font-size:16px;margin-bottom:4px">가상 촉각 점자 패드</h2>
-        <p class="note" style="margin-bottom:14px">점을 눌러 보세요. 몇 번 점이 켜졌는지에 따라 어떤 글자인지 알려 드려요.</p>
-        <div class="braillecell-wrap">
-          <div class="braillecell" id="padCell" role="group" aria-label="점자 6점 패드"></div>
-          <div class="padresult" aria-live="polite">
-            <div class="big" id="padResultChar">점을 눌러 보세요</div>
-            <div class="kind" id="padResultKind"></div>
-          </div>
-          <button class="btn ghost" id="padReset" type="button">↺ 초기화</button>
+      <div class="seg" role="group" aria-label="점자 화면 고르기" id="bpSeg">
+        <button type="button" data-bpanel="convert" aria-pressed="true">글자 바꾸기</button>
+        <button type="button" data-bpanel="pad" aria-pressed="false">연습 패드</button>
+        <button type="button" data-bpanel="table" aria-pressed="false">점자 표</button>
+      </div>
+
+      <!-- 글자 → 점자 -->
+      <div class="bpanel" id="bp-convert">
+        <div class="card">
+          <h2 style="margin-bottom:10px">글자 → 점자 바꾸기</h2>
+          <textarea class="bptext" id="bpInput" placeholder="여기에 한글을 쓰면 점자로 바꿔 드려요" aria-label="점자로 바꿀 글자 입력"></textarea>
+          <div class="chiprow" id="bpExamples" style="margin-top:10px" role="group" aria-label="예시 글"></div>
+          <label class="bpopt"><input type="checkbox" id="bpContract" checked> 약자·약어 사용 (한국 점자 규정 방식)</label>
+          <p class="note" style="margin-top:8px" id="bpModeNote">「한국 점자 규정」(2024년 개정)의 약자(가·나·다…, 억·언·얼…)와 약어(그래서·그러나 등)를 적용해요. 끄면 자음·모음을 모두 풀어서 보여줘요(학습용).</p>
+          <p class="note amber" style="margin-top:8px">규정의 한글·약자·약어·숫자·문장 부호 예시 227개로 확인했어요. 아직 점자 전문가의 검수는 받지 않았으니, 실제 점자 인쇄나 점역에 쓰기 전에는 점자 교사나 점자도서관에서 확인받으세요. 로마자·수식·옛 글자 등은 바꿔 주지 않고 표시만 해요.</p>
+        </div>
+        <div class="card" id="bpResult">
+          <div id="bpSummary" class="note">글자를 입력하면 여기에 몇 칸인지 나와요</div>
+          <div id="bpWarn" class="note amber" style="margin-top:8px" hidden></div>
+          <div class="cellsrow" id="bpCells" style="margin-top:14px"></div>
+          <div class="bpout" id="bpOutWrap" hidden><span class="tag gray">점자 문자 (복사해서 쓸 수 있어요)</span><div class="bpbraille" id="bpOut" aria-label="변환된 점자 문자"></div><button class="btn ghost small" id="bpCopy" type="button">복사</button></div>
         </div>
       </div>
 
-      <div class="card">
-        <h2 style="font-size:16px;margin-bottom:10px">글자 → 점자 바꾸기</h2>
-        <textarea class="bptext" id="bpInput" placeholder="여기에 한글을 쓰면 점자로 바꿔 드려요" aria-label="점자로 바꿀 글자 입력"></textarea>
-        <label class="bpopt"><input type="checkbox" id="bpContract" checked> 약자·약어 사용 (한국 점자 규정 방식)</label>
-        <p class="note" style="margin-top:6px" id="bpModeNote">「한국 점자 규정」(2024년 개정)의 약자(가·나·다…, 억·언·얼…)와 약어(그래서·그러나 등)를 적용해요. 끄면 자음·모음을 모두 풀어서 보여줘요(학습용).</p>
-        <p class="note amber" style="margin-top:8px">규정의 한글·약자·약어·숫자·문장 부호 예시 230여 개로 확인했어요. 아직 점자 전문가의 검수는 받지 않았으니, 실제 점자 인쇄나 점역에 쓰기 전에는 점자 교사나 점자도서관에서 확인받으세요. 로마자·수식·옛 글자 등은 바꿔 주지 않아요(표시만 해요).</p>
-        <div id="bpSummary" class="note" style="margin-top:10px"></div>
-        <div id="bpWarn" class="note amber" style="margin-top:8px" hidden></div>
-        <div class="cellsrow" id="bpCells" style="margin-top:14px"></div>
-        <div class="bpout" id="bpOutWrap" hidden><span class="lbl">점자 문자(복사해서 쓸 수 있어요)</span><div class="bpbraille" id="bpOut" aria-label="변환된 점자 문자"></div><button class="btn ghost" id="bpCopy" type="button">복사</button></div>
+      <!-- 연습 패드 -->
+      <div class="bpanel" id="bp-pad" hidden>
+        <div class="card">
+          <h2 style="margin-bottom:6px">6점 점자 연습 패드</h2>
+          <p class="note" style="margin-bottom:10px">점을 눌러 한 칸을 만들어 보세요. 같은 모양이라도 글자 안의 자리에 따라 다르게 읽혀서, 읽는 방법을 모두 알려 드려요.</p>
+          <div class="chiprow" aria-label="이 패드가 알려 주는 것" role="list" style="margin-bottom:14px">
+            <span class="tag" role="listitem">첫소리</span><span class="tag" role="listitem">모음</span><span class="tag" role="listitem">받침</span><span class="tag" role="listitem">약자</span><span class="tag" role="listitem">숫자</span><span class="tag" role="listitem">문장부호</span>
+          </div>
+          <div class="braillecell-wrap">
+            <div class="braillecell" id="padCell" role="group" aria-label="점자 6점 패드"></div>
+            <div class="padout" aria-live="polite">
+              <div class="padresult">
+                <div class="big" id="padResultChar">점을 눌러 보세요</div>
+                <div class="kind" id="padResultKind"></div>
+              </div>
+              <div class="padreads" id="padReadings"></div>
+            </div>
+            <button class="btn ghost" id="padReset" type="button">처음으로</button>
+          </div>
+          <p class="note" style="margin-top:14px">한 칸만 읽어 줘요. 된소리·겹받침·약어처럼 두 칸 이상으로 쓰는 것은 「글자 바꾸기」에서 확인하세요.</p>
+        </div>
       </div>
 
-      <div class="card">
-        <div class="section-h"><h2 style="font-size:16px">한글 초성 퀵 가이드</h2><span class="tag">기본 13개</span></div>
-        <div class="guide-grid" id="choGuide" style="margin-top:10px"></div>
-        <div class="section-h" style="margin-top:16px"><h2 style="font-size:14px">된소리(쌍자음)</h2><span class="tag amber">5개</span></div>
-        <p class="note" style="margin:8px 0">6번 점(된소리표)을 먼저 쓰고, 뒤에 예사소리를 이어 써요.</p>
-        <div class="guide-grid" id="choDoubleGuide"></div>
+      <!-- 점자 표 -->
+      <div class="bpanel" id="bp-table" hidden>
+        <div class="chiprow" id="tableChips" role="group" aria-label="점자 표 종류"></div>
+        <div class="card" id="tableBody"></div>
       </div>
 
-      <div class="card">
-        <div class="section-h"><h2 style="font-size:16px">기본 모음 퀵 가이드</h2><span class="tag">10개</span></div>
-        <div class="guide-grid" id="jungGuide" style="margin-top:10px"></div>
-        <div class="section-h" style="margin-top:16px"><h2 style="font-size:14px">복합 모음</h2><span class="tag">11개</span></div>
-        <p class="note" style="margin:8px 0">ㅒ ㅙ ㅞ ㅟ는 앞 모음 뒤에 ㅐ(1·2·3·5번)를 한 칸 더 붙여 두 칸으로 써요.</p>
-        <div class="guide-grid" id="jungCompoundGuide"></div>
-      </div>
-
-      <div class="card">
-        <div class="section-h"><h2 style="font-size:16px">숫자 가이드</h2><span class="tag">0~9</span></div>
-        <p class="note" style="margin:8px 0">숫자 앞에는 수표(3·4·5·6번 점)를 한 번 써요. 그 뒤에 아래 모양의 숫자를 이어 써요. 예: 25 → 수표 + 2 + 5</p>
-        <div class="guide-grid" id="numGuide"></div>
-        <ul class="exlist" style="margin-top:10px">
-          <li>숫자 사이의 쉼표와 자릿점은 2번 점, 소수점은 2·5·6번 점이에요. 예: 9,375 → 수표 9 (2번 점) 3 7 5</li>
-          <li>숫자 뒤에 ㄴ·ㄷ·ㅁ·ㅋ·ㅌ·ㅍ·ㅎ으로 시작하는 글자나 '운'이 오면 숫자와 한 칸을 띄어요. 예: 1년 → 수표 1, 빈칸, 년</li>
-          <li>위 내용은 「한국 점자 규정」 제40~44항을 따랐어요. 연산 기호(+ - × ÷)와 분수는 아직 지원하지 않아요.</li>
-        </ul>
-      </div>
-
-      <div>
-        <div class="section-h"><h2>점자 영상으로 배우기</h2></div>
-        <div class="vlist-grid" id="brailleVideoGrid"></div>
-      </div>
+      <section aria-labelledby="bvH">
+        <div class="section-h"><h2 id="bvH" style="font-size:1.1875rem;font-weight:800">점자 영상으로 배우기</h2></div>
+        <div class="vlist-grid" id="brailleVideoGrid" style="margin-top:10px"></div>
+      </section>
     </section>
 
-    <!-- 도전(퀴즈) -->
+    <!-- ===== 도전(퀴즈) ===== -->
     <section class="view" id="view-quiz" aria-labelledby="quizH">
-      <h1 id="quizH" class="visually-hidden">도전 퀴즈</h1>
+      <h1 id="quizH" class="visually-hidden" tabindex="-1">퀴즈</h1>
       <div id="quizArea"></div>
     </section>
 
-    <!-- 영상 플레이어 -->
+    <!-- ===== 영상 플레이어 ===== -->
     <section class="view" id="view-player" aria-labelledby="playerH">
       <div class="backrow">
         <button class="icon-btn" id="playerBack" type="button" aria-label="뒤로 가기"></button>
-        <h1 id="playerH" class="visually-hidden">영상 재생</h1>
+        <h1 id="playerH" class="visually-hidden" tabindex="-1">영상 재생</h1>
       </div>
       <div class="player-wrap">
         <video id="playerVideo" controls playsinline preload="auto"></video>
       </div>
       <div class="vmeta">
-        <div class="tags" id="playerTags"></div>
+        <div class="tags" id="playerTags" style="display:flex;gap:6px;margin-bottom:8px"></div>
         <h2 id="playerTitle"></h2>
         <p id="playerDesc"></p>
       </div>
-      <div class="section-h"><h2 style="font-size:15px">대본(자막) 따라 읽기</h2></div>
+      <div class="section-h"><h2 style="font-size:0.9375rem">대본(자막) 따라 읽기</h2></div>
       <div class="transcript" id="playerTranscript"></div>
     </section>
 
@@ -191,11 +231,15 @@
       <button class="navbtn active" data-nav="home" type="button" aria-current="page"><span class="i" data-icon="home"></span><span>학습</span></button>
       <button class="navbtn" data-nav="sign" type="button"><span class="i" data-icon="hand"></span><span>수어</span></button>
       <button class="navbtn" data-nav="braille" type="button"><span class="i" data-icon="braille"></span><span>점자</span></button>
-      <button class="navbtn" data-nav="quiz" type="button"><span class="i" data-icon="quiz"></span><span>도전</span></button>
+      <button class="navbtn" data-nav="quiz" type="button"><span class="i" data-icon="quiz"></span><span>퀴즈</span></button>
     </div>
   </nav>
 
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <input type="file" id="importFile" accept="application/json,.json" hidden>
 </div>
+
+<noscript><p style="padding:24px;text-align:center">손빛 배움터는 자바스크립트를 켜야 쓸 수 있어요.</p></noscript>
 
 <script src="assets/ksl-data.js"></script>
 <script src="assets/ksl2-data.js"></script>

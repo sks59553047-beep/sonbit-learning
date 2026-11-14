@@ -398,7 +398,13 @@ body{word-break:keep-all;overflow-wrap:break-word}
 .vdesc{font-size:0.8125rem;color:var(--muted);line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .vseen{display:inline-flex;align-items:center;gap:4px;font-size:0.75rem;color:var(--teal);font-weight:700}
 @media (max-width:380px){ .vthumb{width:112px} }
-@media (max-width:339px){ .vrow{flex-direction:column} .vthumb{width:100%} }
+@media (max-width:339px){ .vrow{flex-direction:column;align-items:stretch} .vthumb{width:100%} }
+/* 컴퓨터 화면: 학습 페이지의 기초 영상 3편은 한 줄로(그림이 위, 글이 아래) */
+@media (min-width:760px){
+  #homeVideoList{grid-template-columns:repeat(3,minmax(0,1fr))}
+  #homeVideoList .vrow{flex-direction:column;align-items:stretch;gap:10px}
+  #homeVideoList .vthumb{width:100%}
+}
 
 /* ---------- 퀴즈 난이도(하·중·상) / 점자 범위 / 영상 4개 중에서 고르는 문제 ---------- */
 .chiprow.wrap{flex-wrap:wrap;overflow-x:visible}

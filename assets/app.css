@@ -246,3 +246,7 @@ textarea.bptext{width:100%;border:1px solid var(--line);border-radius:14px;paddi
 .skiplink:focus{top:8px}
 @media (prefers-reduced-motion: reduce){ *{animation:none!important;transition:none!important} }
 .kslvideo{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:contain;background:#000}
+.wordrow .wsub{font-size:0.75rem;font-weight:600;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1}
+.wordrow .lbl{font-size:0.7188rem;font-weight:800;color:var(--teal);margin-top:2px}
+.wordrow .exlist{margin:2px 0 4px;padding-left:18px;font-size:0.8438rem;color:var(--muted);line-height:1.55}
+.qclue .qvideo{margin-top:12px;border-radius:12px;max-height:300px}

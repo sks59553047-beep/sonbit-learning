@@ -161,7 +161,7 @@ function bindVideoCards(root) {
 
 // ---------------- 학습(홈) ----------------
 function renderHome() {
-  $('#statWords').textContent = KSL_WORDS.length;
+  $('#statWords').textContent = ALL_WORDS.length;
   $('#statVideos').textContent = VIDEO_LIST.length;
   $('#statBraille').textContent = Object.keys(BRAILLE_CHO).length + Object.keys(BRAILLE_JONG).length + Object.keys(BRAILLE_JUNG).length;
   const starters = VIDEO_LIST.filter(v => v.order === 1);
@@ -173,7 +173,7 @@ let roadTrack = 'sign';
 function roadmapFor(track) {
   if (track === 'sign') {
     return [
-      { label: '1단계', title: '수어 단어 찾아보기', sub: '수어 ' + KSL_WORDS.length + '개 검색, 국립국어원 실제 영상으로 바로 확인', nav: 'sign' },
+      { label: '1단계', title: '수어 단어 찾아보기', sub: '수어 ' + ALL_WORDS.length + '개 검색, 국립국어원 실제 영상으로 바로 확인', nav: 'sign' },
       { label: '2단계', title: '도전 퀴즈로 복습', sub: '10문제로 실력 확인', nav: 'quiz' }
     ];
   }
@@ -207,20 +207,26 @@ function renderRoadmap(track) {
 $('#roadTabSign').addEventListener('click', () => { roadTrack = 'sign'; $('#roadTabSign').classList.add('active'); $('#roadTabSign').setAttribute('aria-selected', 'true'); $('#roadTabBraille').classList.remove('active'); $('#roadTabBraille').setAttribute('aria-selected', 'false'); renderRoadmap('sign'); });
 $('#roadTabBraille').addEventListener('click', () => { roadTrack = 'braille'; $('#roadTabBraille').classList.add('active'); $('#roadTabBraille').setAttribute('aria-selected', 'true'); $('#roadTabSign').classList.remove('active'); $('#roadTabSign').setAttribute('aria-selected', 'false'); renderRoadmap('braille'); });
 
-// ---------------- 수어 스튜디오 ----------------
-const TOPIC_ORDER = ['몸·건강·긴급', '인사·예절', '대답·질문', '사람·가족', '감정', '음식', '돈·쇼핑', '장소·이동', '시간·날짜', '날씨·색·크기', '하루 생활', '물건·소지품', '열기·시작·찾기'];
-const TOPIC_ICON = { '몸·건강·긴급': '🚑', '인사·예절': '👋', '대답·질문': '💬', '사람·가족': '👨‍👩‍👧', '감정': '😊', '음식': '🍚', '돈·쇼핑': '🛍️', '장소·이동': '🏫', '시간·날짜': '⏰', '날씨·색·크기': '🌤️', '하루 생활': '🏠', '물건·소지품': '🎒', '열기·시작·찾기': '🔑' };
-const TOPICS = TOPIC_ORDER.filter(t => KSL_WORDS.some(w => w.t === t)).concat([...new Set(KSL_WORDS.map(w => w.t))].filter(t => !TOPIC_ORDER.includes(t)));
-let signTopic = '', signQuery = '';
+// ---------------- 수어 사전 ----------------
+const ALL_WORDS = KSL_WORDS.concat(KSL_EXTRA.map(x => ({ id: 'N' + x.i, w: x.w, t: x.t, x: true, g: x.g, e: x.e, k: '/signFile/video/' + x.m })));
+const TOPIC_ORDER = ['몸·건강·긴급', '인사·예절', '대답·질문', '사람·가족', '감정', '마음·생각', '성격·태도', '음식', '돈·쇼핑', '장소·이동', '시간·날짜', '날씨·색·크기', '하루 생활', '물건·소지품', '열기·시작·찾기', '말·소통', '학교·일·직업', '사회·제도', '법·사건', '자연·동식물', '나라·지명', '숫자·돈 단위', '일반 단어'];
+const TOPIC_ICON = { '몸·건강·긴급': '🚑', '인사·예절': '👋', '대답·질문': '💬', '사람·가족': '👨‍👩‍👧', '감정': '😊', '마음·생각': '💭', '성격·태도': '🙂', '음식': '🍚', '돈·쇼핑': '🛍️', '장소·이동': '🏫', '시간·날짜': '⏰', '날씨·색·크기': '🌤️', '하루 생활': '🏠', '물건·소지품': '🎒', '열기·시작·찾기': '🔑', '말·소통': '🗣️', '학교·일·직업': '🎓', '사회·제도': '🏛️', '법·사건': '⚖️', '자연·동식물': '🌳', '나라·지명': '🗺️', '숫자·돈 단위': '🔢', '일반 단어': '📖' };
+const TOPICS = TOPIC_ORDER.filter(t => ALL_WORDS.some(w => w.t === t)).concat([...new Set(ALL_WORDS.map(w => w.t))].filter(t => !TOPIC_ORDER.includes(t)));
+let signTopic = '', signQuery = '', signCho = '';
 const CHO_LIST = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+const CHO_MAIN = ['ㄱ', 'ㄴ', 'ㄷ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅅ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+const CHO_FOLD = { 'ㄲ': 'ㄱ', 'ㄸ': 'ㄷ', 'ㅃ': 'ㅂ', 'ㅆ': 'ㅅ', 'ㅉ': 'ㅈ' };
 function choOf(str) {
   return [...str].map(ch => { const c = ch.charCodeAt(0); return (c >= 0xAC00 && c <= 0xD7A3) ? CHO_LIST[Math.floor((c - 0xAC00) / 588)] : ch; }).join('');
 }
+function firstCho(w) { const c = choOf(w.w).charAt(0); return CHO_FOLD[c] || c; }
+function byName(a, b) { return a.w.localeCompare(b.w, 'ko'); }
 function hasRealVideo(w) { return !!w.k || (typeof SLDICT_LINK === 'object' && !!SLDICT_LINK[w.w]); }
 function matchWord(w, q) {
   if (!q) return true;
   if (w.w.toLowerCase().includes(q)) return true;
   if (/^[ㄱ-ㅎ]+$/.test(q)) return choOf(w.w).includes(q);
+  if (w.x) return (w.g || '').toLowerCase().includes(q);
   return (w.d || '').toLowerCase().includes(q);
 }
 function cleanDesc(d) { return String(d || '').replace(/\s*[—-]\s*(국립국어원|한국수어누리사전).*$/, ''); }
@@ -229,22 +235,35 @@ function descHtml(d) {
   return `<p class="desc">${esc(cleanDesc(d))}</p>`;
 }
 function topicCardHtml(t) {
-  const n = KSL_WORDS.filter(w => w.t === t).length;
+  const n = ALL_WORDS.filter(w => w.t === t).length;
   const urgent = t === '몸·건강·긴급' ? ' urgent' : '';
   return `<button class="topiccard${urgent}" data-topic="${esc(t)}" type="button"><span class="ti">${TOPIC_ICON[t] || '✋'}</span><span class="tn">${esc(t)}</span><span class="tc">${n}개</span></button>`;
 }
 function wordRowHtml(w, showTopic) {
   const play = hasRealVideo(w) ? '<span class="vbadge" title="실제 수어 영상 있음">▶</span>' : '';
   const topic = showTopic ? `<span class="wtopic">${esc(w.t)}</span>` : '';
-  return `<details class="wordrow" data-wid="${esc(w.id)}"><summary><span class="wname">${esc(w.w)}</span>${topic}${play}</summary><div class="wbody"></div></details>`;
+  const sub = w.x ? `<span class="wsub">${esc((w.g || '').split(' / ')[0].slice(0, 24))}</span>` : '';
+  return `<details class="wordrow" data-wid="${esc(w.id)}"><summary><span class="wname">${esc(w.w)}</span>${sub}${topic}${play}</summary><div class="wbody"></div></details>`;
+}
+function extraBodyHtml(w) {
+  const senses = (w.g || '').split(' / ').filter(Boolean).map(s => `<li>${esc(s)}</li>`).join('');
+  const exs = (w.e || '').split(/(?<=[.?!]),\s*/).filter(Boolean).slice(0, 3).map(s => `<li>${esc(s)}</li>`).join('');
+  const uid = 'x' + Math.random().toString(36).slice(2, 9);
+  const exBlock = exs ? `<p class="lbl">예문</p><ul class="exlist">${exs}</ul>` : '';
+  return `<p class="lbl">뜻</p><ul class="exlist">${senses}</ul>${exBlock}<div class="actions">${kslVideoBtnHtml(uid)}</div>${kslVideoBoxHtml(uid, w.k, w.w)}`;
 }
 function fillWordBody(det) {
   const body = det.querySelector('.wbody');
   if (body.dataset.ready) return;
-  const w = KSL_WORDS.find(x => String(x.id) === det.dataset.wid); if (!w) return;
-  body.innerHTML = descHtml(w.d) + signVisualHtml(w.w, [w.w]);
+  const w = ALL_WORDS.find(x => String(x.id) === det.dataset.wid); if (!w) return;
+  body.innerHTML = w.x ? extraBodyHtml(w) : descHtml(w.d) + signVisualHtml(w.w, [w.w]);
   body.dataset.ready = '1';
   bindSignVisuals(body);
+}
+function choChipsHtml(list) {
+  const present = new Set(list.map(firstCho));
+  const chips = ['전체'].concat(CHO_MAIN.filter(c => present.has(c)));
+  return chips.map(c => `<button class="chip${(signCho || '전체') === c ? ' active' : ''}" data-cho="${c}" type="button">${c}</button>`).join('');
 }
 function renderSign() {
   const q = signQuery.toLowerCase();
@@ -252,19 +271,28 @@ function renderSign() {
   const inTopic = !searching && !!signTopic;
   $('#signTopics').hidden = searching || inTopic;
   $('#signTopicHead').hidden = !inTopic;
-  const list = searching ? KSL_WORDS.filter(w => matchWord(w, q)) : (inTopic ? KSL_WORDS.filter(w => w.t === signTopic) : []);
+  $('#signCho').hidden = true;
+  let list = searching ? ALL_WORDS.filter(w => matchWord(w, q)) : (inTopic ? ALL_WORDS.filter(w => w.t === signTopic) : []);
   if (!searching && !inTopic) {
     $('#signTopics').innerHTML = TOPICS.map(topicCardHtml).join('');
-    $$('[data-topic]', $('#signTopics')).forEach(b => b.addEventListener('click', () => { signTopic = b.dataset.topic; hap(8); renderSign(); window.scrollTo(0, 0); }));
-    $('#signCount').hidden = false; $('#signCount').textContent = `주제를 눌러 단어를 찾아보세요 · 전체 ${KSL_WORDS.length}개`;
+    $$('[data-topic]', $('#signTopics')).forEach(b => b.addEventListener('click', () => { signTopic = b.dataset.topic; signCho = ''; hap(8); renderSign(); window.scrollTo(0, 0); }));
+    $('#signCount').hidden = false; $('#signCount').textContent = `주제를 눌러 단어를 찾아보세요 · 전체 ${ALL_WORDS.length}개`;
     $('#signList').innerHTML = '';
     return;
   }
-  if (inTopic) { $('#signTopicName').textContent = (TOPIC_ICON[signTopic] || '') + ' ' + signTopic; }
+  if (inTopic) {
+    $('#signTopicName').textContent = (TOPIC_ICON[signTopic] || '') + ' ' + signTopic;
+    list = list.slice().sort(byName);
+    if (list.length > 40) {
+      $('#signCho').hidden = false; $('#signCho').innerHTML = choChipsHtml(list);
+      $$('[data-cho]', $('#signCho')).forEach(b => b.addEventListener('click', () => { signCho = b.dataset.cho === '전체' ? '' : b.dataset.cho; hap(8); renderSign(); }));
+      if (signCho) list = list.filter(w => firstCho(w) === signCho);
+    }
+  }
   $('#signCount').hidden = false;
-  $('#signCount').textContent = searching ? `검색 결과 ${list.length}개` : `${list.length}개 단어 · 눌러서 동작 설명과 영상 보기`;
+  $('#signCount').textContent = searching ? `검색 결과 ${list.length}개` : `${list.length}개 단어 · 눌러서 뜻과 영상 보기`;
   if (!list.length) { $('#signList').innerHTML = '<div class="empty">찾는 단어가 없어요. 다른 말로 검색해 보세요.</div>'; return; }
-  $('#signList').innerHTML = list.slice(0, 80).map(w => wordRowHtml(w, searching)).join('');
+  $('#signList').innerHTML = list.slice(0, 150).map(w => wordRowHtml(w, searching)).join('') + (list.length > 150 ? `<p class="note" style="text-align:center">검색어를 더 자세히 적으면 좁혀져요 (${list.length}개 중 150개 표시)</p>` : '');
 }
 $('#signTopicBack').innerHTML = icon('back', 20);
 $('#signTopicBack').addEventListener('click', () => { signTopic = ''; renderSign(); window.scrollTo(0, 0); });
@@ -312,8 +340,12 @@ bindVideoCards($('#brailleVideoGrid'));
 
 // ---------------- 도전 퀴즈(수어·점자 따로) ----------------
 // 수어 문제 풀: 설명이 있는 단어 전부
-const QUIZ_POOL_SIGN = KSL_WORDS.filter(w => w.d && w.d.length < 130 && !cleanDesc(w.d).includes(w.w))
+const QUIZ_POOL_SIGN_TEXT = KSL_WORDS.filter(w => w.d && w.d.length < 130 && !cleanDesc(w.d).includes(w.w))
   .map(w => ({ answer: w.w, clueType: 'text', clue: cleanDesc(w.d), group: w.t }));
+// 영상 문제 풀: 영상이 있는 단어 전부(영상을 보고 뜻을 맞히기)
+const QUIZ_POOL_SIGN_VIDEO = ALL_WORDS.filter(w => w.k && w.w.length <= 8 && !/[~\-]/.test(w.w))
+  .map(w => ({ answer: w.w, clueType: 'video', clue: w.k, group: w.t }));
+const QUIZ_POOL_SIGN = QUIZ_POOL_SIGN_TEXT.concat(QUIZ_POOL_SIGN_VIDEO);
 // 점자 문제 풀: 검증된 자모·숫자·문장부호 전부(2칸짜리 된소리·복합모음 포함)
 function cellsOf(v) { return (Array.isArray(v) ? v : [v]).map(x => x.split('-').map(Number)); }
 const QUIZ_POOL_BRAILLE = [
@@ -330,7 +362,7 @@ function renderQuizIntro() {
   $('#quizArea').innerHTML = `
     <div class="card" style="text-align:center">
       <h2 style="font-size:20px">수어 도전 퀴즈</h2>
-      <p class="note" style="margin:14px 0">동작 설명을 읽고 어떤 수어인지 맞혀 보세요. 10문제, 목숨 3개예요. (문제 ${QUIZ_POOL_SIGN.length}개 중에서 매번 다르게 나와요)</p>
+      <p class="note" style="margin:14px 0">동작 설명을 읽거나 수어 영상을 보고 어떤 뜻인지 맞혀 보세요. 10문제, 목숨 3개예요. (문제 ${QUIZ_POOL_SIGN.length}개 중에서 매번 다르게 나와요)</p>
       <button class="btn primary block" data-quiz="sign">${icon('star', 16)} 수어 퀴즈 시작하기</button>
     </div>
     <div class="card" style="text-align:center;margin-top:14px">
@@ -341,8 +373,10 @@ function renderQuizIntro() {
   $$('[data-quiz]', $('#quizArea')).forEach(b => b.addEventListener('click', () => startQuiz(b.dataset.quiz)));
 }
 function startQuiz(type) {
-  const pool = (type === 'braille' ? QUIZ_POOL_BRAILLE : QUIZ_POOL_SIGN);
-  const qs = [...pool].sort(() => Math.random() - .5).slice(0, 10);
+  const shuffle = a => [...a].sort(() => Math.random() - .5);
+  const qs = type === 'braille'
+    ? shuffle(QUIZ_POOL_BRAILLE).slice(0, 10)
+    : shuffle(shuffle(QUIZ_POOL_SIGN_TEXT).slice(0, 4).concat(shuffle(QUIZ_POOL_SIGN_VIDEO).slice(0, 6)));
   quizState = { active: true, type, i: 0, score: 0, lives: 3, qs, answered: false };
   renderQuiz();
 }
@@ -361,14 +395,17 @@ function livesStarsHtml(lives) {
 function quizOptHtml(o, i) {
   return `<button class="qopt" data-opt="${esc(o)}"><span class="num">${i + 1}</span>${esc(o)}</button>`;
 }
+function quizClueHtml(q) {
+  if (q.clueType === 'dots') return `<div class="qclue qclue-dots">이 점자는 무슨 글자(${esc(q.group)})일까요?<div class="quizdots">${clueCellsHtml(q.clue)}</div></div>`;
+  if (q.clueType === 'video') return `<div class="qclue">이 수어 영상이 뜻하는 단어는 무엇일까요?<video class="kslvideo qvideo" src="https://ksldict.korean.go.kr${esc(q.clue)}" autoplay loop muted playsinline controls preload="auto"></video></div>`;
+  return `<div class="qclue">다음 수어 동작이 의미하는 단어는 무엇일까요?<br><br>${esc(q.clue)}</div>`;
+}
 function renderQuiz() {
   const s = quizState; if (!s.active) return;
   if (s.i >= s.qs.length || s.lives <= 0) return renderQuizResult();
   const q = s.qs[s.i];
   if (!q._opts) q._opts = pickChoices(q, s.type);
-  const clueHtml = q.clueType === 'dots'
-    ? `<div class="qclue qclue-dots">이 점자는 무슨 글자(${esc(q.group)})일까요?<div class="quizdots">${clueCellsHtml(q.clue)}</div></div>`
-    : `<div class="qclue">다음 수어 동작이 의미하는 단어는 무엇일까요?<br><br>${esc(q.clue)}</div>`;
+  const clueHtml = quizClueHtml(q);
   $('#quizArea').innerHTML = `
     <div class="quizhead">
       <span style="font-weight:800">문제 ${s.i + 1} / ${s.qs.length}</span>

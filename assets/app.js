@@ -75,7 +75,9 @@ function kslVideoBoxHtml(k, label, id) {
   const src = local ? `assets/media/${id}.mp4` : kslUrl(k);
   const poster = local ? `assets/posters/${id}.jpg` : (isNuri ? kslUrl(k.replace(/\.mp4$/, '.jpg')) : `assets/posters/${id}.jpg`);
   const credit = (local || !isNuri) ? '국립국어원 한국수어사전' : '국립국어원 한국수어누리사전';
-  const img = hasImg ? `<figure class="shapeimg"><img src="assets/media/${id}.jpg" alt="${esc(label)} 수어 동작 그림" loading="lazy"></figure>` : '';
+  const img = hasImg
+    ? `<figure class="shapeimg"><img src="assets/media/${id}.jpg" alt="${esc(label)} 수어 동작 그림" loading="lazy"></figure>`
+    : `<figure class="shapeimg still"><img src="${esc(poster)}" alt="${esc(label)} 수어 장면" loading="lazy"></figure>`;
   return `<div class="signmedia">
       <div class="realvideo">
         <video class="kslvideo" controls loop muted playsinline preload="metadata" poster="${esc(poster)}" src="${esc(src)}" aria-label="${esc(label)} 수어 영상"></video>

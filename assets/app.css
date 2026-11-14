@@ -256,3 +256,10 @@ textarea.bptext{width:100%;border:1px solid var(--line);border-radius:14px;paddi
 .wordrow .exlist{margin:2px 0 4px;padding-left:18px;font-size:0.8438rem;color:var(--muted);line-height:1.55}
 .qclue .qvideo{display:block;margin:12px auto 0;max-width:380px;width:100%;border-radius:12px;aspect-ratio:4/3;object-fit:cover}
 .wordrow .alias{font-size:0.75rem;font-weight:700;color:var(--teal)}
+.signinfo{margin-top:6px;display:block}
+.signinfo .motion{margin:2px 0 8px;font-size:0.875rem;line-height:1.6;color:var(--ink)}
+.signinfo .mnote{margin:-4px 0 8px;font-size:0.7188rem;color:var(--muted)}
+.hsrow{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px}
+.hs{display:flex;flex-direction:column;align-items:center;gap:2px;width:72px}
+.hs img{width:64px;height:64px;object-fit:contain;background:#fff;border:1px solid var(--line);border-radius:10px}
+.hs b{font-size:0.6875rem;font-weight:700;color:var(--muted);text-align:center;line-height:1.25}

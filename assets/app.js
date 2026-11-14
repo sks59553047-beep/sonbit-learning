@@ -74,9 +74,9 @@ function kslVideoBoxHtml(k, label, id) {
   const isNuri = !/^https?:/.test(k);
   const src = local ? `assets/media/${id}.mp4` : kslUrl(k);
   const poster = local ? `assets/posters/${id}.jpg` : (isNuri ? kslUrl(k.replace(/\.mp4$/, '.jpg')) : `assets/posters/${id}.jpg`);
-  const credit = (local || !isNuri) ? '국립국어원 한국수어사전' : '국립국어원 한국수어누리사전';
+  const credit = (id.charAt(0) === 'N' || (k && !/^https?:/.test(k))) ? '국립국어원 한국수어누리사전' : '국립국어원 한국수어사전';
   const img = hasImg
-    ? `<figure class="shapeimg"><img src="assets/media/${id}.jpg" alt="${esc(label)} 수어 동작 그림" loading="lazy"></figure>`
+    ? `<figure class="shapeimg"><img src="assets/media/${id}.jpg" alt="${esc(label)} ${id.charAt(0) === 'N' ? '수어 표기 그림(손모양·움직임)' : '수어 동작 그림'}" loading="lazy"></figure>`
     : `<figure class="shapeimg still"><img src="${esc(poster)}" alt="${esc(label)} 수어 장면" loading="lazy"></figure>`;
   return `<div class="signmedia">
       <div class="realvideo">
@@ -202,11 +202,28 @@ function wordRowHtml(w, showTopic) {
   const sub = w.x ? `<span class="wsub">${esc((w.g || '').split(' / ')[0].slice(0, 24))}</span>` : (w.al ? `<span class="wsub">${esc(w.al.replace(/, /g, ' · '))}</span>` : '');
   return `<details class="wordrow" data-wid="${esc(w.id)}"><summary><span class="wname">${esc(w.w)}</span>${sub}${topic}${play}</summary><div class="wbody"></div></details>`;
 }
+// 누리사전 공식 정보(한 손/두 손, 손모양, 손 위치) + 영상을 보고 정리한 동작 설명
+function signInfoHtml(w) {
+  const inf = typeof KSL_INFO !== 'undefined' ? KSL_INFO[String(w.id).slice(1)] : null;
+  const motion = typeof KSL_MOTION !== 'undefined' ? KSL_MOTION[w.id] : '';
+  if (!inf && !motion) return '';
+  let html = '<div class="signinfo">';
+  if (motion) html += `<p class="lbl">동작 설명</p><p class="motion">${esc(motion)}</p><p class="mnote">영상을 보고 정리한 설명이에요. 정확한 동작은 영상으로 확인하세요.</p>`;
+  if (inf) {
+    const names = inf[1].map(b => KSL_HAND_NAME[b]).filter(Boolean);
+    const pos = KSL_POS_NAME[inf[2]] || '';
+    const hands = inf[1].map(b => `<span class="hs"><img src="assets/hand/${b}.jpg" alt="" loading="lazy"><b>${esc(KSL_HAND_NAME[b] || '')}</b></span>`).join('');
+    const posHtml = pos ? `<span class="hs"><img src="assets/pos/${inf[2]}.jpg" alt="" loading="lazy"><b>${esc(pos)}</b></span>` : '';
+    const sentence = `${inf[0] === 1 ? '한 손' : '두 손'}으로 하는 수어예요.` + (names.length ? ` 손모양은 ${names.join(', ')}` : '') + (pos ? `, 손 위치는 ${pos} 쪽이에요.` : '.');
+    html += `<p class="lbl">손모양과 위치</p><p class="motion">${esc(sentence)}</p><div class="hsrow">${hands}${posHtml}</div>`;
+  }
+  return html + '</div>';
+}
 function extraBodyHtml(w) {
   const senses = (w.g || '').split(' / ').filter(Boolean).map(s => `<li>${esc(s)}</li>`).join('');
   const exs = (w.e || '').split(/(?<=[.?!]),\s*/).filter(Boolean).slice(0, 3).map(s => `<li>${esc(s)}</li>`).join('');
   const exBlock = exs ? `<p class="lbl">예문</p><ul class="exlist">${exs}</ul>` : '';
-  return `<p class="lbl">뜻</p><ul class="exlist">${senses}</ul>${exBlock}${kslVideoBoxHtml(w.k, w.w, w.id)}`;
+  return `<p class="lbl">뜻</p><ul class="exlist">${senses}</ul>${exBlock}${kslVideoBoxHtml(w.k, w.w, w.id)}${signInfoHtml(w)}`;
 }
 function fillWordBody(det) {
   const body = det.querySelector('.wbody');

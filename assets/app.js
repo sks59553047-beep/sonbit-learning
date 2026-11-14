@@ -218,7 +218,17 @@ function officialBlockHtml(w) {
   const o = officialOf(w); if (!o) return '';
   return `<p class="lbl">동작 설명</p><p class="motion">${esc(fingerNames(o[0]))}</p>${officialNoteHtml(w)}`;
 }
+// 기본 숫자 바로가기: '숫자·돈 단위' 주제의 영·일~구·십·백·천·만·억·조(같은 말의 여러 수어 포함)를 차례대로
+const NUM_TOPIC = '기본 숫자';
+const BASIC_NUM_ORDER = ['일', '이', '삼', '사', '오', '육', '칠', '팔', '구', '십', '백', '천', '만', '억', '조'];
+function basicNumberWords() {
+  const out = [], zero = ALL_WORDS.find(w => w.id === 'N901'); // 영·공(0) 은 '일반 단어' 주제에 있어 따로 넣는다
+  if (zero) out.push(zero);
+  for (const n of BASIC_NUM_ORDER) ALL_WORDS.filter(w => w.w === n && w.t === '숫자·돈 단위' && w.id !== 'N457').forEach(w => out.push(w)); // N457 '일'은 '유일하다'라는 뜻이라 뺀다
+  return out;
+}
 function topicCardHtml(t) {
+  if (t === NUM_TOPIC) return `<button class="topiccard" data-topic="${NUM_TOPIC}" type="button"><span class="ti">🔢</span><span class="tn">${NUM_TOPIC}</span><span class="tc">영·일~구·십·백·천·만</span></button>`;
   const n = ALL_WORDS.filter(w => w.t === t).length;
   const urgent = t === '몸·건강·긴급' ? ' urgent' : '';
   return `<button class="topiccard${urgent}" data-topic="${esc(t)}" type="button"><span class="ti">${TOPIC_ICON[t] || '✋'}</span><span class="tn">${esc(t)}</span><span class="tc">${n}개</span></button>`;
@@ -271,17 +281,17 @@ function renderSign() {
   $('#signTopics').hidden = searching || inTopic;
   $('#signTopicHead').hidden = !inTopic;
   $('#signCho').hidden = true;
-  let list = searching ? ALL_WORDS.filter(w => matchWord(w, q)) : (inTopic ? ALL_WORDS.filter(w => w.t === signTopic) : []);
+  let list = searching ? ALL_WORDS.filter(w => matchWord(w, q)) : (inTopic ? (signTopic === NUM_TOPIC ? basicNumberWords() : ALL_WORDS.filter(w => w.t === signTopic)) : []);
   if (!searching && !inTopic) {
-    $('#signTopics').innerHTML = TOPICS.map(topicCardHtml).join('');
+    $('#signTopics').innerHTML = [NUM_TOPIC].concat(TOPICS).map(topicCardHtml).join('');
     $$('[data-topic]', $('#signTopics')).forEach(b => b.addEventListener('click', () => { signTopic = b.dataset.topic; signCho = ''; hap(8); renderSign(); window.scrollTo(0, 0); }));
     $('#signCount').hidden = false; $('#signCount').textContent = `주제를 눌러 단어를 찾아보세요 · 전체 ${ALL_WORDS.length}개`;
     $('#signList').innerHTML = '';
     return;
   }
   if (inTopic) {
-    $('#signTopicName').textContent = (TOPIC_ICON[signTopic] || '') + ' ' + signTopic;
-    list = list.slice().sort(byName);
+    $('#signTopicName').textContent = (signTopic === NUM_TOPIC ? '🔢' : (TOPIC_ICON[signTopic] || '')) + ' ' + signTopic;
+    if (signTopic !== NUM_TOPIC) list = list.slice().sort(byName);
     if (list.length > 40) {
       $('#signCho').hidden = false; $('#signCho').innerHTML = choChipsHtml(list);
       $$('[data-cho]', $('#signCho')).forEach(b => b.addEventListener('click', () => { signCho = b.dataset.cho === '전체' ? '' : b.dataset.cho; hap(8); renderSign(); }));
@@ -356,6 +366,7 @@ $('#jungCompoundGuide').innerHTML = BRAILLE_JUNG_COMPOUND_ORDER.map(ch => {
   if (Array.isArray(raw)) return `<div class="guide-card"><div class="ch">${ch}</div><div style="display:flex;gap:6px;justify-content:center">${raw.map(r => miniDots(r.split('-').map(Number))).join('')}</div><div class="dn">${raw.join(' · ')}번</div></div>`;
   return `<div class="guide-card"><div class="ch">${ch}</div>${miniDots(raw.split('-').map(Number))}<div class="dn">${raw}번</div></div>`;
 }).join('');
+$('#numGuide').innerHTML = `<div class="guide-card"><div class="ch">수표</div>${miniDots(BRAILLE_NUMBER_SIGN.split('-').map(Number))}<div class="dn">${BRAILLE_NUMBER_SIGN}번</div></div>` + Object.keys(BRAILLE_NUMBERS).sort().map(ch => { const d = BRAILLE_NUMBERS[ch]; return `<div class="guide-card"><div class="ch">${ch}</div>${miniDots(d.split('-').map(Number))}<div class="dn">${d}번</div></div>`; }).join('');
 $('#brailleVideoGrid').innerHTML = VIDEO_LIST.filter(v => v.track === '점자').map(v => vcard(v)).join('');
 bindVideoCards($('#brailleVideoGrid'));
 

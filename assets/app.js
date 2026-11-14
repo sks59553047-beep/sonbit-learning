@@ -326,12 +326,27 @@ renderPadCell(); renderPadResult();
 
 function dotIconHtml(on) { return `<i class="${on ? 'on' : ''}"></i>`; }
 function miniDots(dots) { return `<div class="mini">${[1, 2, 3, 4, 5, 6].map(n => dotIconHtml(dots.includes(n))).join('')}</div>`; }
-$('#bpInput').addEventListener('input', e => {
-  const text = e.target.value.slice(0, 60);
-  const cells = textToBrailleCells(text);
-  $('#bpSummary').textContent = text ? `${cells.length}칸으로 바뀌었어요` : '글자를 입력하면 여기에 몇 칸인지 나와요';
-  $('#bpCells').innerHTML = cells.map(c => `<div class="ccell ${c.verified === false ? 'unverified' : ''}">${miniDots(c.dots)}<label>${esc(c.char)}</label></div>`).join('');
-});
+// 점 번호 목록 → 유니코드 점자 문자(U+2800 + 점 비트)
+function dotsToUnicode(dots) { let v = 0; dots.forEach(n => { v |= 1 << (n - 1); }); return String.fromCharCode(0x2800 + v); }
+function renderBraillePanel() {
+  const text = $('#bpInput').value.slice(0, 200);
+  const contract = $('#bpContract').checked;
+  const r = KB.convert(text, { contract });
+  const cells = r.cells.filter(c => c.kind !== '줄바꿈');
+  $('#bpSummary').textContent = text ? `${cells.length}칸으로 바뀌었어요${r.unsupported.length ? ` · 바꾸지 못한 글자 ${r.unsupported.length}개` : ''}` : '글자를 입력하면 여기에 몇 칸인지 나와요';
+  const warn = r.warnings.slice(); if (r.unsupported.length) warn.unshift(`바꿔 주지 않는 글자가 있어요: ${[...new Set(r.unsupported)].join(' ')} (로마자·그리스 문자·수식 기호·옛 글자 등은 규정이 따로 있어 지원하지 않아요. 점선 칸으로 표시했어요.)`);
+  $('#bpWarn').hidden = !warn.length; $('#bpWarn').textContent = warn.join(' ');
+  $('#bpCells').innerHTML = cells.map(c => {
+    const label = c.kind === '띄어쓰기' ? '␣' : (c.text || '');
+    const tip = c.kind + (c.rule ? ' · ' + c.rule : '');
+    return `<div class="ccell ${c.unsupported ? 'unverified' : ''}" title="${esc(tip)}">${miniDots(c.dots)}<label>${esc(label)}</label><small>${esc(c.kind === '띄어쓰기' || c.unsupported ? c.kind : c.kind.replace(/\(.*\)/, ''))}</small></div>`;
+  }).join('');
+  const uni = cells.map(c => (c.kind === '띄어쓰기' ? ' ' : (c.unsupported ? '?' : dotsToUnicode(c.dots)))).join('');
+  $('#bpOutWrap').hidden = !text; $('#bpOut').textContent = uni;
+}
+$('#bpInput').addEventListener('input', renderBraillePanel);
+$('#bpContract').addEventListener('change', renderBraillePanel);
+$('#bpCopy').addEventListener('click', () => { const t = $('#bpOut').textContent; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => { $('#bpCopy').textContent = '복사했어요'; setTimeout(() => { $('#bpCopy').textContent = '복사'; }, 1500); }).catch(() => { const r = document.createRange(); r.selectNodeContents($('#bpOut')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); $('#bpCopy').textContent = '선택됐어요 — 직접 복사하세요'; }); });
 const CHO_DOUBLES = ['ㄲ', 'ㄸ', 'ㅃ', 'ㅆ', 'ㅉ'];
 $('#choGuide').innerHTML = BRAILLE_CHO_ORDER.filter(ch => !CHO_DOUBLES.includes(ch)).map(ch => { const d = BRAILLE_CHO[ch]; return `<div class="guide-card"><div class="ch">${ch}</div>${miniDots(d.split('-').map(Number))}<div class="dn">${d}번</div></div>`; }).join('');
 $('#choDoubleGuide').innerHTML = CHO_DOUBLES.map(ch => { const [a, b] = BRAILLE_CHO[ch]; return `<div class="guide-card"><div class="ch">${ch}</div><div style="display:flex;gap:6px;justify-content:center">${miniDots(a.split('-').map(Number))}${miniDots(b.split('-').map(Number))}</div><div class="dn">${a} · ${b}번</div></div>`; }).join('');
@@ -352,15 +367,24 @@ const QUIZ_POOL_SIGN_TEXT = ALL_WORDS.filter(w => { const t = descOf(w); return 
 const QUIZ_POOL_SIGN_VIDEO = ALL_WORDS.filter(w => w.k && w.w.length <= 8 && !/[~\-]/.test(w.w))
   .map(w => ({ answer: w.w, clueType: 'video', clue: (typeof MEDIA_VIDEO !== 'undefined' && MEDIA_VIDEO.has(w.id)) ? `assets/media/${w.id}.mp4` : w.k, group: w.t }));
 const QUIZ_POOL_SIGN = QUIZ_POOL_SIGN_TEXT.concat(QUIZ_POOL_SIGN_VIDEO);
-// 점자 문제 풀: 검증된 자모·숫자·문장부호 전부(2칸짜리 된소리·복합모음 포함)
+// 점자 문제 풀: 규정(2024)으로 확인한 자모·숫자·약자·약어·문장부호. 점 모양이 같은 것(예: ㄴ 첫소리와 나 약자)은 정답이 둘이 되므로 먼저 나온 하나만 쓴다.
 function cellsOf(v) { return (Array.isArray(v) ? v : [v]).map(x => x.split('-').map(Number)); }
-const QUIZ_POOL_BRAILLE = [
-  ...Object.entries(BRAILLE_CHO).map(([ch, d]) => ({ answer: ch, clueType: 'dots', clue: cellsOf(d), group: '초성' })),
-  ...Object.entries(BRAILLE_JONG).map(([ch, d]) => ({ answer: ch + '(받침)', clueType: 'dots', clue: cellsOf(d), group: '종성' })),
-  ...Object.entries(BRAILLE_JUNG).map(([ch, d]) => ({ answer: ch, clueType: 'dots', clue: cellsOf(d), group: '중성' })),
-  ...Object.entries(BRAILLE_NUMBERS).map(([ch, d]) => ({ answer: ch, clueType: 'dots', clue: cellsOf(d), group: '숫자' })),
-  ...Object.entries(BRAILLE_PUNCTUATION).map(([ch, d]) => ({ answer: ch, clueType: 'dots', clue: cellsOf(d), group: '문장부호' }))
-];
+const QUIZ_POOL_BRAILLE = (() => {
+  const T = KB.tables, seen = new Set(), out = [];
+  const add = (answer, cells, group) => { const k = cells.map(c => c.join('')).join('|'); if (seen.has(k)) return; seen.add(k); out.push({ answer, clueType: 'dots', clue: cells, group }); };
+  for (const [ch, d] of Object.entries(BRAILLE_CHO)) add(ch, cellsOf(d), '초성');
+  for (const [ch, d] of Object.entries(BRAILLE_JONG)) add(ch + '(받침)', cellsOf(d), '종성');
+  for (const [ch, d] of Object.entries(BRAILLE_JUNG)) add(ch, cellsOf(d), '중성');
+  for (const [ch, d] of Object.entries(BRAILLE_NUMBERS)) add(ch, [BRAILLE_NUMBER_SIGN.split('-').map(Number), ...cellsOf(d)], '숫자');
+  const SYL1 = { 'ㄱ': '가', 'ㄴ': '나', 'ㄷ': '다', 'ㅁ': '마', 'ㅂ': '바', 'ㅅ': '사', 'ㅈ': '자', 'ㅋ': '카', 'ㅌ': '타', 'ㅍ': '파', 'ㅎ': '하' };
+  for (const [k, brf] of Object.entries(T.ABBR1)) add(SYL1[k] + '(약자)', KB.brfCells(brf), '약자');
+  const SYL2 = { 'ㅓㄱ': '억', 'ㅓㄴ': '언', 'ㅓㄹ': '얼', 'ㅕㄴ': '연', 'ㅕㄹ': '열', 'ㅕㅇ': '영', 'ㅗㄱ': '옥', 'ㅗㄴ': '온', 'ㅗㅇ': '옹', 'ㅜㄴ': '운', 'ㅜㄹ': '울', 'ㅡㄴ': '은', 'ㅡㄹ': '을', 'ㅣㄴ': '인' };
+  for (const [k, brf] of Object.entries(T.ABBR2)) add(SYL2[k] + '(약자)', KB.brfCells(brf), '약자');
+  add('것(약자)', KB.brfCells('_s'), '약자');
+  for (const [w, brf] of Object.entries(T.ABBR_WORDS)) add(w + '(약어)', KB.brfCells(brf), '약어');
+  for (const ch of ['.', '?', '!', ',', '·', ':', '/', '…', '“', '”', '‘', '’', '(', ')', '[', ']', '「', '」', '―']) add(ch + (ch === ',' ? ' 쉼표' : ''), KB.brfCells(T.PUNCT[ch]), '문장부호');
+  return out;
+})();
 function clueCellsHtml(cells) { return '<div style="display:flex;gap:10px;justify-content:center">' + cells.map(miniDots).join('') + '</div>'; }
 let quizState = { active: false };
 function renderQuizIntro() {

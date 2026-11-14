@@ -254,6 +254,12 @@ $('#signTopicBack').innerHTML = icon('back', 20);
 $('#signTopicBack').addEventListener('click', () => { signTopic = ''; renderSign(); window.scrollTo(0, 0); });
 $('#signSearch').addEventListener('input', e => { signQuery = e.target.value.trim(); renderSign(); });
 $('#signList').addEventListener('toggle', e => { if (e.target.open) fillWordBody(e.target); }, true);
+$('#signList').addEventListener('error', e => {
+  const el = e.target;
+  if (el.tagName === 'VIDEO') {
+    const box = el.closest('.signmedia'); if (box && !box.dataset.failed) { box.dataset.failed = '1'; box.innerHTML = '<p class="note amber" style="flex:1 1 100%">영상을 불러오지 못했어요. 잠시 뒤에 다시 열어 주세요.</p>'; }
+  } else if (el.tagName === 'IMG' && el.closest('.shapeimg')) { el.closest('.shapeimg').remove(); }
+}, true);
 
 // ---------------- 점자 패드 ----------------
 let padDots = new Set();

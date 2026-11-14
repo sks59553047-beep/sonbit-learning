@@ -425,7 +425,7 @@ function parseVtt(text) {
 function setPlayerSrc(id) {
   const old = $('#playerVideo');
   const f = document.createElement('video');
-  f.id = 'playerVideo'; f.controls = true; f.playsInline = true; f.preload = 'metadata';
+  f.id = 'playerVideo'; f.controls = true; f.playsInline = true; f.preload = 'auto';
   if (id) {
     f.poster = `videos/${id}.jpg`;
     f.src = `videos/${id}.mp4`;

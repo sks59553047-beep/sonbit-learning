@@ -142,6 +142,7 @@ function bindVideoCards(root) {
 function renderHome() {
   $('#statWords').textContent = KSL_WORDS.length;
   $('#statVideos').textContent = VIDEO_LIST.length;
+  $('#statBraille').textContent = Object.keys(BRAILLE_CHO).length + Object.keys(BRAILLE_JONG).length + Object.keys(BRAILLE_JUNG).length;
   const starters = VIDEO_LIST.filter(v => v.order === 1);
   $('#homeVideoGrid').innerHTML = starters.map(v => vcard(v)).join('');
   bindVideoCards($('#homeVideoGrid'));
@@ -290,7 +291,7 @@ bindVideoCards($('#brailleVideoGrid'));
 
 // ---------------- 도전 퀴즈(수어·점자 따로) ----------------
 // 수어 문제 풀: 설명이 있는 단어 전부
-const QUIZ_POOL_SIGN = KSL_WORDS.filter(w => w.d && w.d.length < 130)
+const QUIZ_POOL_SIGN = KSL_WORDS.filter(w => w.d && w.d.length < 130 && !cleanDesc(w.d).includes(w.w))
   .map(w => ({ answer: w.w, clueType: 'text', clue: cleanDesc(w.d), group: w.t }));
 // 점자 문제 풀: 검증된 자모·숫자·문장부호 전부(2칸짜리 된소리·복합모음 포함)
 function cellsOf(v) { return (Array.isArray(v) ? v : [v]).map(x => x.split('-').map(Number)); }

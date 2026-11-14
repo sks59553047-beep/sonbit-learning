@@ -68,36 +68,22 @@ $('#playerBack').addEventListener('click', () => { history.back(); });
 
 // ---------------- 단어 하나의 "실제 영상" 블록(수어 사전·학습 페이지 공용) ----------------
 function kslUrl(k) { return /^https?:/.test(k) ? k : 'https://ksldict.korean.go.kr' + k; }
-function kslVideoBtnHtml(uid) {
-  return `<button class="linkbtn primary" data-kvideo="${uid}" aria-expanded="false">${icon('video', 14)} 실제 수어 영상 보기</button>`;
-}
-function kslVideoBoxHtml(uid, k, label) {
+function kslVideoBoxHtml(k, label, id) {
   const isNuri = !/^https?:/.test(k);
-  const poster = isNuri ? ` poster="${esc(kslUrl(k.replace(/\.mp4$/, '.jpg')))}"` : '';
+  const poster = isNuri ? kslUrl(k.replace(/\.mp4$/, '.jpg')) : `assets/posters/${id}.jpg`;
   const src = isNuri ? '국립국어원 한국수어누리사전' : '국립국어원 한국수어사전';
-  return `<div class="realvideo" id="kv-${uid}" hidden>
-      <video class="kslvideo" controls loop muted playsinline preload="none"${poster} data-src="${esc(kslUrl(k))}" aria-label="${esc(label)} 수어 영상"></video>
+  return `<div class="realvideo">
+      <video class="kslvideo" controls loop muted playsinline preload="none" poster="${esc(poster)}" src="${esc(kslUrl(k))}" aria-label="${esc(label)} 수어 영상"></video>
       <p class="note">${src} 제공 영상 (저작자표시-비영리-변경금지)</p>
     </div>`;
 }
-function signVisualHtml(label) {
-  const kw = KSL_WORDS.find(x => x.w === label);
-  const k = kw && kw.k;
-  if (!k) return '';
-  const uid = 'v' + Math.random().toString(36).slice(2, 9);
-  return `<div class="actions">${kslVideoBtnHtml(uid)}</div>` + kslVideoBoxHtml(uid, k, label);
+function aliasHtml(w) {
+  return w.al ? `<p class="alias">같은 수어: ${esc(w.al)}</p>` : '';
 }
-function bindSignVisuals(root) {
-  $$('[data-kvideo]', root).forEach(b => b.addEventListener('click', () => {
-    const box = $('#kv-' + b.dataset.kvideo);
-    const open = box.hidden; box.hidden = !open;
-    const v = box.querySelector('video');
-    if (open) { if (!v.getAttribute('src')) v.src = v.dataset.src; v.play().catch(() => {}); } else { v.pause(); }
-    b.setAttribute('aria-expanded', String(open));
-    b.innerHTML = (open ? icon('video', 14) + ' 실제 영상 닫기' : icon('video', 14) + ' 실제 수어 영상 보기');
-    hap(8);
-  }));
+function signVisualHtml(w) {
+  return w.k ? kslVideoBoxHtml(w.k, w.w, w.id) : '';
 }
+function bindSignVisuals() { }
 
 // ---------------- 영상 카드 공통 ----------------
 function watchedBadgeHtml(watched) {
@@ -188,6 +174,8 @@ function matchWord(w, q) {
   if (w.w.toLowerCase().includes(q)) return true;
   if (/^[ㄱ-ㅎ]+$/.test(q)) return choOf(w.w).includes(q);
   if (w.x) return (w.g || '').toLowerCase().includes(q);
+  if ((w.al || '').toLowerCase().includes(q)) return true;
+  if (/^[ㄱ-ㅎ]+$/.test(q) && w.al) return choOf(w.al).includes(q);
   return (w.d || '').toLowerCase().includes(q);
 }
 function cleanDesc(d) { return String(d || '').replace(/\s*[—-]\s*(국립국어원|한국수어누리사전).*$/, ''); }
@@ -203,21 +191,20 @@ function topicCardHtml(t) {
 function wordRowHtml(w, showTopic) {
   const play = hasRealVideo(w) ? '<span class="vbadge" title="실제 수어 영상 있음">▶</span>' : '<span class="vbadge none">▶</span>';
   const topic = showTopic ? `<span class="wtopic">${esc(w.t)}</span>` : '';
-  const sub = w.x ? `<span class="wsub">${esc((w.g || '').split(' / ')[0].slice(0, 24))}</span>` : '';
+  const sub = w.x ? `<span class="wsub">${esc((w.g || '').split(' / ')[0].slice(0, 24))}</span>` : (w.al ? `<span class="wsub">${esc(w.al.replace(/, /g, ' · '))}</span>` : '');
   return `<details class="wordrow" data-wid="${esc(w.id)}"><summary><span class="wname">${esc(w.w)}</span>${sub}${topic}${play}</summary><div class="wbody"></div></details>`;
 }
 function extraBodyHtml(w) {
   const senses = (w.g || '').split(' / ').filter(Boolean).map(s => `<li>${esc(s)}</li>`).join('');
   const exs = (w.e || '').split(/(?<=[.?!]),\s*/).filter(Boolean).slice(0, 3).map(s => `<li>${esc(s)}</li>`).join('');
-  const uid = 'x' + Math.random().toString(36).slice(2, 9);
   const exBlock = exs ? `<p class="lbl">예문</p><ul class="exlist">${exs}</ul>` : '';
-  return `<p class="lbl">뜻</p><ul class="exlist">${senses}</ul>${exBlock}<div class="actions">${kslVideoBtnHtml(uid)}</div>${kslVideoBoxHtml(uid, w.k, w.w)}`;
+  return `<p class="lbl">뜻</p><ul class="exlist">${senses}</ul>${exBlock}${kslVideoBoxHtml(w.k, w.w, w.id)}`;
 }
 function fillWordBody(det) {
   const body = det.querySelector('.wbody');
   if (body.dataset.ready) return;
   const w = ALL_WORDS.find(x => String(x.id) === det.dataset.wid); if (!w) return;
-  body.innerHTML = w.x ? extraBodyHtml(w) : descHtml(w.d) + signVisualHtml(w.w);
+  body.innerHTML = w.x ? extraBodyHtml(w) : descHtml(w.d) + aliasHtml(w) + signVisualHtml(w);
   body.dataset.ready = '1';
   bindSignVisuals(body);
 }

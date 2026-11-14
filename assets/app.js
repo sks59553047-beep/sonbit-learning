@@ -126,18 +126,26 @@ function renderHome() {
 }
 let roadTrack = 'sign';
 function roadmapFor(track) {
+  const has = id => VIDEO_LIST.some(v => v.id === id);
+  let steps;
   if (track === 'sign') {
-    return [
-      { label: '1단계', title: '수어 단어 찾아보기', sub: '수어 ' + ALL_WORDS.length + '개 검색, 국립국어원 실제 영상으로 바로 확인', nav: 'sign' },
-      { label: '2단계', title: '도전 퀴즈로 복습', sub: '10문제로 실력 확인', nav: 'quiz' }
+    steps = [
+      { title: '수어의 시작', sub: '수어가 무엇인지 알아보는 입문 영상', video: 'v8-ksl-intro' },
+      { title: '수어 단어 찾아보기', sub: '수어 ' + ALL_WORDS.length + '개 검색, 국립국어원 실제 영상으로 바로 확인', nav: 'sign' },
+      { title: '도전 퀴즈로 복습', sub: '틀린 문제는 영상과 설명으로 다시 확인', nav: 'quiz' }
+    ];
+  } else {
+    steps = [
+      { title: '점자의 시작', sub: '6개의 점으로 읽는 세상', video: 'v1-braille-basics' },
+      { title: '한글 점자 ①', sub: '초성 자음 14개', video: 'v2-braille-initials' },
+      { title: '한글 점자 ②', sub: '모음·받침·낱말 쓰기', video: 'v3-braille-words' },
+      { title: '한글 점자 ③', sub: '받침 마저 배우기', video: 'v6-braille-batchim2' },
+      { title: '한글 점자 ④', sub: '숫자·문장부호 쓰기', video: 'v7-braille-numbers' },
+      { title: '점자 패드 실습', sub: '내 이름을 점자로 바꿔 보기', nav: 'braille' },
+      { title: '점자 퀴즈로 복습', sub: '점 모양을 보고 글자 맞히기', nav: 'quiz' }
     ];
   }
-  return [
-    { label: '1단계', title: '점자의 시작', sub: '6개의 점으로 읽는 세상', video: 'v1-braille-basics' },
-    { label: '2단계', title: '한글 점자 ①', sub: '초성 자음 14개', video: 'v2-braille-initials' },
-    { label: '3단계', title: '한글 점자 ②', sub: '모음·받침·낱말 쓰기', video: 'v3-braille-words' },
-    { label: '4단계', title: '점자 패드 실습', sub: '내 이름을 점자로 바꿔 보기', nav: 'braille' }
-  ];
+  return steps.filter(s => !s.video || has(s.video)).map((s, i) => Object.assign({ label: (i + 1) + '단계' }, s));
 }
 function renderRoadmap(track) {
   const steps = roadmapFor(track);
@@ -145,12 +153,13 @@ function renderRoadmap(track) {
   $('#roadList').innerHTML = steps.map(s => {
     const done = s.video ? store.get('watched:' + s.video, false) : false;
     const now = !done && !nowSet ? (nowSet = true, true) : false;
+    const aria = `${s.label} ${s.title}. ${s.sub}.${done ? ' 시청 완료.' : ''}${now ? ' 지금 할 단계.' : ''}`;
     return `<div class="rstep ${done ? 'done' : now ? 'now' : ''}">
-      <div class="dot">${done ? icon('check', 14) : ''}</div>
-      <div class="rbox" data-road="${s.video ? 'v:' + s.video : 'n:' + s.nav}">
-        <div class="tt">${esc(s.label)} · ${esc(s.title)}<div class="sub">${esc(s.sub)}</div></div>
-        <span style="color:var(--muted)">${icon('back', 16).replace('m15 5 8 12-7 7', '')}›</span>
-      </div>
+      <div class="dot" aria-hidden="true">${done ? icon('check', 14) : ''}</div>
+      <button type="button" class="rbox" data-road="${s.video ? 'v:' + s.video : 'n:' + s.nav}" aria-label="${esc(aria)}">
+        <span class="tt">${esc(s.label)} · ${esc(s.title)}<span class="sub">${esc(s.sub)}</span></span>
+        <span class="rarrow" aria-hidden="true">›</span>
+      </button>
     </div>`;
   }).join('');
   $$('[data-road]', $('#roadList')).forEach(el => el.addEventListener('click', () => {
@@ -167,7 +176,7 @@ const ALL_WORDS = KSL_WORDS.concat(KSL_EXTRA.map(x => ({ id: 'N' + x.i, w: x.w, 
 const TOPIC_ORDER = ['몸·건강·긴급', '인사·예절', '대답·질문', '사람·가족', '감정', '마음·생각', '성격·태도', '음식', '돈·쇼핑', '장소·이동', '시간·날짜', '날씨·색·크기', '하루 생활', '물건·소지품', '열기·시작·찾기', '말·소통', '학교·일·직업', '사회·제도', '법·사건', '자연·동식물', '나라·지명', '숫자·돈 단위', '일반 단어'];
 const TOPIC_ICON = { '몸·건강·긴급': '🚑', '인사·예절': '👋', '대답·질문': '💬', '사람·가족': '👨‍👩‍👧', '감정': '😊', '마음·생각': '💭', '성격·태도': '🙂', '음식': '🍚', '돈·쇼핑': '🛍️', '장소·이동': '🏫', '시간·날짜': '⏰', '날씨·색·크기': '🌤️', '하루 생활': '🏠', '물건·소지품': '🎒', '열기·시작·찾기': '🔑', '말·소통': '🗣️', '학교·일·직업': '🎓', '사회·제도': '🏛️', '법·사건': '⚖️', '자연·동식물': '🌳', '나라·지명': '🗺️', '숫자·돈 단위': '🔢', '일반 단어': '📖' };
 const TOPICS = TOPIC_ORDER.filter(t => ALL_WORDS.some(w => w.t === t)).concat([...new Set(ALL_WORDS.map(w => w.t))].filter(t => !TOPIC_ORDER.includes(t)));
-let signTopic = '', signQuery = '', signCho = '';
+let signTopic = '', signQuery = '', signCho = '', signPinId = '';
 const CHO_LIST = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
 const CHO_MAIN = ['ㄱ', 'ㄴ', 'ㄷ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅅ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
 const CHO_FOLD = { 'ㄲ': 'ㄱ', 'ㄸ': 'ㄷ', 'ㅃ': 'ㅂ', 'ㅆ': 'ㅅ', 'ㅉ': 'ㅈ' };
@@ -282,6 +291,7 @@ function renderSign() {
   $('#signTopicHead').hidden = !inTopic;
   $('#signCho').hidden = true;
   let list = searching ? ALL_WORDS.filter(w => matchWord(w, q)) : (inTopic ? (signTopic === NUM_TOPIC ? basicNumberWords() : ALL_WORDS.filter(w => w.t === signTopic)) : []);
+  if (searching && signPinId) { const k = list.findIndex(x => x.id === signPinId); if (k > 0) list.unshift(list.splice(k, 1)[0]); }
   if (!searching && !inTopic) {
     $('#signTopics').innerHTML = [NUM_TOPIC].concat(TOPICS).map(topicCardHtml).join('');
     $$('[data-topic]', $('#signTopics')).forEach(b => b.addEventListener('click', () => { signTopic = b.dataset.topic; signCho = ''; hap(8); renderSign(); window.scrollTo(0, 0); }));
@@ -306,7 +316,15 @@ function renderSign() {
 }
 $('#signTopicBack').innerHTML = icon('back', 20);
 $('#signTopicBack').addEventListener('click', () => { signTopic = ''; renderSign(); window.scrollTo(0, 0); });
-$('#signSearch').addEventListener('input', e => { signQuery = e.target.value.trim(); renderSign(); });
+$('#signSearch').addEventListener('input', e => { signQuery = e.target.value.trim(); signPinId = ''; renderSign(); });
+// 퀴즈 해설 등에서 사전의 특정 단어를 바로 열어 준다
+function openWordInDictionary(w) {
+  signTopic = ''; signCho = ''; signQuery = w.w; signPinId = w.id;
+  $('#signSearch').value = w.w;
+  go('sign'); renderSign();
+  const row = $('#signList .wordrow[data-wid="' + w.id + '"]');
+  if (row) { row.open = true; setTimeout(() => row.scrollIntoView({ block: 'center' }), 80); }
+}
 $('#signList').addEventListener('toggle', e => { if (e.target.open) fillWordBody(e.target); }, true);
 $('#signList').addEventListener('error', e => {
   const el = e.target;
@@ -335,7 +353,12 @@ $('#padReset').addEventListener('click', () => { padDots.clear(); hap(10); rende
 renderPadCell(); renderPadResult();
 
 function dotIconHtml(on) { return `<i class="${on ? 'on' : ''}"></i>`; }
-function miniDots(dots) { return `<div class="mini">${[1, 2, 3, 4, 5, 6].map(n => dotIconHtml(dots.includes(n))).join('')}</div>`; }
+function dotsLabel(dots) { return dots && dots.length ? dots.slice().sort((a, b) => a - b).join('·') + '번 점' : '점이 없는 빈칸'; }
+// 점자 한 칸 그림. 화면낭독기에는 점 번호를 읽어 주고, 옆에 글이 이미 있는 곳(가이드 카드 등)은 decorative=true 로 숨긴다
+function miniDots(dots, decorative) {
+  const a = decorative ? 'aria-hidden="true"' : `role="img" aria-label="${dotsLabel(dots)}"`;
+  return `<div class="mini" ${a}>${[1, 2, 3, 4, 5, 6].map(n => dotIconHtml(dots.includes(n))).join('')}</div>`;
+}
 // 점 번호 목록 → 유니코드 점자 문자(U+2800 + 점 비트)
 function dotsToUnicode(dots) { let v = 0; dots.forEach(n => { v |= 1 << (n - 1); }); return String.fromCharCode(0x2800 + v); }
 function renderBraillePanel() {
@@ -358,25 +381,25 @@ $('#bpInput').addEventListener('input', renderBraillePanel);
 $('#bpContract').addEventListener('change', renderBraillePanel);
 $('#bpCopy').addEventListener('click', () => { const t = $('#bpOut').textContent; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => { $('#bpCopy').textContent = '복사했어요'; setTimeout(() => { $('#bpCopy').textContent = '복사'; }, 1500); }).catch(() => { const r = document.createRange(); r.selectNodeContents($('#bpOut')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); $('#bpCopy').textContent = '선택됐어요 — 직접 복사하세요'; }); });
 const CHO_DOUBLES = ['ㄲ', 'ㄸ', 'ㅃ', 'ㅆ', 'ㅉ'];
-$('#choGuide').innerHTML = BRAILLE_CHO_ORDER.filter(ch => !CHO_DOUBLES.includes(ch)).map(ch => { const d = BRAILLE_CHO[ch]; return `<div class="guide-card"><div class="ch">${ch}</div>${miniDots(d.split('-').map(Number))}<div class="dn">${d}번</div></div>`; }).join('');
-$('#choDoubleGuide').innerHTML = CHO_DOUBLES.map(ch => { const [a, b] = BRAILLE_CHO[ch]; return `<div class="guide-card"><div class="ch">${ch}</div><div style="display:flex;gap:6px;justify-content:center">${miniDots(a.split('-').map(Number))}${miniDots(b.split('-').map(Number))}</div><div class="dn">${a} · ${b}번</div></div>`; }).join('');
-$('#jungGuide').innerHTML = BRAILLE_JUNG_ORDER.map(ch => { const d = BRAILLE_JUNG[ch]; return `<div class="guide-card"><div class="ch">${ch}</div>${miniDots(d.split('-').map(Number))}<div class="dn">${d}번</div></div>`; }).join('');
+$('#choGuide').innerHTML = BRAILLE_CHO_ORDER.filter(ch => !CHO_DOUBLES.includes(ch)).map(ch => { const d = BRAILLE_CHO[ch]; return `<div class="guide-card"><div class="ch">${ch}</div>${miniDots(d.split('-').map(Number), true)}<div class="dn">${d}번</div></div>`; }).join('');
+$('#choDoubleGuide').innerHTML = CHO_DOUBLES.map(ch => { const [a, b] = BRAILLE_CHO[ch]; return `<div class="guide-card"><div class="ch">${ch}</div><div style="display:flex;gap:6px;justify-content:center">${miniDots(a.split('-').map(Number), true)}${miniDots(b.split('-').map(Number), true)}</div><div class="dn">${a} · ${b}번</div></div>`; }).join('');
+$('#jungGuide').innerHTML = BRAILLE_JUNG_ORDER.map(ch => { const d = BRAILLE_JUNG[ch]; return `<div class="guide-card"><div class="ch">${ch}</div>${miniDots(d.split('-').map(Number), true)}<div class="dn">${d}번</div></div>`; }).join('');
 $('#jungCompoundGuide').innerHTML = BRAILLE_JUNG_COMPOUND_ORDER.map(ch => {
   const raw = BRAILLE_JUNG[ch];
-  if (Array.isArray(raw)) return `<div class="guide-card"><div class="ch">${ch}</div><div style="display:flex;gap:6px;justify-content:center">${raw.map(r => miniDots(r.split('-').map(Number))).join('')}</div><div class="dn">${raw.join(' · ')}번</div></div>`;
-  return `<div class="guide-card"><div class="ch">${ch}</div>${miniDots(raw.split('-').map(Number))}<div class="dn">${raw}번</div></div>`;
+  if (Array.isArray(raw)) return `<div class="guide-card"><div class="ch">${ch}</div><div style="display:flex;gap:6px;justify-content:center">${raw.map(r => miniDots(r.split('-').map(Number), true)).join('')}</div><div class="dn">${raw.join(' · ')}번</div></div>`;
+  return `<div class="guide-card"><div class="ch">${ch}</div>${miniDots(raw.split('-').map(Number), true)}<div class="dn">${raw}번</div></div>`;
 }).join('');
-$('#numGuide').innerHTML = `<div class="guide-card"><div class="ch">수표</div>${miniDots(BRAILLE_NUMBER_SIGN.split('-').map(Number))}<div class="dn">${BRAILLE_NUMBER_SIGN}번</div></div>` + Object.keys(BRAILLE_NUMBERS).sort().map(ch => { const d = BRAILLE_NUMBERS[ch]; return `<div class="guide-card"><div class="ch">${ch}</div>${miniDots(d.split('-').map(Number))}<div class="dn">${d}번</div></div>`; }).join('');
+$('#numGuide').innerHTML = `<div class="guide-card"><div class="ch">수표</div>${miniDots(BRAILLE_NUMBER_SIGN.split('-').map(Number), true)}<div class="dn">${BRAILLE_NUMBER_SIGN}번</div></div>` + Object.keys(BRAILLE_NUMBERS).sort().map(ch => { const d = BRAILLE_NUMBERS[ch]; return `<div class="guide-card"><div class="ch">${ch}</div>${miniDots(d.split('-').map(Number), true)}<div class="dn">${d}번</div></div>`; }).join('');
 $('#brailleVideoGrid').innerHTML = VIDEO_LIST.filter(v => v.track === '점자').map(v => vcard(v)).join('');
 bindVideoCards($('#brailleVideoGrid'));
 
 // ---------------- 도전 퀴즈(수어·점자 따로) ----------------
 // 수어 문제 풀: 설명이 있는 단어 전부
 const QUIZ_POOL_SIGN_TEXT = ALL_WORDS.filter(w => { const t = descOf(w); return t && t.length < 130 && !t.includes(w.w); })
-  .map(w => ({ answer: w.w, clueType: 'text', clue: descOf(w), group: w.t }));
+  .map(w => ({ id: w.id, answer: w.w, clueType: 'text', clue: descOf(w), group: w.t }));
 // 영상 문제 풀: 영상이 있는 단어 전부(영상을 보고 뜻을 맞히기)
 const QUIZ_POOL_SIGN_VIDEO = ALL_WORDS.filter(w => w.k && w.w.length <= 8 && !/[~\-]/.test(w.w))
-  .map(w => ({ answer: w.w, clueType: 'video', clue: (typeof MEDIA_VIDEO !== 'undefined' && MEDIA_VIDEO.has(w.id)) ? `assets/media/${w.id}.mp4` : w.k, group: w.t }));
+  .map(w => ({ id: w.id, answer: w.w, clueType: 'video', clue: (typeof MEDIA_VIDEO !== 'undefined' && MEDIA_VIDEO.has(w.id)) ? `assets/media/${w.id}.mp4` : w.k, group: w.t }));
 const QUIZ_POOL_SIGN = QUIZ_POOL_SIGN_TEXT.concat(QUIZ_POOL_SIGN_VIDEO);
 // 점자 문제 풀: 규정(2024)으로 확인한 자모·숫자·약자·약어·문장부호. 점 모양이 같은 것(예: ㄴ 첫소리와 나 약자)은 정답이 둘이 되므로 먼저 나온 하나만 쓴다.
 function cellsOf(v) { return (Array.isArray(v) ? v : [v]).map(x => x.split('-').map(Number)); }
@@ -396,30 +419,52 @@ const QUIZ_POOL_BRAILLE = (() => {
   for (const ch of ['.', '?', '!', ',', '·', ':', '/', '…', '“', '”', '‘', '’', '(', ')', '[', ']', '「', '」', '―']) add(ch + (ch === ',' ? ' 쉼표' : ''), KB.brfCells(T.PUNCT[ch]), '문장부호');
   return out;
 })();
-function clueCellsHtml(cells) { return '<div style="display:flex;gap:10px;justify-content:center">' + cells.map(miniDots).join('') + '</div>'; }
+function clueCellsHtml(cells) { return '<div style="display:flex;gap:10px;justify-content:center">' + cells.map(c => miniDots(c, true)).join('') + '</div>'; }
+// ---- 점자 문제의 글 설명(화면낭독기용·오답 해설용). 정답 글자는 포함하지 않는다 ----
+const ORD = ['첫째', '둘째', '셋째', '넷째', '다섯째', '여섯째'];
+function cellsDescription(cells) {
+  if (cells.length === 1) return dotsLabel(cells[0]) + '이 있는 점자 한 칸';
+  return '점자 ' + cells.length + '칸. ' + cells.map((c, i) => (ORD[i] || (i + 1) + '번째') + ' 칸 ' + dotsLabel(c)).join(', ');
+}
+function dotsDiffText(ans, got) {
+  if (ans.length !== got.length) return `정답은 ${ans.length}칸, 고른 글자는 ${got.length}칸이에요`;
+  const parts = [];
+  ans.forEach((a, i) => {
+    const g = got[i], miss = a.filter(n => !g.includes(n)), extra = g.filter(n => !a.includes(n));
+    const bits = [];
+    if (miss.length) bits.push(`정답에만 있는 점 ${miss.join('·')}번`);
+    if (extra.length) bits.push(`고른 글자에만 있는 점 ${extra.join('·')}번`);
+    if (bits.length) parts.push((ans.length > 1 ? ORD[i] + ' 칸: ' : '') + bits.join(', '));
+  });
+  return parts.join(' / ');
+}
 let quizState = { active: false };
 function renderQuizIntro() {
   quizState = { active: false };
   $('#quizArea').innerHTML = `
     <div class="card" style="text-align:center">
       <h2 style="font-size:20px">수어 도전 퀴즈</h2>
-      <p class="note" style="margin:14px 0">동작 설명을 읽거나 수어 영상을 보고 어떤 뜻인지 맞혀 보세요. 10문제, 목숨 3개예요. (문제 ${QUIZ_POOL_SIGN.length}개 중에서 매번 다르게 나와요)</p>
+      <p class="note" style="margin:14px 0">동작 설명을 읽거나 수어 영상을 보고 어떤 뜻인지 맞혀 보세요. 10문제, 목숨 3개예요. 틀리면 정답의 영상과 설명을 보여 드려요. (문제 ${QUIZ_POOL_SIGN.length}개 중에서 매번 다르게 나와요)</p>
       <button class="btn primary block" data-quiz="sign">${icon('star', 16)} 수어 퀴즈 시작하기</button>
     </div>
     <div class="card" style="text-align:center;margin-top:14px">
       <h2 style="font-size:20px">점자 도전 퀴즈</h2>
-      <p class="note" style="margin:14px 0">점 모양을 보고 어떤 글자인지 맞혀 보세요. 10문제, 목숨 3개예요. (문제 ${QUIZ_POOL_BRAILLE.length}개 중에서 매번 다르게 나와요)</p>
+      <p class="note" style="margin:14px 0">점 모양을 보고 어떤 글자인지 맞혀 보세요. 10문제, 목숨 3개예요. 점 번호도 글로 읽어 드려요. 틀리면 내가 고른 글자와 점이 어떻게 다른지 알려 드려요. (문제 ${QUIZ_POOL_BRAILLE.length}개 중에서 매번 다르게 나와요)</p>
       <button class="btn primary block" data-quiz="braille">${icon('star', 16)} 점자 퀴즈 시작하기</button>
     </div>`;
   $$('[data-quiz]', $('#quizArea')).forEach(b => b.addEventListener('click', () => startQuiz(b.dataset.quiz)));
+}
+function startQuizWith(type, qs) {
+  // 문제 묶음을 복사해서 시작한다(선택지 _opts 가 풀에 남아 다음 퀴즈에서 같은 보기로 나오는 것을 막는다)
+  quizState = { active: true, type, i: 0, score: 0, lives: 3, qs: qs.map(q => Object.assign({}, q, { _opts: undefined })), answered: false, wrong: [] };
+  renderQuiz();
 }
 function startQuiz(type) {
   const shuffle = a => [...a].sort(() => Math.random() - .5);
   const qs = type === 'braille'
     ? shuffle(QUIZ_POOL_BRAILLE).slice(0, 10)
     : shuffle(shuffle(QUIZ_POOL_SIGN_TEXT).slice(0, 4).concat(shuffle(QUIZ_POOL_SIGN_VIDEO).slice(0, 6)));
-  quizState = { active: true, type, i: 0, score: 0, lives: 3, qs, answered: false };
-  renderQuiz();
+  startQuizWith(type, qs);
 }
 function pickChoices(correct, type) {
   const pool = type === 'braille' ? QUIZ_POOL_BRAILLE : QUIZ_POOL_SIGN;
@@ -437,8 +482,8 @@ function quizOptHtml(o, i) {
   return `<button class="qopt" data-opt="${esc(o)}"><span class="num">${i + 1}</span>${esc(o)}</button>`;
 }
 function quizClueHtml(q) {
-  if (q.clueType === 'dots') return `<div class="qclue qclue-dots">이 점자는 무슨 글자(${esc(q.group)})일까요?<div class="quizdots">${clueCellsHtml(q.clue)}</div></div>`;
-  if (q.clueType === 'video') return `<div class="qclue">이 수어 영상이 뜻하는 단어는 무엇일까요?<video class="kslvideo qvideo" src="${esc(kslUrl(q.clue))}" autoplay loop muted playsinline controls preload="auto"></video></div>`;
+  if (q.clueType === 'dots') return `<div class="qclue qclue-dots">이 점자는 무슨 글자(${esc(q.group)})일까요?<div class="quizdots" role="img" aria-label="${esc(cellsDescription(q.clue))}">${clueCellsHtml(q.clue)}</div></div>`;
+  if (q.clueType === 'video') return `<div class="qclue">이 수어 영상이 뜻하는 단어는 무엇일까요?<video class="kslvideo qvideo" id="quizClueVideo" src="${esc(kslUrl(q.clue))}" autoplay loop muted playsinline controls preload="auto" aria-label="수어 영상 문제"></video></div>`;
   return `<div class="qclue">다음 수어 동작이 의미하는 단어는 무엇일까요?<br><br>${esc(q.clue)}</div>`;
 }
 function renderQuiz() {
@@ -465,28 +510,69 @@ function feedbackMsgHtml(correct, answer) {
   if (correct) return '정답입니다! 잘하셨어요 🎉';
   return `아쉬워요. 정답은 「${esc(answer)}」예요.`;
 }
+// ---- 정답 해설 ----
+function brailleExplainHtml(q, chosen, correct) {
+  let html = `<p class="qx">정답 「${esc(q.answer)}」: ${esc(cellsDescription(q.clue))}.</p>`;
+  let cmp = `<div><span class="qcl">정답 ${esc(q.answer)}</span>${clueCellsHtml(q.clue)}</div>`;
+  if (!correct) {
+    const item = QUIZ_POOL_BRAILLE.find(x => x.answer === chosen);
+    if (item) {
+      html += `<p class="qx">고른 「${esc(chosen)}」: ${esc(cellsDescription(item.clue))}.</p>`;
+      const d = dotsDiffText(q.clue, item.clue);
+      if (d) html += `<p class="qx">차이: ${esc(d)}.</p>`;
+      cmp += `<div><span class="qcl">내가 고른 ${esc(chosen)}</span>${clueCellsHtml(item.clue)}</div>`;
+    }
+  }
+  return `<div class="qexplain">${html}<div class="qcompare" aria-hidden="true">${cmp}</div><div class="qexbtns"><button class="btn ghost" id="quizPad" type="button">점자 패드에서 눌러 보기</button></div></div>`;
+}
+function wordVideoSrc(w) { return (typeof MEDIA_VIDEO !== 'undefined' && MEDIA_VIDEO.has(w.id)) ? `assets/media/${w.id}.mp4` : kslUrl(w.k); }
+function signMeaning(w) {
+  if (w.x && w.g) { const s = w.g.split(' / ').slice(0, 2).join(' · '); return s.length > 70 ? s.slice(0, 70) + '…' : s; }
+  return w.al ? '같은 수어: ' + w.al : '';
+}
+function signExplainHtml(q) {
+  const w = ALL_WORDS.find(x => x.id === q.id); if (!w) return '';
+  let meaning = signMeaning(w); if (meaning === w.w) meaning = '';
+  const motion = descOf(w);
+  let html = `<p class="qx"><b>${esc(w.w)}</b>${meaning ? ' — ' + esc(meaning) : ''}</p>`;
+  if (q.clueType === 'text') {
+    // 설명을 보고 맞히는 문제는 정답의 영상을 보여 준다
+    html += `<video class="kslvideo qvideo" src="${esc(wordVideoSrc(w))}" autoplay loop muted playsinline controls preload="auto" aria-label="${esc(w.w)} 수어 영상"></video>`;
+  } else if (motion) {
+    html += `<p class="qx">동작 설명: ${esc(motion)}</p>${officialNoteHtml(w)}`;
+  }
+  const btns = (q.clueType === 'video' ? '<button class="btn ghost" id="quizReplay" type="button">영상 다시 재생</button>' : '') + '<button class="btn ghost" id="quizRelearn" type="button">이 표현 다시 배우기</button>';
+  return `<div class="qexplain">${html}<div class="qexbtns">${btns}</div></div>`;
+}
 function answerQuiz(btn, q) {
   if (quizState.answered) return; quizState.answered = true;
-  const correct = btn.dataset.opt === q.answer;
+  const chosen = btn.dataset.opt, correct = chosen === q.answer;
   $$('[data-opt]', $('#quizOpts')).forEach(b => { b.disabled = true; if (b.dataset.opt === q.answer) b.classList.add('correct'); else if (b === btn) b.classList.add('wrong'); });
-  if (correct) { quizState.score++; hap(16); } else { quizState.lives--; hap([30, 40, 30]); }
-  $('#quizFeedback').innerHTML = `<div class="qfeedback ${correct ? 'ok' : 'bad'}">${feedbackMsgHtml(correct, q.answer)}</div>
+  if (correct) { quizState.score++; hap(16); } else { quizState.lives--; quizState.wrong.push(q); hap([30, 40, 30]); }
+  const explain = quizState.type === 'braille' ? brailleExplainHtml(q, chosen, correct) : signExplainHtml(q);
+  $('#quizFeedback').innerHTML = `<div class="qfeedback ${correct ? 'ok' : 'bad'}">${feedbackMsgHtml(correct, q.answer)}</div>${explain}
     <button class="btn primary block" id="quizNext" style="margin-top:12px">${quizState.i + 1 >= quizState.qs.length || quizState.lives <= 0 ? '결과 보기' : '다음 문제로'} →</button>`;
   $('#quizNext').addEventListener('click', () => { quizState.i++; quizState.answered = false; renderQuiz(); });
+  const pad = $('#quizPad'); if (pad) pad.addEventListener('click', () => { padDots = new Set(q.clue[0]); renderPadCell(); renderPadResult(); go('braille'); setTimeout(() => { const el = $('#padCell'); if (el) el.scrollIntoView({ block: 'center' }); }, 60); });
+  const rl = $('#quizRelearn'); if (rl) rl.addEventListener('click', () => { const w = ALL_WORDS.find(x => x.id === q.id); if (w) openWordInDictionary(w); });
+  const rp = $('#quizReplay'); if (rp) rp.addEventListener('click', () => { const v = $('#quizClueVideo'); if (v) { v.currentTime = 0; v.play(); } });
 }
 function renderQuizResult() {
   const s = quizState; quizState.active = false;
   const pct = Math.round(s.score / s.qs.length * 100);
+  const wrongN = (s.wrong || []).length;
   $('#quizArea').innerHTML = `<div class="card qresult">
     <div class="score">${s.score} / ${s.qs.length}</div>
     <p class="note" style="margin:14px 0">${pct >= 80 ? '정말 잘했어요! 다음에도 도전해 보세요.' : pct >= 50 ? '좋아요! 조금만 더 연습하면 돼요.' : (s.type === 'braille' ? '점자 패드에서 다시 한 번 익혀 보면 어떨까요?' : '사전에서 다시 한 번 익혀 보면 어떨까요?')}</p>
+    ${wrongN ? `<button class="btn primary block" id="quizRetryWrong" type="button" style="margin-bottom:10px">틀린 문제 ${wrongN}개 다시 풀기</button>` : ''}
     <div style="display:flex;gap:10px">
       <button class="btn ghost block" id="quizToVideo">${s.type === 'braille' ? '점자 패드 보기' : '수어 사전 보기'}</button>
-      <button class="btn primary block" id="quizRetry">다시 도전</button>
+      <button class="btn ${wrongN ? 'ghost' : 'primary'} block" id="quizRetry">새로 도전</button>
     </div>
   </div>`;
   $('#quizRetry').addEventListener('click', () => startQuiz(s.type));
   $('#quizToVideo').addEventListener('click', () => go(s.type === 'braille' ? 'braille' : 'sign'));
+  const rw = $('#quizRetryWrong'); if (rw) rw.addEventListener('click', () => startQuizWith(s.type, s.wrong));
 }
 
 // ---------------- 영상 플레이어 ----------------

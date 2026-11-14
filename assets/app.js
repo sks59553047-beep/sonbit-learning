@@ -187,9 +187,36 @@ function matchWord(w, q) {
   return (w.d || '').toLowerCase().includes(q);
 }
 function cleanDesc(d) { return String(d || '').replace(/\s*[—-]\s*(국립국어원|한국수어누리사전).*$/, ''); }
-function descHtml(d) {
-  if (!d) return '';
-  return `<p class="desc">${esc(cleanDesc(d))}</p>`;
+// 국립국어원 수형 설명의 손가락 번호(1지=검지 … 5지=엄지)를 이름으로 바꿔 초보자도 읽게 함
+const FINGER = { 1: '검지', 2: '중지', 3: '약지', 4: '새끼손가락', 5: '엄지' };
+const JOSA = { '을': ['을', '를'], '를': ['을', '를'], '은': ['은', '는'], '는': ['은', '는'], '이': ['이', '가'], '가': ['이', '가'], '과': ['과', '와'], '와': ['과', '와'], '으로': ['으로', '로'], '로': ['으로', '로'] };
+function fingerNames(d) {
+  return String(d).replace(/&#8231;/g, '‧').replace(/([1-5](?:[·‧][1-5])*)지(으로|[을를은는이가과와로])?/g, (m, g, j) => {
+    const ns = g.split(/[·‧]/);
+    const last = ns[ns.length - 1];
+    const out = ns.map(n => FINGER[n]).join('·');
+    if (!j) return out;
+    const hasFinal = last === '4'; // 새끼손가락은 받침이 있고, 나머지(검지·중지·약지·엄지)는 받침이 없다
+    return out + JOSA[j][hasFinal ? 0 : 1];
+  });
+}
+// 한국수어사전 공식 수형 설명(있으면): [설명, 표제어 번호, 'id'|'name']
+function officialOf(w) { return (typeof KSL_OFFICIAL !== 'undefined' && KSL_OFFICIAL[w.id]) || null; }
+function descOf(w) { const o = officialOf(w); return o ? fingerNames(o[0]) : cleanDesc(w.d); }
+function officialNoteHtml(w) {
+  const o = officialOf(w); if (!o) return '';
+  return o[2] === 'name'
+    ? '<p class="onote">국립국어원 한국수어사전의 같은 뜻 표제어 설명이에요. 영상과 동작이 조금 다를 수 있어요.</p>'
+    : '<p class="onote">국립국어원 한국수어사전의 공식 수형 설명이에요.</p>';
+}
+function descHtml(w) {
+  const t = descOf(w);
+  if (!t) return '';
+  return `<p class="desc">${esc(t)}</p>${officialNoteHtml(w)}`;
+}
+function officialBlockHtml(w) {
+  const o = officialOf(w); if (!o) return '';
+  return `<p class="lbl">동작 설명</p><p class="motion">${esc(fingerNames(o[0]))}</p>${officialNoteHtml(w)}`;
 }
 function topicCardHtml(t) {
   const n = ALL_WORDS.filter(w => w.t === t).length;
@@ -221,13 +248,13 @@ function extraBodyHtml(w) {
   const senses = (w.g || '').split(' / ').filter(Boolean).map(s => `<li>${esc(s)}</li>`).join('');
   const exs = (w.e || '').split(/(?<=[.?!]),\s*/).filter(Boolean).slice(0, 3).map(s => `<li>${esc(s)}</li>`).join('');
   const exBlock = exs ? `<p class="lbl">예문</p><ul class="exlist">${exs}</ul>` : '';
-  return `<p class="lbl">뜻</p><ul class="exlist">${senses}</ul>${exBlock}${kslVideoBoxHtml(w.k, w.w, w.id)}${signInfoHtml(w)}`;
+  return `<p class="lbl">뜻</p><ul class="exlist">${senses}</ul>${exBlock}${kslVideoBoxHtml(w.k, w.w, w.id)}${officialBlockHtml(w)}${signInfoHtml(w)}`;
 }
 function fillWordBody(det) {
   const body = det.querySelector('.wbody');
   if (body.dataset.ready) return;
   const w = ALL_WORDS.find(x => String(x.id) === det.dataset.wid); if (!w) return;
-  body.innerHTML = w.x ? extraBodyHtml(w) : descHtml(w.d) + aliasHtml(w) + signVisualHtml(w);
+  body.innerHTML = w.x ? extraBodyHtml(w) : descHtml(w) + aliasHtml(w) + signVisualHtml(w);
   body.dataset.ready = '1';
   bindSignVisuals(body);
 }
@@ -319,8 +346,8 @@ bindVideoCards($('#brailleVideoGrid'));
 
 // ---------------- 도전 퀴즈(수어·점자 따로) ----------------
 // 수어 문제 풀: 설명이 있는 단어 전부
-const QUIZ_POOL_SIGN_TEXT = KSL_WORDS.filter(w => w.d && w.d.length < 130 && !cleanDesc(w.d).includes(w.w))
-  .map(w => ({ answer: w.w, clueType: 'text', clue: cleanDesc(w.d), group: w.t }));
+const QUIZ_POOL_SIGN_TEXT = ALL_WORDS.filter(w => { const t = descOf(w); return t && t.length < 130 && !t.includes(w.w); })
+  .map(w => ({ answer: w.w, clueType: 'text', clue: descOf(w), group: w.t }));
 // 영상 문제 풀: 영상이 있는 단어 전부(영상을 보고 뜻을 맞히기)
 const QUIZ_POOL_SIGN_VIDEO = ALL_WORDS.filter(w => w.k && w.w.length <= 8 && !/[~\-]/.test(w.w))
   .map(w => ({ answer: w.w, clueType: 'video', clue: (typeof MEDIA_VIDEO !== 'undefined' && MEDIA_VIDEO.has(w.id)) ? `assets/media/${w.id}.mp4` : w.k, group: w.t }));

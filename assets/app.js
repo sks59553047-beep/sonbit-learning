@@ -422,25 +422,25 @@ function parseVtt(text) {
     return { start: toSec(a), end: toSec(c), text: lines.slice(lines.indexOf(timeLine) + 1).join(' ') };
   });
 }
-function setPlayerSrc(url) {
+function setPlayerSrc(id) {
   const old = $('#playerVideo');
-  const f = document.createElement('iframe');
-  f.id = 'playerVideo'; f.setAttribute('allow', 'autoplay'); f.setAttribute('allowfullscreen', ''); f.setAttribute('frameborder', '0');
-  if (url) f.src = url;
+  const f = document.createElement('video');
+  f.id = 'playerVideo'; f.controls = true; f.playsInline = true; f.preload = 'metadata';
+  if (id) {
+    f.poster = `videos/${id}.jpg`;
+    f.src = `videos/${id}.mp4`;
+    const t = document.createElement('track');
+    t.kind = 'captions'; t.srclang = 'ko'; t.label = '한국어'; t.src = `videos/${id}.vtt`; t.default = true;
+    f.appendChild(t);
+  }
   old.replaceWith(f);
 }
-function sizePlayerWrap() {
-  const wrap = $('#view-player .player-wrap'); if (!wrap) return;
-  wrap.style.height = Math.round(wrap.offsetWidth * 9 / 16 + 48) + 'px';
-}
-window.addEventListener('resize', sizePlayerWrap);
 async function openPlayer(id) {
   const v = VIDEO_LIST.find(x => x.id === id); if (!v) return;
   $('#playerTitle').textContent = v.title;
   $('#playerDesc').textContent = v.desc;
   $('#playerTags').innerHTML = `<span class="tag">${esc(v.track)}</span><span class="tag amber">${esc(v.level)}</span><span class="tag" style="background:var(--surface2);color:var(--muted)">${fmtTime(v.dur)}</span>`;
-  sizePlayerWrap();
-  setPlayerSrc(`https://drive.google.com/file/d/${v.driveId}/preview`);
+  setPlayerSrc(v.id);
   store.set('watched:' + v.id, true);
   $('#playerTranscript').innerHTML = '<p class="note">자막을 불러오는 중…</p>';
   try {

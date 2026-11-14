@@ -221,8 +221,8 @@ textarea.bptext{width:100%;border:1px solid var(--line);border-radius:14px;paddi
    구글 드라이브 미리보기(iframe)는 일반 재생 모드에서 자체 재생바만큼 세로 공간을 더 쓰기 때문에,
    순수 16:9보다 조금 더 높게 잡아서 그 몫을 흡수함(확대/전체화면에서는 이 여유가 필요 없어 자동으로 맞음).
    CSS 퍼센트 padding-top 트릭은 플렉스 레이아웃에서 높이가 과도하게 커지는 문제가 있어 JS 계산으로 대체. */
-.player-wrap{background:#000;border-radius:var(--r-lg);overflow:hidden;position:relative;width:100%}
-.player-wrap iframe{position:absolute;inset:0;width:100%;height:100%;display:block;border:0}
+.player-wrap{background:#000;border-radius:var(--r-lg);overflow:hidden;width:100%;aspect-ratio:16/9}
+.player-wrap video{width:100%;height:100%;display:block;object-fit:contain;background:#000}
 .vmeta h2{font-size:1.125rem}
 .vmeta p{color:var(--muted);margin-top:6px;font-size:0.8438rem}
 .transcript{display:flex;flex-direction:column;gap:2px;max-height:280px;overflow:auto;border:1px solid var(--line);border-radius:14px;padding:6px}

@@ -107,6 +107,7 @@
       <div class="card">
         <h2 style="font-size:16px;margin-bottom:10px">글자 → 점자 바꾸기</h2>
         <textarea class="bptext" id="bpInput" placeholder="여기에 한글을 쓰면 점자로 바꿔 드려요" aria-label="점자로 바꿀 글자 입력"></textarea>
+        <p class="note amber" style="margin-top:10px">연습용이에요. 실제 한국 점자 규정에는 "가·나·그래서" 같은 약자·약어가 있는데, 여기서는 줄이지 않고 자음·모음을 모두 풀어서 보여줘요. 실제 점자 인쇄나 점역에는 쓰지 마세요.</p>
         <div id="bpSummary" class="note" style="margin-top:10px"></div>
         <div class="cellsrow" id="bpCells" style="margin-top:14px"></div>
       </div>
@@ -146,7 +147,7 @@
         <h1 id="playerH" class="visually-hidden">영상 재생</h1>
       </div>
       <div class="player-wrap">
-        <iframe id="playerVideo" allow="autoplay" allowfullscreen frameborder="0"></iframe>
+        <video id="playerVideo" controls playsinline preload="metadata"></video>
       </div>
       <div class="vmeta">
         <div class="tags" id="playerTags"></div>

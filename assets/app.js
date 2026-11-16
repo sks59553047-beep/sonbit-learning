@@ -198,20 +198,23 @@ function hasActivity() { return watchedIds().length > 0 || store.keys('did:').le
 function kslUrl(k) { return (/^https?:/.test(k) || k.startsWith('assets/')) ? k : 'https://ksldict.korean.go.kr' + k; }
 function kslVideoBoxHtml(k, label, id) {
   const local = typeof MEDIA_VIDEO !== 'undefined' && MEDIA_VIDEO.has(id);
-  const hasImg = typeof MEDIA_IMG !== 'undefined' && MEDIA_IMG.has(id);
+  // 누리사전(N) 단어의 그림 1,009장은 모두 손모양·움직임을 기호로 적은 「수어 표기」 그림이라 배우는 사람에게는 뜻을 알 수 없다
+  // (2026-11-16 작업자님 요청으로 뺌). 누리사전 단어는 영상만 보여 주고, 사람 손 그림·사진인 국립국어원 사전(KSL) 그림만 쓴다.
+  const isNotation = id.charAt(0) === 'N';
+  const hasImg = !isNotation && typeof MEDIA_IMG !== 'undefined' && MEDIA_IMG.has(id);
   const isNuri = !/^https?:/.test(k);
   const src = local ? `assets/media/${id}.mp4` : kslUrl(k);
   const poster = local ? `assets/posters/${id}.jpg` : (isNuri ? kslUrl(k.replace(/\.mp4$/, '.jpg')) : `assets/posters/${id}.jpg`);
-  const credit = (id.charAt(0) === 'N' || (k && !/^https?:/.test(k))) ? '국립국어원 한국수어누리사전' : '국립국어원 한국수어사전';
-  const img = hasImg
-    ? `<figure class="shapeimg"><img src="assets/media/${id}.jpg" alt="${esc(label)} ${id.charAt(0) === 'N' ? '수어 표기 그림(손모양·움직임)' : '수어 동작 그림'}" loading="lazy"></figure>`
-    : `<figure class="shapeimg still"><img src="${esc(poster)}" alt="${esc(label)} 수어 장면" loading="lazy"></figure>`;
+  const credit = (isNotation || (k && !/^https?:/.test(k))) ? '국립국어원 한국수어누리사전' : '국립국어원 한국수어사전';
+  const img = isNotation ? ''
+    : hasImg ? `<figure class="shapeimg"><img src="assets/media/${id}.jpg" alt="${esc(label)} 수어 동작 그림" loading="lazy"></figure>`
+      : `<figure class="shapeimg still"><img src="${esc(poster)}" alt="${esc(label)} 수어 장면" loading="lazy"></figure>`;
   return `<div class="signmedia">
       <div class="realvideo">
         <video class="kslvideo" controls loop muted playsinline preload="metadata" poster="${esc(poster)}" src="${esc(src)}" aria-label="${esc(label)} 수어 영상"></video>
       </div>${img}
     </div>
-    <p class="note">${credit} 제공 영상·그림 (저작자표시-비영리-변경금지)</p>`;
+    <p class="note">${credit} 제공 영상${img && !isNotation && hasImg ? "·그림" : ""} (저작자표시-비영리-변경금지)</p>`;
 }
 function aliasHtml(w) { return w.al ? `<p class="alias">같은 수어: ${esc(w.al)}</p>` : ''; }
 
@@ -1173,7 +1176,7 @@ function renderTranscript() {
 // 인터넷이 끊기거나 파일을 받지 못하면 검은 화면만 남지 않게, 그 자리에 까닭·다른 방법·「다시 불러오기」를 띄운다.
 const VFAIL_EXTRA = [
   ['.player-wrap', ' 아래 대본(자막)으로 내용을 먼저 읽을 수 있어요.'],
-  ['.signmedia', ' 옆의 그림과 동작 설명으로도 확인할 수 있어요.'],
+  ['.signmedia', ' 그림이나 동작 설명이 있는 단어는 그것으로도 확인할 수 있어요.'],
   ['#quizArea', ' 계속 안 나오면 「끝내기」로 마치고 나중에 다시 풀어 주세요.']
 ];
 document.addEventListener('error', e => {

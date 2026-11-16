@@ -7,7 +7,9 @@ const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const store = {
   get(k, d) { try { const v = localStorage.getItem('sonbit:' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
-  set(k, v) { try { localStorage.setItem('sonbit:' + k, JSON.stringify(v)); return true; } catch (e) { return false; } },
+  // 저장에 실패하면(저장 공간이 꽉 참, 저장을 막아 둔 브라우저 설정 등) false 를 돌려준다. quiet 가 아니면 알림도 띄운다.
+  // 「저장했어요」 같은 성공 안내를 하는 곳은 quiet 로 부르고 결과를 직접 확인해 맞는 안내를 한다.
+  set(k, v, quiet) { try { localStorage.setItem('sonbit:' + k, JSON.stringify(v)); return true; } catch (e) { if (!quiet) storeFailed(); return false; } },
   del(k) { try { localStorage.removeItem('sonbit:' + k); } catch (e) { } },
   keys(prefix) { const out = []; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith('sonbit:' + prefix)) out.push(k.slice(7)); } } catch (e) { } return out; }
 };
@@ -57,6 +59,10 @@ initToggle($('#btnTheme'), 'theme', matchMedia('(prefers-color-scheme: dark)').m
 });
 
 // ---------------- 알림(토스트) ----------------
+const STORE_FAIL_WHY = '저장 공간이 꽉 찼거나 저장을 막아 둔 설정(일부 시크릿 창 등)일 수 있어요.';
+const STORE_FAIL_MSG = '이 브라우저에 저장하지 못했어요. ' + STORE_FAIL_WHY;
+let storeFailAt = 0;
+function storeFailed() { const now = Date.now(); if (now - storeFailAt < 8000) return; storeFailAt = now; setTimeout(() => toast(STORE_FAIL_MSG), 0); }
 let toastTimer = 0;
 function toast(msg) {
   const t = $('#toast'); t.textContent = msg; t.classList.add('show');
@@ -170,11 +176,13 @@ function favWords() { return favList().map(id => WORD_BY_ID.get(id)).filter(Bool
 function toggleFav(id) {
   id = String(id); const l = favList(); const i = l.indexOf(id);
   if (i >= 0) l.splice(i, 1); else l.unshift(id);
-  store.set('fav', l); return i < 0;
+  if (!store.set('fav', l, true)) return null;   // 저장 실패: 화면의 담김 표시를 바꾸지 않는다
+  return i < 0;
 }
 function getWrong() { const w = store.get('wrong', []); return Array.isArray(w) ? w : []; }
 function wrongKey(c) { return QZ.wrongKey(c); }
-function addWrong(q) { const c = QZ.compact(q, true); const l = getWrong().filter(x => wrongKey(x) !== wrongKey(c)); l.unshift(c); store.set('wrong', l.slice(0, 100)); }
+const WRONG_MAX = 100;   // 틀린 문제는 최근 100개까지만 보관(가져오기도 같은 수를 쓴다)
+function addWrong(q) { const c = QZ.compact(q, true); const l = getWrong().filter(x => wrongKey(x) !== wrongKey(c)); l.unshift(c); store.set('wrong', l.slice(0, WRONG_MAX)); }
 function dropWrong(q) { const k = wrongKey(QZ.compact(q, true)); const l = getWrong(); const n = l.filter(x => wrongKey(x) !== k); if (n.length !== l.length) store.set('wrong', n); }
 // 옛 방식으로 저장된 틀린 문제(글 단서 문제 등)는 지금 퀴즈로 다시 만들 수 없다. 시작할 때 한 번 정리하고, 같은 문제가 겹쳐 있으면 하나만 남긴다.
 (function migrateWrong() {
@@ -364,7 +372,9 @@ function collectRecord() {
   const watched = {}, did = {};
   watchedIds().forEach(id => { watched[id] = true; });
   store.keys('did:').forEach(k => { if (store.get(k, false)) did[k.slice(4)] = true; });
-  return { fav: favList(), wrong: getWrong(), watched, did, track: roadTrack };
+  const out = { fav: favList(), wrong: getWrong(), watched, did, track: roadTrack };
+  const run = loadRun(); if (run) out.quizrun = runData(run);   // 풀던 퀴즈도 함께 옮긴다
+  return out;
 }
 $('#recExport').addEventListener('click', () => {
   const day = new Date().toISOString().slice(0, 10);
@@ -387,25 +397,37 @@ function cleanWrongEntry(c) {
 function importRecord(text) {
   let obj; try { obj = JSON.parse(text); } catch (e) { return { ok: false, msg: '파일을 읽을 수 없어요. 손빛에서 내보낸 .json 파일이 맞는지 확인해 주세요.' }; }
   if (!obj || obj.app !== 'sonbit' || !obj.data || typeof obj.data !== 'object') return { ok: false, msg: '손빛 배움터에서 내보낸 기록 파일이 아니에요.' };
-  const d = obj.data; let nFav = 0, nWrong = 0, nWatched = 0, nDid = 0;
+  const d = obj.data; let nFav = 0, nFavSkip = 0, nWrong = 0, nWrongOver = 0, nWatched = 0, nDid = 0, runMsg = '', failed = 0;
+  const put = (k, v) => { if (!store.set(k, v, true)) failed++; };   // 저장 실패를 세어 두었다가 성공이라고 하지 않는다
   if (Array.isArray(d.fav)) {
+    // 사전 단어 수(1,190개)보다 넉넉하게 받는다. 사전에 없는 단어(예전에 지운 단어 등)는 건너뛰고 몇 개인지 알려 준다
     const cur = favList(), set = new Set(cur);
-    d.fav.slice(0, 1000).forEach(id => { id = String(id); if (WORD_BY_ID.has(id) && !set.has(id)) { set.add(id); cur.push(id); nFav++; } });
-    store.set('fav', cur);
+    d.fav.slice(0, 5000).forEach(id => { id = String(id); if (!WORD_BY_ID.has(id)) { nFavSkip++; return; } if (!set.has(id)) { set.add(id); cur.push(id); nFav++; } });
+    if (nFav) put('fav', cur);
   }
   if (Array.isArray(d.wrong)) {
+    // 틀린 문제는 퀴즈에서도 최근 WRONG_MAX개까지만 보관한다. 자리가 없어 못 넣은 것은 세어서 알려 준다
     const cur = getWrong(), keys = new Set(cur.map(wrongKey));
-    d.wrong.slice(0, 300).forEach(c => { const n = cleanWrongEntry(c); if (n && !keys.has(wrongKey(n))) { keys.add(wrongKey(n)); cur.push(n); nWrong++; } });
-    store.set('wrong', cur.slice(0, 100));
+    d.wrong.slice(0, 300).forEach(c => { const n = cleanWrongEntry(c); if (!n || keys.has(wrongKey(n))) return; if (cur.length >= WRONG_MAX) { nWrongOver++; return; } keys.add(wrongKey(n)); cur.push(n); nWrong++; });
+    if (nWrong) put('wrong', cur);
   }
   if (d.watched && typeof d.watched === 'object') {
-    VIDEO_LIST.forEach(v => { if (d.watched[v.id] === true && !store.get('watched:' + v.id, false)) { store.set('watched:' + v.id, true); nWatched++; } });
+    VIDEO_LIST.forEach(v => { if (d.watched[v.id] === true && !store.get('watched:' + v.id, false)) { put('watched:' + v.id, true); nWatched++; } });
   }
   if (d.did && typeof d.did === 'object') {
-    ['sign', 'braille', 'quiz-sign', 'quiz-braille'].forEach(k => { if (d.did[k] === true && !didFlag(k)) { store.set('did:' + k, true); nDid++; } });
+    ['sign', 'braille', 'quiz-sign', 'quiz-braille'].forEach(k => { if (d.did[k] === true && !didFlag(k)) { put('did:' + k, true); nDid++; } });
   }
-  if (d.track === 'sign' || d.track === 'braille') { if (!hasTrackChoice()) { roadTrack = d.track; store.set('track', d.track); } }
-  return { ok: true, msg: `기록을 가져왔어요. 단어장 +${nFav}, 틀린 문제 +${nWrong}, 본 영상 +${nWatched}${nDid ? `, 학습 단계 +${nDid}` : ''}. 이 기기의 기존 기록은 그대로 두었어요.` };
+  if (d.track === 'sign' || d.track === 'braille') { if (!hasTrackChoice()) { roadTrack = d.track; put('track', d.track); } }
+  // 풀던 퀴즈: 이 기기에 풀던 퀴즈가 없을 때만 가져온다(있으면 이 기기 것을 지킨다). 내용은 검사해서 깨끗한 모양으로 다시 저장
+  if (d.quizrun && typeof d.quizrun === 'object') {
+    const run = runFrom(d.quizrun);
+    if (!run) runMsg = ' 파일의 풀던 퀴즈는 읽을 수 없어서 가져오지 않았어요.';
+    else if (loadRun()) runMsg = ' 이 기기에 풀던 퀴즈가 있어서 파일의 풀던 퀴즈는 가져오지 않았어요.';
+    else { put('quizrun', runData(run)); runMsg = ' 풀던 퀴즈도 가져왔어요.'; }
+  }
+  if (failed) return { ok: false, msg: `기록을 이 기기에 저장하지 못했어요. ${STORE_FAIL_WHY} 가져온 내용 중 일부 또는 전부가 들어오지 않았어요.` };
+  const notes = (nFavSkip ? ` 사전에 없는 단어 ${nFavSkip}개는 건너뛰었어요.` : '') + (nWrongOver ? ` 틀린 문제는 ${WRONG_MAX}개까지만 보관해서 ${nWrongOver}개는 넣지 못했어요.` : '');
+  return { ok: true, msg: `기록을 가져왔어요. 단어장 +${nFav}, 틀린 문제 +${nWrong}, 본 영상 +${nWatched}${nDid ? `, 학습 단계 +${nDid}` : ''}.${runMsg}${notes} 이 기기의 기존 기록은 그대로 두었어요.` };
 }
 function hasTrackChoice() { return store.get('track', null) !== null; }
 $('#recImport').addEventListener('click', () => $('#importFile').click());
@@ -415,7 +437,7 @@ $('#importFile').addEventListener('change', async e => {
   if (f.size > 600 * 1024) { setRecStatus('파일이 너무 커요. 손빛에서 내보낸 기록 파일만 가져올 수 있어요.'); return; }
   let text = ''; try { text = await f.text(); } catch (err) { setRecStatus('파일을 읽지 못했어요.'); return; }
   const r = importRecord(text); setRecStatus(r.msg); toast(r.ok ? '기록을 가져왔어요' : '가져오지 못했어요');
-  if (r.ok) renderHome();
+  renderHome();   // 저장에 일부만 성공했어도 화면은 실제 저장된 대로 다시 그린다
 });
 $('#recClear').addEventListener('click', () => { $('#recConfirm').hidden = false; $('#recClearNo').focus(); });
 $('#recClearNo').addEventListener('click', () => { $('#recConfirm').hidden = true; $('#recClear').focus(); });
@@ -568,6 +590,7 @@ $('#signList').addEventListener('click', e => {
   const fb = e.target.closest('[data-fav]');
   if (fb) {
     const id = fb.dataset.fav, on = toggleFav(id);
+    if (on === null) { toast('단어장에 저장하지 못했어요. ' + STORE_FAIL_WHY); return; }
     fb.setAttribute('aria-pressed', String(on)); fb.querySelector('.fl').textContent = on ? '단어장에 담김' : '단어장에 담기';
     const row = fb.closest('.wordrow'); if (row) { const m = row.querySelector('.favmark'); if (m) m.hidden = !on; }
     const w = WORD_BY_ID.get(String(id)); toast(on ? `「${w ? w.w : ''}」을(를) 단어장에 담았어요` : `「${w ? w.w : ''}」을(를) 단어장에서 뺐어요`);
@@ -760,17 +783,24 @@ const modeNow = () => (store.get('qmode', 'practice') === 'challenge' ? 'challen
 const levelNow = () => { const v = Number(store.get('qlevel', 2)); return v === 1 || v === 3 ? v : 2; };
 const scopeNow = () => { const v = store.get('qscope', 'all'); return QZ.SCOPES.some(s => s.key === v) ? v : 'all'; };
 const scopeLabel = k => (QZ.SCOPES.find(s => s.key === k) || QZ.SCOPES[0]).label;
-function saveRun() {
-  const s = quizState; if (!s.active) return;
-  store.set('quizrun', { v: 2, kind: s.kind, mode: s.mode, lv: s.lv, scope: s.scope, i: s.answered ? s.i + 1 : s.i, score: s.score, lives: s.lives, done: s.done, qs: s.qs.map(q => QZ.compact(q)), wrong: s.wrong.map(q => QZ.compact(q, true)) });
+// 풀이 상태 → 저장할 모양(기록 파일로 내보낼 때도 같은 모양)
+const runData = s => ({ v: 2, kind: s.kind, mode: s.mode, lv: s.lv, scope: s.scope, i: s.answered ? s.i + 1 : s.i, score: s.score, lives: s.lives, done: s.done, qs: s.qs.map(q => QZ.compact(q)), wrong: s.wrong.map(q => QZ.compact(q, true)) });
+// 저장에 성공했는지 돌려준다(「잠시 나가기」에서 성공했을 때만 「저장했어요」라고 하기 위해)
+function saveRun(quiet) {
+  const s = quizState; if (!s.active) return false;
+  return store.set('quizrun', runData(s), quiet);
+}
+// 저장된 모양 → 풀이 상태. 이 기기의 저장소와 가져온 기록 파일 모두 이것으로 검사한다(알 수 없는 값이면 null)
+function runFrom(r) {
+  if (!r || typeof r !== 'object' || r.v !== 2 || !QKINDS[r.kind] || !Array.isArray(r.qs) || !r.qs.length || r.qs.length > 50) return null;
+  const qs = r.qs.map(QZ.restore); if (qs.some(q => !q)) return null;
+  const i = Math.max(0, Math.min(Number(r.i) || 0, qs.length));
+  return { active: true, kind: r.kind, mode: r.mode === 'challenge' ? 'challenge' : 'practice', lv: [1, 2, 3].includes(r.lv) ? r.lv : 2, scope: QZ.SCOPES.some(s => s.key === r.scope) ? r.scope : 'all', i, score: Number(r.score) || 0, lives: Number.isFinite(Number(r.lives)) ? Number(r.lives) : 3, done: Number(r.done) || 0, qs, answered: false, wrong: (Array.isArray(r.wrong) ? r.wrong : []).map(QZ.restore).filter(Boolean) };
 }
 function loadRun() {
   const r = store.get('quizrun', null);
   if (r && r.v !== 2) { store.del('quizrun'); return null; }           // 옛 방식으로 저장된 풀이는 이어 풀 수 없다
-  if (!r || !QKINDS[r.kind] || !Array.isArray(r.qs) || !r.qs.length) return null;
-  const qs = r.qs.map(QZ.restore); if (qs.some(q => !q)) return null;
-  const i = Math.max(0, Math.min(Number(r.i) || 0, qs.length));
-  return { active: true, kind: r.kind, mode: r.mode === 'challenge' ? 'challenge' : 'practice', lv: [1, 2, 3].includes(r.lv) ? r.lv : 2, scope: QZ.SCOPES.some(s => s.key === r.scope) ? r.scope : 'all', i, score: Number(r.score) || 0, lives: Number.isFinite(Number(r.lives)) ? Number(r.lives) : 3, done: Number(r.done) || 0, qs, answered: false, wrong: (r.wrong || []).map(QZ.restore).filter(Boolean) };
+  return runFrom(r);
 }
 function resumeQuiz() {
   const run = loadRun();
@@ -917,7 +947,7 @@ $('#quizArea').addEventListener('click', e => {
   if (t.closest('#buildCheck')) { if (!s.answered) answerBuild(q); return; }
   if (t.closest('#hintCut')) { cutOption(q); return; }
   if (t.closest('#hintText')) { showHint(q); return; }
-  if (t.closest('#quizPause')) { saveRun(); renderQuizHub(); toast('저장했어요. 퀴즈 화면에서 이어서 풀 수 있어요'); return; }
+  if (t.closest('#quizPause')) { const ok = saveRun(true); renderQuizHub(); toast(ok ? '저장했어요. 퀴즈 화면에서 이어서 풀 수 있어요' : '풀던 퀴즈를 저장하지 못해서 나중에 이어서 풀 수 없어요. ' + STORE_FAIL_WHY); return; }
   if (t.closest('#quizEnd')) { $('#quizEndConfirm').hidden = false; $('#quizEndNo').focus(); return; }
   if (t.closest('#quizEndNo')) { $('#quizEndConfirm').hidden = true; return; }
   if (t.closest('#quizEndYes')) { s.ended = true; renderQuizResult(); return; }
@@ -1099,7 +1129,9 @@ function parseVtt(text) {
 }
 // 영상을 끝까지(또는 85% 이상) 봤을 때만 '시청 완료'로 기록한다. 열어 보기만 한 것은 완료가 아니다.
 function markWatched(id) { if (!store.get('watched:' + id, false)) store.set('watched:' + id, true); }
+let playerReq = 0;   // 영상을 바꾸거나 플레이어를 떠날 때마다 1씩 늘린다(늦게 도착한 대본을 알아보는 번호)
 function setPlayerSrc(id) {
+  playerReq++;
   $$('.vfail', $('#view-player')).forEach(n => n.remove());   // 앞 영상에서 남은 「불러오지 못했어요」 안내는 지운다
   const old = $('#playerVideo');
   const f = document.createElement('video');
@@ -1121,13 +1153,17 @@ async function openPlayer(id) {
   $('#playerTitle').textContent = v.title;
   $('#playerDesc').textContent = v.desc;
   $('#playerTags').innerHTML = `<span class="tag">${esc(v.track)}</span><span class="tag amber">${esc(v.level)}</span><span class="tag gray">${fmtTime(v.dur)}</span>`;
-  setPlayerSrc(v.id);
+  setPlayerSrc(v.id); const req = playerReq;
   $('#playerTranscript').innerHTML = '<p class="note">자막을 불러오는 중…</p>';
   try {
-    const vttText = await (await fetch(`videos/${v.id}.vtt`)).text();
+    const r = await fetch(`videos/${v.id}.vtt`);
+    const vttText = r.ok ? await r.text() : '';
+    if (req !== playerReq) return;   // 기다리는 사이 다른 영상을 열었거나 화면을 떠났으면, 늦게 온 대본은 버린다
+    // 없는 파일은 사이트가 첫 화면(HTML)을 대신 돌려줄 수 있어서, 자막 파일(WEBVTT)이 맞는지 내용으로 확인한다
+    if (!/^﻿?WEBVTT/.test(vttText)) throw new Error('자막 파일이 아님');
     transcriptCues = parseVtt(vttText);
     renderTranscript();
-  } catch (e) { $('#playerTranscript').innerHTML = '<p class="note">자막을 불러오지 못했어요.</p>'; transcriptCues = []; }
+  } catch (e) { if (req !== playerReq) return; $('#playerTranscript').innerHTML = '<p class="note">자막을 불러오지 못했어요.</p>'; transcriptCues = []; }
 }
 function renderTranscript() {
   $('#playerTranscript').innerHTML = transcriptCues.map(c => `<p class="tline">${esc(c.text)}</p>`).join('') || '<p class="note">자막이 없어요.</p>';

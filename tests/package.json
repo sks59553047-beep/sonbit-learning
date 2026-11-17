@@ -1,0 +1,14 @@
+{
+  "name": "sonbit-tests",
+  "private": true,
+  "type": "module",
+  "description": "손빛 배움터 시험(브라우저 자동 시험 + 퀴즈·점자·색 대비 검사)",
+  "scripts": {
+    "test": "node run-all.mjs",
+    "test:quick": "node run-all.mjs --quick",
+    "test:live": "node run-all.mjs --live"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

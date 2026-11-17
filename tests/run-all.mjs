@@ -1,0 +1,90 @@
+// 손빛 배움터 시험을 한 번에 돌린다.
+//   node tests/run-all.mjs           내 컴퓨터 파일로 전부(15분 안팎)
+//   node tests/run-all.mjs --quick   오래 걸리는 시험(종합·기능 전체·좁은 화면 등)을 빼고(5분 안팎)
+//   node tests/run-all.mjs --live    실제 주소(https://sonbit.pages.dev)를 대상으로(올린 뒤 확인용)
+// 시험용 정적 서버(127.0.0.1:8765)와 화면 없는 크롬(디버그 포트 9333)을 알아서 켜고, 끝나면 끈다.
+// 크롬 위치가 다르면 CHROME 환경 변수로 알려 준다. 설치할 부품은 없다(Node 22 이상).
+import { spawn, execFileSync } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const REPO = path.resolve(HERE, '..');
+const OUT = path.join(HERE, 'out');                       // 시험이 만드는 그림·임시 파일(git 제외)
+const args = process.argv.slice(2);
+const QUICK = args.includes('--quick'), LIVE = args.includes('--live');
+const BASE = LIVE ? 'https://sonbit.pages.dev/' : 'http://127.0.0.1:8765/';
+const CHROME = process.env.CHROME || (process.platform === 'win32' ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' : 'google-chrome');
+fs.mkdirSync(OUT, { recursive: true });
+
+// [이름, 파일, 인자, 브라우저 필요, 오래 걸림, 통과 조건(출력에 이 글이 있어야)]
+// 통과 조건이 없으면 「FAIL 로 시작하는 줄이 없고 종료 코드가 0」이면 통과로 본다.
+const TESTS = [
+  ['점자 규정 예시 227개', '../braille-tests/run-all.mjs', [], false, false, /불일치 0/],
+  ['퀴즈 문제 시뮬레이션(정답 둘·보기 겹침·난이도 배분)', 'quiz-sim.mjs', [], false, false, /모든 점검 통과/],
+  ['색 대비(밝은·어두운 화면)', 'contrast.mjs', [], false, false, /기준 미달 0 건/],
+  ['첫 화면과 기본 흐름', 'smoke.mjs', [BASE, 'mobile'], true],
+  ['교육 영상 두 자리 배치·10편 열림', 'video-placement.mjs', [BASE, 'mobile'], true],
+  ['다른 AI 검토 1차 보완(퀴즈 전환·복습 표시·점자 칸 수·복사 안내)', 'review1-fixes.mjs', [BASE, 'mobile'], true],
+  ['다른 AI 검토 2차 보완(저장 실패·대본 순서·백업·범위 이름)', 'review2-fixes.mjs', [BASE], true],
+  ['키보드만으로 퀴즈 풀기', 'keyboard.mjs', [BASE, 'desktop'], true],
+  ['영상을 못 불러올 때 안내', 'video-fail.mjs', [BASE], true],
+  ['예전 방식 기록 정리', 'migrate.mjs', [BASE], true],
+  ['점자 연습 패드 두 칸', 'pad-two.mjs', [BASE, 'mobile'], true],
+  ['안 보이는 영상 멈춤·변환 200자', 'hidden-video.mjs', [BASE], true],
+  ['수어 표기 기호 그림이 안 나옴', 'no-notation.mjs', [BASE], true, true],
+  ['기능 전체(단어장·검색·퀴즈·기록 내보내기/가져오기)', 'features.mjs', [BASE], true, true],
+  ['종합(퀴즈 종류×난이도×범위 19가지 완주 등)', 'qa.mjs', [BASE, 'mobile'], true, true],
+  ...(LIVE ? [['실제 주소 파일이 내 컴퓨터 파일과 같음', 'verify-live.mjs', [], false]]
+    : [['좁은 화면(320~390px)·큰 글자에서 넘침 없음', 'overflow.mjs', [], true, true], ['두 칸 패드가 좁은 화면에 들어감', 'pad-two-fit.mjs', [], true]])
+].filter(t => !(QUICK && t[4]));
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const up = async url => { try { return (await fetch(url)).ok; } catch { return false; } };
+async function waitUp(url, what) { for (let i = 0; i < 60; i++) { if (await up(url)) return; await sleep(500); } throw new Error(what + '이(가) 켜지지 않았어요: ' + url); }
+
+const started = [];
+async function startServices() {
+  if (!LIVE && !(await up('http://127.0.0.1:8765/index.html'))) {
+    started.push(spawn(process.execPath, [path.join(HERE, 'lib/serve.mjs'), REPO, '8765'], { stdio: 'ignore' }));
+    await waitUp('http://127.0.0.1:8765/index.html', '시험용 서버');
+  }
+  if (!(await up('http://127.0.0.1:9333/json/version'))) {
+    const dir = path.join(os.tmpdir(), 'sonbit-test-chrome');
+    started.push(spawn(CHROME, ['--headless=new', '--disable-gpu', '--remote-debugging-port=9333', '--no-first-run', '--autoplay-policy=no-user-gesture-required', '--user-data-dir=' + dir, 'about:blank'], { stdio: 'ignore' }));
+    await waitUp('http://127.0.0.1:9333/json/version', '시험용 크롬');
+  }
+}
+function stopServices() {
+  for (const p of started) {
+    try { if (process.platform === 'win32') execFileSync('taskkill', ['/PID', String(p.pid), '/T', '/F'], { stdio: 'ignore' }); else p.kill('SIGKILL'); } catch { /* 이미 꺼짐 */ }
+  }
+}
+function run(file, argv) {
+  return new Promise(res => {
+    const p = spawn(process.execPath, [path.join(HERE, file), ...argv], { cwd: OUT });
+    let out = ''; p.stdout.on('data', d => { out += d; }); p.stderr.on('data', d => { out += d; });
+    const t = setTimeout(() => { p.kill(); out += '\nFAIL 시간 초과(10분)'; }, 10 * 60 * 1000);
+    p.on('close', code => { clearTimeout(t); res({ code, out }); });
+  });
+}
+
+const needBrowser = TESTS.some(t => t[3]);
+console.log(`손빛 배움터 시험 ${TESTS.length}개 · 대상 ${LIVE ? '실제 주소' : '내 컴퓨터 파일'}${QUICK ? ' · 빠른 시험' : ''}\n`);
+let failed = 0; const t0 = Date.now();
+try {
+  if (needBrowser) await startServices();
+  for (const [name, file, argv, , , re] of TESTS) {
+    const s = Date.now(); const { code, out } = await run(file, argv);
+    const fails = out.split('\n').filter(l => /^FAIL/.test(l));
+    const ok = code === 0 && !fails.length && (!re || re.test(out));
+    if (!ok) failed++;
+    console.log(`${ok ? '통과' : '실패'}  ${name}  (${Math.round((Date.now() - s) / 1000)}초)`);
+    if (!ok) { (fails.length ? fails : out.trim().split('\n').slice(-5)).slice(0, 8).forEach(l => console.log('      ' + l.slice(0, 200))); }
+  }
+} catch (e) { failed++; console.log('실패  시험 준비: ' + e.message); }
+finally { stopServices(); }
+console.log(`\n${failed ? '실패 ' + failed + '개' : '모두 통과'} · ${Math.round((Date.now() - t0) / 1000)}초`);
+process.exit(failed ? 1 : 0);

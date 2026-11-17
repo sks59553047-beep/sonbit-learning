@@ -1,0 +1,33 @@
+// 고친 두 가지 확인: ①다른 탭으로 가면 안 보이는 영상이 멈추고, 퀴즈로 돌아오면 다시 재생 ②점자 변환 칸 200자 제한과 안내
+import { open, check } from './lib/cdp.mjs';
+const BASE = (process.argv[2] || 'http://127.0.0.1:8765/').replace(/\?.*$/, '');
+const c = await open({ w: 390, h: 844 });
+const { ev, sleep, send } = c;
+const playing = sel => ev(`JSON.stringify([...document.querySelectorAll(${JSON.stringify(sel)})].map(v => !v.paused))`);
+await c.fresh(BASE + '?f2=' + Date.now(), 2500);
+await ev(`document.querySelector('[data-nav="quiz"]').click()`); await sleep(300);
+await ev(`document.querySelector('[data-qlevel="3"]').click()`); await ev(`document.querySelector('[data-quiz="sign"]').click()`); await sleep(800);
+for (let i = 0; i < 10 && !(await ev(`!!document.querySelector('.vgrid')`)); i++) { await ev(`document.querySelector('#quizOpts [data-opt]').click()`); await sleep(150); await ev(`document.querySelector('#quizNext').click()`); await sleep(400); }
+await sleep(1500);
+const p0 = await playing('#quizArea video');
+await ev(`document.querySelector('[data-nav="home"]').click()`); await sleep(1200);
+const p1 = await playing('#quizArea video');
+check('1-1 퀴즈에서 학습 탭으로 가면 퀴즈 영상 4개가 멈춤', p0 === '[true,true,true,true]' && p1 === '[false,false,false,false]', `전 ${p0} → 후 ${p1}`);
+await ev(`document.querySelector('[data-nav="quiz"]').click()`); await sleep(1200);
+check('1-2 퀴즈로 돌아오면 영상 4개가 다시 재생', (await playing('#quizArea video')) === '[true,true,true,true]', await playing('#quizArea video'));
+await ev(`document.querySelector('[data-nav="sign"]').click()`); await sleep(300);
+await ev(`document.querySelector('[data-topic="인사·예절"]').click()`); await sleep(300);
+await ev(`(()=>{const d=document.querySelector('#signList .wordrow');d.open=true})()`); await sleep(800);
+await ev(`document.querySelector('#signList .wordrow[open] video').play()`); await sleep(800);
+const s0 = await playing('#signList .wordrow[open] video');
+await ev(`document.querySelector('[data-nav="braille"]').click()`); await sleep(1000);
+check('1-3 수어 사전 영상을 틀어 둔 채 점자 탭으로 가면 멈춤', s0 === '[true]' && (await playing('#signList .wordrow[open] video')) === '[false]', `전 ${s0} → 후 ${await playing('#signList .wordrow[open] video')}`);
+await ev(`document.querySelector('[data-bpanel="convert"]').click()`); await sleep(200);
+await ev(`(()=>{const i=document.querySelector('#bpInput');i.value='';i.focus()})()`);
+await send('Input.insertText', { text: '가나다라마바사아자차'.repeat(25) }); await sleep(400);
+const len = await ev(`document.querySelector('#bpInput').value.length`), sum = await ev(`document.querySelector('#bpSummary').textContent`);
+check('2-1 250자를 넣어도 칸에는 200자까지만 들어가고, 200자에 닿았다고 안내', len === 200 && /한 번에 200자까지만 바꿀 수 있어요/.test(sum), `${len}자 | ${sum}`);
+await ev(`(()=>{const i=document.querySelector('#bpInput');i.value='안녕하세요';i.dispatchEvent(new Event('input',{bubbles:true}))})()`); await sleep(300);
+check('2-2 200자보다 짧으면 그 안내는 안 나옴', !/200자까지만/.test(await ev(`document.querySelector('#bpSummary').textContent`)), await ev(`document.querySelector('#bpSummary').textContent`));
+check('JS 오류 없음', c.errs.length === 0, c.errs.join(' | '));
+await c.close(); process.exit(0);

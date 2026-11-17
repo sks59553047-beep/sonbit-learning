@@ -75,6 +75,10 @@ const TITLES = { home: '손빛 배움터', sign: '수어 사전', braille: '점�
 function go(view, opts) {
   opts = opts || {};
   VIEWS.forEach(v => $('#view-' + v).classList.toggle('active', v === view));
+  // 다른 화면으로 가면 안 보이는 영상(퀴즈 영상·수어 사전 영상)은 멈춘다(배터리·데이터 절약).
+  // 퀴즈로 돌아오면 퀴즈의 자동 재생 영상만 다시 튼다(보기 지우기로 지운 영상은 빼고).
+  $$('.view:not(.active) video').forEach(v => { if (!v.paused) v.pause(); });
+  if (view === 'quiz') $$('#quizArea video[autoplay]').forEach(v => { if (v.paused && !v.closest('.gone')) v.play().catch(() => {}); });
   $$('.navbtn').forEach(b => { const on = b.dataset.nav === view; b.classList.toggle('active', on); if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
   $('#pageTitle').textContent = TITLES[view] || '손빛 배움터';
   if (view !== 'player') { window.scrollTo(0, 0); setPlayerSrc(''); }
@@ -717,13 +721,14 @@ $('#padTwo').addEventListener('click', () => setPadTwo(!padTwo));
 $('#padReset').addEventListener('click', () => { padDots.clear(); padDots2.clear(); syncPadCell(); renderPadResult(); });
 // ---- 글자 → 점자 변환기 ----
 function renderBraillePanel() {
-  const text = $('#bpInput').value.slice(0, 200);
+  const BP_MAX = 200;   // 한 번에 바꾸는 글자 수(입력 칸도 이만큼만 받는다)
+  const text = $('#bpInput').value.slice(0, BP_MAX), full = $('#bpInput').value.length >= BP_MAX;
   const contract = $('#bpContract').checked;
   const r = KB.convert(text, { contract });
   const cells = r.cells.filter(c => c.kind !== '줄바꿈');
   // 칸 수에는 바꾸지 못한 글자 자리(점선 칸)를 넣지 않고, 띄어쓰기 칸은 따로 밝힌다
   const real = cells.filter(c => !c.unsupported), spaces = real.filter(c => c.kind === '띄어쓰기').length, bad = r.unsupported.length;
-  $('#bpSummary').textContent = text ? `점자 ${real.length}칸${spaces ? `(띄어쓰기 ${spaces}칸 포함)` : ''}으로 바뀌었어요${bad ? ` · 바꾸지 못한 글자 ${bad}개` : ''}` : '글자를 입력하면 여기에 몇 칸인지 나와요';
+  $('#bpSummary').textContent = text ? `점자 ${real.length}칸${spaces ? `(띄어쓰기 ${spaces}칸 포함)` : ''}으로 바뀌었어요${bad ? ` · 바꾸지 못한 글자 ${bad}개` : ''}${full ? ` · 한 번에 ${BP_MAX}자까지만 바꿀 수 있어요` : ''}` : '글자를 입력하면 여기에 몇 칸인지 나와요';
   const warn = r.warnings.slice(); if (r.unsupported.length) warn.unshift(`바꿔 주지 않는 글자가 있어요: ${[...new Set(r.unsupported)].join(' ')} (로마자·그리스 문자·수식 기호·옛 글자 등은 규정이 따로 있어 지원하지 않아요. 점선 칸으로 표시했어요.)`);
   $('#bpWarn').hidden = !warn.length; $('#bpWarn').textContent = warn.join(' ');
   $('#bpCells').innerHTML = cells.map(c => {

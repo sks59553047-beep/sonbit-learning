@@ -205,6 +205,7 @@ $('#quizArea').addEventListener('click', e => {
   if (t.closest('#quizEndNo')) { $('#quizEndConfirm').hidden = true; return; }
   if (t.closest('#quizEndYes')) { s.ended = true; renderQuizResult(); return; }
   if (t.closest('#quizNext')) { s.i++; renderQuiz(); window.scrollTo(0, 0); return; }
+  if (t.closest('#quizConv')) { $('#bpInput').value = convTextOf(q); $('#bpContract').checked = true; renderBraillePanel(); store.set('track', 'braille'); go('braille'); showBraillePanel('convert'); return; }
   if (t.closest('#quizPad')) { const two = q.clue.length === 2; setPadTwo(two); padDots = new Set(q.clue[0]); padDots2 = new Set(two ? q.clue[1] : []); syncPadCell(); renderPadResult(); store.set('track', 'braille'); go('braille'); showBraillePanel('pad'); return; }
   if (t.closest('#quizRelearn')) { const w = WORD_BY_ID.get(String(q.id)); if (w) openWordInDictionary(w); return; }
   if (t.closest('#quizReplay')) { const v = $('#quizClueVideo'); if (v) { v.currentTime = 0; v.play(); } return; }
@@ -289,6 +290,18 @@ function answerBuild(q) {
 }
 // ---- 정답 해설 ----
 // 한 칸 글자는 자리에 따라 여러 가지로 읽히므로(예: ㄴ 첫소리 = 나 약자 = 수표 뒤 숫자 3), 그 목록을 해설에 덧붙인다
+// 해설의 연습 버튼: 연습 패드는 두 칸까지라, 정답이 세 칸 이상이면 글자 바꾸기(변환기)로 보낸다
+function practiceBtnHtml(q) {
+  return q.clue.length <= 2
+    ? '<button class="btn ghost" id="quizPad" type="button">연습 패드에서 눌러 보기</button>'
+    : '<button class="btn ghost" id="quizConv" type="button">글자 바꾸기에서 보기</button>';
+}
+// 변환기에 넣을 글자: 낱말·숫자는 정답 그대로, 부호처럼 「이름(기호)」 모양이면 괄호 안의 기호
+function convTextOf(q) {
+  if (q.bk !== 'p') return q.answer;
+  const i = q.answer.indexOf('(');
+  return i > 0 && q.answer.endsWith(')') ? q.answer.slice(i + 1, -1) : q.answer;
+}
 function readingsNote(q) {
   if (q.bk !== 'p' || q.clue.length !== 1) return '';
   const rs = READINGS[q.clue[0].join('-')] || [];
@@ -306,7 +319,7 @@ function brailleExplainHtml(q, chosen, correct) {
       cmp += `<div><span class="qcl">내가 고른 ${esc(chosen)}</span>${clueCellsHtml(got)}</div>`;
     }
   }
-  return `<div class="qexplain">${html}${readingsNote(q)}<div class="qcompare" aria-hidden="true">${cmp}</div><div class="qexbtns"><button class="btn ghost" id="quizPad" type="button">연습 패드에서 눌러 보기</button></div></div>`;
+  return `<div class="qexplain">${html}${readingsNote(q)}<div class="qcompare" aria-hidden="true">${cmp}</div><div class="qexbtns">${practiceBtnHtml(q)}</div></div>`;
 }
 function buildExplainHtml(q, entered, correct) {
   let html = `<p class="qx">정답 「${esc(q.answer)}」: ${esc(cellsDescription(q.clue))}.</p>`;
@@ -316,7 +329,7 @@ function buildExplainHtml(q, entered, correct) {
     const d = dotsDiffText(q.clue, entered, '내가 쓴 것'); if (d) html += `<p class="qx">차이: ${esc(d)}.</p>`;
     cmp += `<div><span class="qcl">내가 쓴 것</span>${clueCellsHtml(entered)}</div>`;
   }
-  return `<div class="qexplain">${html}${readingsNote(q)}<div class="qcompare" aria-hidden="true">${cmp}</div><div class="qexbtns"><button class="btn ghost" id="quizPad" type="button">연습 패드에서 눌러 보기</button></div></div>`;
+  return `<div class="qexplain">${html}${readingsNote(q)}<div class="qcompare" aria-hidden="true">${cmp}</div><div class="qexbtns">${practiceBtnHtml(q)}</div></div>`;
 }
 function signMeaning(w) {
   if (w.x && w.g) { const s = w.g.split(' / ').slice(0, 2).join(' · '); return s.length > 70 ? s.slice(0, 70) + '…' : s; }

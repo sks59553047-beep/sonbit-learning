@@ -33,6 +33,7 @@ const TESTS = [
   ['영상을 못 불러올 때 안내', 'video-fail.mjs', [BASE], true],
   ['예전 방식 기록 정리', 'migrate.mjs', [BASE], true],
   ['점자 연습 패드 두 칸', 'pad-two.mjs', [BASE, 'mobile'], true],
+  ['퀴즈 해설 연습 버튼(세 칸 이상은 글자 바꾸기로)', 'quiz-practice-link.mjs', [BASE], true],
   ['안 보이는 영상 멈춤·변환 200자', 'hidden-video.mjs', [BASE], true],
   ['수어 표기 기호 그림이 안 나옴', 'no-notation.mjs', [BASE], true, true],
   ['기능 전체(단어장·검색·퀴즈·기록 내보내기/가져오기)', 'features.mjs', [BASE], true, true],

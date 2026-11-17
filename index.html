@@ -184,7 +184,10 @@
             <span class="tag" role="listitem">첫소리</span><span class="tag" role="listitem">모음</span><span class="tag" role="listitem">받침</span><span class="tag" role="listitem">약자</span><span class="tag" role="listitem">숫자</span><span class="tag" role="listitem">문장부호</span>
           </div>
           <div class="braillecell-wrap">
-            <div class="braillecell" id="padCell" role="group" aria-label="점자 6점 패드"></div>
+            <div class="padcells" id="padCells">
+              <div class="padcol"><div class="braillecell" id="padCell" role="group" aria-label="점자 6점 패드 첫째 칸"></div><span class="padlbl" hidden>첫째 칸</span></div>
+              <div class="padcol" id="padCol2" hidden><div class="braillecell" id="padCell2" role="group" aria-label="점자 6점 패드 둘째 칸"></div><span class="padlbl">둘째 칸</span></div>
+            </div>
             <div class="padout" aria-live="polite">
               <div class="padresult">
                 <div class="big" id="padResultChar">점을 눌러 보세요</div>
@@ -192,9 +195,12 @@
               </div>
               <div class="padreads" id="padReadings"></div>
             </div>
-            <button class="btn ghost" id="padReset" type="button">처음으로</button>
+            <div class="padbtns">
+              <button class="btn line" id="padTwo" type="button" aria-pressed="false">칸 추가(두 칸으로)</button>
+              <button class="btn ghost" id="padReset" type="button">처음으로</button>
+            </div>
           </div>
-          <p class="note" style="margin-top:14px">한 칸만 읽어 줘요. 된소리·겹받침·약어처럼 두 칸 이상으로 쓰는 것은 「글자 바꾸기」에서 확인하세요.</p>
+          <p class="note" style="margin-top:14px">「칸 추가」를 누르면 두 칸을 함께 읽어 줘요(된소리, 두 칸 겹모음, 쌍받침·겹받침, 약어, 숫자, 두 칸 글자 등). 세 칸 이상은 「글자 바꾸기」에서 확인하세요.</p>
         </div>
       </div>
 

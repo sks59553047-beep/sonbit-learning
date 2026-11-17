@@ -648,28 +648,73 @@ function showBraillePanel(name, byUser) {
   if (name === 'learn') renderLearnPanel();
 }
 $('#bpSeg').addEventListener('click', e => { const b = e.target.closest('[data-bpanel]'); if (b) showBraillePanel(b.dataset.bpanel, true); });
-// ---- 연습 패드 ----
-let padDots = new Set();
-function renderPadCell() {
-  $('#padCell').innerHTML = [1, 2, 3, 4, 5, 6].map(n => `<button type="button" class="dot ${padDots.has(n) ? 'on' : ''}" data-dot="${n}" aria-pressed="${padDots.has(n)}" aria-label="${n}번 점">${n}</button>`).join('');
+// ---- 연습 패드(처음엔 한 칸, 「칸 추가」를 누르면 두 칸) ----
+let padDots = new Set(), padDots2 = new Set(), padTwo = false;
+const sortedDots = s => Array.from(s).sort((a, b) => a - b);
+function dotBtns(set, cellNo) {
+  const pre = padTwo ? (cellNo === 2 ? '둘째 칸 ' : '첫째 칸 ') : '';
+  return [1, 2, 3, 4, 5, 6].map(n => `<button type="button" class="dot ${set.has(n) ? 'on' : ''}" data-dot="${n}" data-cell="${cellNo}" aria-pressed="${set.has(n)}" aria-label="${pre}${n}번 점">${n}</button>`).join('');
 }
-function syncPadCell() { $$('[data-dot]', $('#padCell')).forEach(b => { const on = padDots.has(Number(b.dataset.dot)); b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); }); }
+function renderPadCell() { $('#padCell').innerHTML = dotBtns(padDots, 1); $('#padCell2').innerHTML = dotBtns(padDots2, 2); }
+function syncPadCell() {
+  [['#padCell', padDots], ['#padCell2', padDots2]].forEach(([sel, set]) => $$('[data-dot]', $(sel)).forEach(b => { const on = set.has(Number(b.dataset.dot)); b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); }));
+}
+function setPadTwo(on) {
+  padTwo = on; if (!on) padDots2.clear();
+  $('#padCol2').hidden = !on; $('.padlbl', $('#padCells')).hidden = !on; $('#padCells').classList.toggle('two', on);
+  $('#padTwo').setAttribute('aria-pressed', String(on)); $('#padTwo').textContent = on ? '한 칸으로' : '칸 추가(두 칸으로)';
+  renderPadCell(); renderPadResult();
+}
+const oneReadings = dots => (READINGS[dots.join('-')] || []).slice().sort((a, b) => READ_ORDER.indexOf(a.kind) - READ_ORDER.indexOf(b.kind));
+// 두 칸 읽기 표: 손으로 정하지 않고, 규정 표(된소리·두 칸 모음·쌍받침·겹받침·약어·문장부호)와
+// 점자 엔진으로 바꾼 결과(수표+숫자, 가~힣 11,172자 중 두 칸이 되는 글자)로 만든다. 처음 쓸 때 한 번만 만든다(0.1초 안쪽).
+let TWO_READ = null;
+function twoReadings() {
+  if (TWO_READ) return TWO_READ;
+  const map = {}, key = cs => cs.map(cellKey).join('|');
+  const conv = (s, contract) => KB.convert(s, { contract }).cells.filter(c => c.kind !== '띄어쓰기' && c.kind !== '줄바꿈').map(c => c.dots);
+  const add = (cs, label, kind) => { if (cs.length !== 2) return; const l = (map[key(cs)] = map[key(cs)] || []); if (!l.some(x => x.label === label)) l.push({ label, kind }); };
+  for (const [ch, b] of Object.entries(T.CHO)) if (b) add(KB.brfCells(b), ch, '된소리 첫소리');
+  for (const [ch, b] of Object.entries(T.JUNG)) if (b) add(KB.brfCells(b), ch, '모음(두 칸)');
+  for (const [ch, b] of Object.entries(T.JONG)) if (b) add(KB.brfCells(b), ch + ' 받침', ch === 'ㄲ' ? '쌍받침' : '겹받침');
+  for (const [w, b] of Object.entries(T.ABBR_WORDS)) add(KB.brfCells(b), w, '약어');
+  for (const [ch, b] of Object.entries(T.PUNCT)) if (PUNCT_NAME[ch]) add(KB.brfCells(b), PUNCT_NAME[ch] + ' ' + ch, '문장부호');
+  for (let d = 0; d <= 9; d++) add(conv(String(d), false), '숫자 ' + d, '숫자(수표+숫자)');
+  for (let c = 0xAC00; c <= 0xD7A3; c++) {
+    const s = String.fromCharCode(c), a = conv(s, true);
+    if (a.length === 2) add(a, s, key(a) === key(conv(s, false)) ? '글자' : '글자(약자 사용)');
+  }
+  return (TWO_READ = map);
+}
+const readList = rs => rs.map(r => `<li><b>${esc(r.label)}</b> — ${esc(r.kind)}</li>`).join('');
+const readInline = rs => rs.length ? rs.map(r => `${r.label}(${r.kind})`).join(', ') : '한 칸으로 읽는 글자 없음';
 function renderPadResult() {
-  const dots = Array.from(padDots).sort((a, b) => a - b);
-  if (!dots.length) { $('#padResultChar').textContent = '점을 눌러 보세요'; $('#padResultKind').textContent = ''; $('#padReadings').innerHTML = ''; return; }
-  $('#padResultChar').textContent = dots.join('·') + '번 점';
-  $('#padResultKind').textContent = '점자 문자 ' + dotsToUnicode(dots);
-  const rs = (READINGS[dots.join('-')] || []).slice().sort((a, b) => READ_ORDER.indexOf(a.kind) - READ_ORDER.indexOf(b.kind));
-  $('#padReadings').innerHTML = rs.length
-    ? `<p>${rs.length > 1 ? '같은 모양이 글자 안의 자리에 따라 이렇게 읽혀요.' : '이렇게 읽혀요.'}</p><ul>${rs.map(r => `<li><b>${esc(r.label)}</b> — ${esc(r.kind)}</li>`).join('')}</ul>`
-    : '<p>한 칸으로 읽는 글자가 아직 없는 모양이에요.</p>';
+  const d1 = sortedDots(padDots), d2 = sortedDots(padDots2);
+  if (padTwo && d2.length) {
+    if (!d1.length) { $('#padResultChar').textContent = '첫째 칸부터 눌러 주세요'; $('#padResultKind').textContent = ''; $('#padReadings').innerHTML = ''; return; }
+    $('#padResultChar').textContent = `${d1.join('·')} | ${d2.join('·')}번 점`;
+    $('#padResultKind').textContent = '점자 문자 ' + dotsToUnicode(d1) + dotsToUnicode(d2);
+    const both = twoReadings()[d1.join('-') + '|' + d2.join('-')] || [];
+    $('#padReadings').innerHTML = (both.length ? `<p>두 칸을 함께 읽으면 이렇게 읽혀요.</p><ul>${readList(both)}</ul>` : '<p>두 칸이 한 덩어리로 읽히는 글자·부호는 없어요.</p>')
+      + `<p style="margin-top:8px">칸마다 따로 읽으면</p><ul><li>첫째 칸: ${esc(readInline(oneReadings(d1)))}</li><li>둘째 칸: ${esc(readInline(oneReadings(d2)))}</li></ul>`;
+    return;
+  }
+  if (!d1.length) { $('#padResultChar').textContent = '점을 눌러 보세요'; $('#padResultKind').textContent = ''; $('#padReadings').innerHTML = ''; return; }
+  $('#padResultChar').textContent = d1.join('·') + '번 점';
+  $('#padResultKind').textContent = '점자 문자 ' + dotsToUnicode(d1);
+  const rs = oneReadings(d1);
+  $('#padReadings').innerHTML = (rs.length
+    ? `<p>${rs.length > 1 ? '같은 모양이 글자 안의 자리에 따라 이렇게 읽혀요.' : '이렇게 읽혀요.'}</p><ul>${readList(rs)}</ul>`
+    : '<p>한 칸으로 읽는 글자가 아직 없는 모양이에요.</p>') + (padTwo ? '<p style="margin-top:8px">둘째 칸도 누르면 두 칸을 함께 읽어 줘요.</p>' : '');
 }
-$('#padCell').addEventListener('click', e => {
+$('#padCells').addEventListener('click', e => {
   const b = e.target.closest('[data-dot]'); if (!b) return;
-  const n = Number(b.dataset.dot); padDots.has(n) ? padDots.delete(n) : padDots.add(n);
+  const set = b.dataset.cell === '2' ? padDots2 : padDots, n = Number(b.dataset.dot);
+  set.has(n) ? set.delete(n) : set.add(n);
   syncPadCell(); renderPadResult(); markDid('braille');
 });
-$('#padReset').addEventListener('click', () => { padDots.clear(); syncPadCell(); renderPadResult(); });
+$('#padTwo').addEventListener('click', () => setPadTwo(!padTwo));
+$('#padReset').addEventListener('click', () => { padDots.clear(); padDots2.clear(); syncPadCell(); renderPadResult(); });
 // ---- 글자 → 점자 변환기 ----
 function renderBraillePanel() {
   const text = $('#bpInput').value.slice(0, 200);
@@ -955,7 +1000,7 @@ $('#quizArea').addEventListener('click', e => {
   if (t.closest('#quizEndNo')) { $('#quizEndConfirm').hidden = true; return; }
   if (t.closest('#quizEndYes')) { s.ended = true; renderQuizResult(); return; }
   if (t.closest('#quizNext')) { s.i++; renderQuiz(); window.scrollTo(0, 0); return; }
-  if (t.closest('#quizPad')) { padDots = new Set(q.clue[0]); syncPadCell(); renderPadResult(); store.set('track', 'braille'); go('braille'); showBraillePanel('pad'); return; }
+  if (t.closest('#quizPad')) { const two = q.clue.length === 2; setPadTwo(two); padDots = new Set(q.clue[0]); padDots2 = new Set(two ? q.clue[1] : []); syncPadCell(); renderPadResult(); store.set('track', 'braille'); go('braille'); showBraillePanel('pad'); return; }
   if (t.closest('#quizRelearn')) { const w = WORD_BY_ID.get(String(q.id)); if (w) openWordInDictionary(w); return; }
   if (t.closest('#quizReplay')) { const v = $('#quizClueVideo'); if (v) { v.currentTime = 0; v.play(); } return; }
 });

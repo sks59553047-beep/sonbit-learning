@@ -436,3 +436,11 @@ body{word-break:keep-all;overflow-wrap:break-word}
 .vopt.correct{border-color:var(--teal);background:var(--mint)}
 .vopt.wrong{border-color:var(--danger);background:var(--danger-bg)}
 .vopt.gone{opacity:.35}
+
+/* ---------- 점자 연습 패드: 한 칸 / 두 칸 ---------- */
+.padcells{display:flex;gap:12px;justify-content:center;align-items:flex-start}
+.padcol{display:flex;flex-direction:column;align-items:center;gap:6px}
+.padlbl{font-size:0.75rem;font-weight:700;color:var(--muted)}
+.padbtns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+@media (max-width:440px){ .padcells.two .braillecell{padding:12px;gap:9px} .padcells.two .braillecell .dot{width:44px;height:44px;font-size:1rem} }
+@media (max-width:360px){ .padcells.two{gap:8px} .padcells.two .braillecell{padding:10px;gap:8px} .padcells.two .braillecell .dot{width:40px;height:40px} }

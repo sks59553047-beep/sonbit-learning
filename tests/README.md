@@ -36,6 +36,13 @@
 | `features.mjs` | 단어장, 검색, 퀴즈(연습·도전·이어 풀기·복습), 기록 내보내기·가져오기·지우기 |
 | `qa.mjs` | 종합: 퀴즈 종류×난이도×범위 19가지를 끝까지 풀기 등 |
 | `overflow.mjs` | 320·360·390px 화면과 큰 글자에서 옆으로 넘치는 곳이 없는지 |
+| `error-report-live.mjs` | 실제 사이트에서 일부러 오류를 내면 GitHub 이슈(auto-error)가 생기는지(실제 주소에서만, gh 로그인 필요, 만든 이슈는 스스로 닫음) |
 | `verify-live.mjs` | 실제 주소의 파일이 내 컴퓨터 파일과 글자 하나까지 같은지(`--live`에서만) |
 
 `lib/cdp.mjs`는 크롬을 조작하는 도우미, `lib/serve.mjs`는 시험용 정적 서버입니다.
+
+## 오류 자동 보고
+
+사이트(`assets/error-report.js`)가 사용자 화면의 오류를 `/api/error`로 보내면, Cloudflare 함수(`functions/api/error.js`)가 GitHub 이슈(라벨 `auto-error`)로 올립니다. 개인정보는 보내지 않습니다. GitHub 열쇠는 Cloudflare 비밀값 `GITHUB_TOKEN`(이 저장소 이슈 쓰기 권한만)에만 있습니다. 사이트를 올릴 때 `functions` 폴더를 wrangler 를 실행하는 폴더에 함께 두어야 함수가 같이 올라갑니다.
+
+새 오류 확인: `gh issue list --label auto-error`

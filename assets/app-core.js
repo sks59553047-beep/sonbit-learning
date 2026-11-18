@@ -102,7 +102,7 @@ window.addEventListener('popstate', e => {
   // 기록에 화면 정보가 없을 때(주소창에 #board/12 처럼 직접 넣었거나 처음 연 화면으로 돌아옴): 주소를 읽어 그 화면으로. 영상 화면은 영상 정보가 없어 학습으로
   const h = location.hash.slice(1).split('/')[0], v = VIEWS.includes(h) && h !== 'player' ? h : 'home';
   const arg = v === 'board' ? boardRoute(location.hash) : undefined;
-  if (v === 'board') history.replaceState({ view: 'board', arg }, '', location.hash);
+  if (v === 'board') history.replaceState({ view: 'board', arg }, '', bHash(arg));
   go(v, { push: false, arg });
 });
 $('#playerBack').addEventListener('click', () => { history.back(); });

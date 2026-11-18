@@ -1,4 +1,4 @@
-// 게시판 화면 시험(브라우저): 「의견」 버튼 → 목록·공지 → 글쓰기(검사·긴 글) → 글 보기 → 댓글 쓰기·지우기 → 본인 수정 → 주소로 바로 열기·뒤로 가기
+// 게시판 화면 시험(브라우저): 「의견」 버튼 → 목록·공지 → 글쓰기(검사·긴 글) → 글 보기 → 댓글 쓰기·지우기 → 수정 버튼 없음 → 주소로 바로 열기·뒤로 가기
 // → 신고·자동 숨김 → 쪽 번호·검색 → 본인 삭제 → 관리 화면(글·댓글, 숨김·공개·삭제, 검토 후 공개)
 // 사용: node board-ui.mjs <주소(시험용 서버)> [mobile|desktop]
 import { open, check } from './lib/cdp.mjs';
@@ -31,7 +31,7 @@ check('U2 누르면 게시판 목록(주소 #board, 제목 「의견 게시판�
 check('U3 처음엔 「전체 0개」·글이 없다는 안내, 맨 위에 공지(이용 안내)', /전체 0개/.test(await txt('.bcount')) && /아직 올라온 글이 없어요/.test(await txt('.btable')) && (await cnt('.bnotice')) === 1);
 check(`U4 ${desktop ? '넓은 화면은 표 머리줄(번호·제목·글쓴이·날짜·조회)이 보임' : '휴대폰은 표 머리줄 없이 두 줄 목록'}`, (await vis('.bth')) === desktop && /번호제목글쓴이날짜조회/.test((await txt('.bth')).replace(/ /g, '')));
 await click('[data-brules]', 600);
-check('U5 공지를 누르면 이용 안내(주소 #board/rules, 비밀번호로 직접 지우기·욕설 안 됨 안내)', (await hash()) === '#board/rules' && /게시판 이용 안내/.test(await txt('#bpH')) && /글은 직접 고치거나 지울 수 있고, 댓글은 지울 수 있어요/.test(await txt('.boardrules')) && !/글과 댓글은 쓸 때/.test(await txt('.boardrules')) && /욕설이 들어간 글·댓글·닉네임은 올릴 수 없어요/.test(await txt('.boardrules')) && (await focusId()) === 'bpH');
+check('U5 공지를 누르면 이용 안내(주소 #board/rules, 비밀번호로 직접 지우기·욕설 안 됨 안내)', (await hash()) === '#board/rules' && /게시판 이용 안내/.test(await txt('#bpH')) && /글과 댓글은 쓸 때 정한 비밀번호로 직접 지울 수 있어요/.test(await txt('.boardrules')) && /올린 글은 고칠 수 없으니/.test(await txt('.boardrules')) && /욕설이 들어간 글·댓글·닉네임은 올릴 수 없어요/.test(await txt('.boardrules')) && (await focusId()) === 'bpH');
 await click('[data-blist]', 800);
 
 // ---------- 글쓰기 ----------
@@ -74,25 +74,24 @@ check('U17 틀린 비밀번호는 거절 안내', /맞지 않아요/.test(await 
 await setv('.bcmt .bpw input', '5678'); await submit('.bcmt .bpw', 1200);
 check('U18 맞는 비밀번호면 댓글이 지워짐(댓글 0)', (await cnt('.bcmt')) === 0 && (await txt('#bcH .bcc')) === '0' && await toastHas(/댓글을 지웠어요/));
 
-// ---------- 본인 수정 ----------
-await click('[data-bown="edit"]', 300);
+// ---------- 글 고치기는 없음(2026-11-19 작업자님 요청으로 없앰) ----------
+check('U19 글 보기에는 「목록·삭제·신고」만 있고 「수정」 버튼은 없음', !(await cnt('[data-bown="edit"]')) && (await cnt('[data-bown="delete"]')) === 1 && !/수정/.test(await txt('.bacts')), await txt('.bacts'));
+await click('[data-bown="delete"]', 300);
 await setv('#bPostPanel .bpw input', '9999'); await submit('#bPostPanel .bpw', 900);
-check('U19 「수정」: 비밀번호가 틀리면 고칠 수 없음', /맞지 않아요/.test(await txt('#bPostPanel .bpwmsg')) && (await hash()) === '#board/' + id1);
-await setv('#bPostPanel .bpw input', '1234'); await submit('#bPostPanel .bpw', 900);
-check('U20 맞으면 「글 수정」 화면(주소 #board/edit/번호, 제목·내용이 채워져 있고 닉네임·비밀번호 칸은 없음)', (await hash()) === '#board/edit/' + id1 && (await txt('#bpH')) === '글 수정' && (await ev(`document.querySelector('#bwTitle').value`)) === '수어 사전에 바라는 점' && (await ev(`document.querySelector('#bwText').value.length`)) === LONG.length && !(await cnt('#bwNick,#bwPw')));
-await setv('#bwTitle', '고친 제목입니다'); await submit('#bwForm', 1400);
-check('U21 「수정 완료」 → 글 보기에 고친 제목과 「수정됨」', (await hash()) === '#board/' + id1 && (await txt('#bpH')) === '고친 제목입니다' && /수정됨/.test(await txt('.bmeta2')) && await toastHas(/고쳤어요/));
+check('U20 「삭제」: 비밀번호가 틀리면 지워지지 않고 그 글에 머묾', /맞지 않아요/.test(await txt('#bPostPanel .bpwmsg')) && (await hash()) === '#board/' + id1);
+await click('#bPostPanel [data-pclose]', 300);
+check('U21 글쓰기 안내에 「올린 글은 고칠 수 없어요」, 비밀번호 설명은 「지울 때 필요」', await (async () => { await click('[data-blist]', 800); await click('[data-bwrite]', 600); const ok = /올린 글은 고칠 수 없으니/.test(await txt('#bwForm')) && /글을 지울 때 필요해요/.test(await txt('#bwPwHelp')) && !/고치거나/.test(await txt('#bwForm')); await click('[data-bcancel]', 600); return ok; })());
 
 // ---------- 주소로 바로 열기·뒤로 가기 ----------
 await c.goto(BASE + '?r=' + Date.now() + '#board/' + id1, 2200);
-check('U22 글 주소(#board/번호)로 바로 열면 그 글이 열림', (await vis('#view-board')) && (await txt('#bpH')) === '고친 제목입니다');
+check('U22 글 주소(#board/번호)로 바로 열면 그 글이 열림', (await vis('#view-board')) && (await txt('#bpH')) === '수어 사전에 바라는 점');
 await click('#boardBack', 900);
 check('U23 바로 연 글에서 왼쪽 위 화살표 → 게시판 목록', (await hash()) === '#board' && (await cnt('.btable [data-bid]')) === 2);
 await click(`[data-bid="${id2}"]`, 1000);
 await ev('history.back()'); await sleep(1000);
 check('U24 브라우저 뒤로 가기: 글 → 목록', (await hash()) === '#board' && (await cnt('.btable [data-bid]')) === 2);
 await c.goto(BASE + '?r2=' + Date.now() + '#board/edit/' + id1, 2200);
-check('U25 비밀번호 확인 없이 수정 주소로 들어오면 글 보기로', (await txt('#bpH')) === '고친 제목입니다' && !(await cnt('#bwForm')));
+check('U25 예전 수정 주소(#board/edit/번호)로 들어오면 그 글 보기로', (await txt('#bpH')) === '수어 사전에 바라는 점' && !(await cnt('#bwForm')) && (await hash()) === '#board/' + id1, await hash());
 
 // ---------- 신고 ----------
 await c.goto(BASE + '?r3=' + Date.now() + '#board/' + id2, 2200);

@@ -1,5 +1,5 @@
 // 게시판 서버 쪽 시험: 진짜 함수 코드를 시험용 서버(내 컴퓨터 SQLite)에서 돌려 확인한다.
-// 글쓰기(제목·닉네임·비밀번호)·글 검사·도배 제한·조회수·본인 수정/삭제·댓글·신고 자동 숨김·관리자·검토 후 공개·쪽 번호·검색
+// 글쓰기(제목·닉네임·비밀번호)·글 검사·도배 제한·조회수·본인 삭제(고치기 없음)·댓글·신고 자동 숨김·관리자·검토 후 공개·쪽 번호·검색
 // 사용: node board-api.mjs <주소(시험용 서버)>   예) http://127.0.0.1:8765/
 import { check } from './lib/cdp.mjs';
 const BASE = (process.argv[2] || 'http://127.0.0.1:8765/').replace(/\/$/, '');
@@ -60,22 +60,21 @@ check('A9 글 보기: 내용·글쓴이 나옴, 비밀번호는 안 나감', g1.
 check('A10 조회수는 같은 사람이 여러 번 열어도 하루 한 번만 셈(1→1→2)', g1.d.post.views === 1 && g2.d.post.views === 1 && g3.d.post.views === 2 && (await list()).posts[0].views === 2);
 check('A11 없는 글은 404', (await read(9999)).s === 404);
 
-// ---------- 본인 수정·삭제 ----------
-let x = await own({ action: 'check', id: id1, pw: '0000' });
-check('A12 비밀번호가 틀리면 고치기 거절', x.s === 403 && /맞지 않아요/.test(x.d.message));
-x = await own({ action: 'check', id: id1, pw: '1234' });
-check('A13 비밀번호가 맞으면 고칠 제목·내용을 받음', x.s === 200 && x.d.title === '조회수 시험' && x.d.text.includes('도움이'));
-x = await own({ action: 'edit', id: id1, pw: '1234', title: '고친 제목입니다', text: '고친 내용입니다. 잘 보이나요?' });
+// ---------- 본인 삭제(글 고치기는 2026-11-19 작업자님 요청으로 없앰) ----------
+let x = await own({ action: 'edit', id: id1, pw: '1234', title: '고친 제목입니다', text: '고친 내용입니다. 잘 보이나요?' });
 g1 = await read(id1);
-check('A14 고치면 제목·내용이 바뀌고 「수정됨」 시각이 남음', x.s === 200 && g1.d.post.title === '고친 제목입니다' && g1.d.post.text.startsWith('고친 내용') && g1.d.post.updated > 0 && (await list()).posts[0].title === '고친 제목입니다');
-check('A15 고칠 때도 글 검사(링크 등)', (await own({ action: 'edit', id: id1, pw: '1234', title: '고친 제목', text: 'http://spam.example 광고입니다' })).s === 400);
+check('A12 글 고치기는 없음: 비밀번호가 맞아도 고치기 요청은 거절(400), 글은 그대로', x.s === 400 && g1.d.post.title === '조회수 시험' && g1.d.post.text.includes('도움이'), JSON.stringify(x.d));
+x = await own({ action: 'check', id: id1, pw: '1234' });
+check('A13 고칠 내용 받아 가기(check)도 거절(400)하고 제목·내용을 내주지 않음', x.s === 400 && !('title' in x.d) && !('text' in x.d));
+check('A14 글 보기에 「수정됨」 정보가 없음', !('updated' in g1.d.post), Object.keys(g1.d.post).join());
+check('A15 비밀번호 없이 지우기는 거절', (await own({ action: 'delete', id: id1 })).s === 403 && (await read(id1)).s === 200);
 await cmt({ post_id: id1, text: '이 글에 단 댓글' });
 check('A16 틀린 비밀번호로는 못 지움', (await own({ action: 'delete', id: id1, pw: '9999' })).s === 403 && (await read(id1)).s === 200);
 x = await own({ action: 'delete', id: id1, pw: '1234' });
 check('A17 맞는 비밀번호로 지우면 글과 댓글이 모두 사라짐', x.s === 200 && (await read(id1)).s === 404 && (await adm('GET', '/api/admin/board?kind=comment')).d.items.length === 0);
 const id2 = (await write({ title: '비밀번호 맞히기 시험' })).d.id;
-let last = 0; for (let i = 0; i < 11; i++) last = (await own({ action: 'check', id: id2, pw: 'guess' + i }, '192.0.2.99')).s;
-check('A18 비밀번호를 10번 넘게 틀리면 그 사람은 10분 동안 막힘(다른 사람은 됨)', last === 429 && (await own({ action: 'check', id: id2, pw: '1234' }, '192.0.2.99')).s === 429 && (await own({ action: 'check', id: id2, pw: '1234' }, '192.0.2.98')).s === 200);
+let last = 0; for (let i = 0; i < 11; i++) last = (await own({ action: 'delete', id: id2, pw: 'guess' + i }, '192.0.2.99')).s;
+check('A18 비밀번호를 10번 넘게 틀리면 그 사람은 10분 동안 막힘(다른 사람은 됨)', last === 429 && (await own({ action: 'delete', id: id2, pw: '1234' }, '192.0.2.99')).s === 429 && (await read(id2)).s === 200 && (await own({ action: 'delete', id: id2, pw: '1234' }, '192.0.2.98')).s === 200);
 
 // ---------- 댓글 ----------
 await reset();
@@ -131,7 +130,8 @@ check('A34 켜면 새 글·댓글은 대기로 들어가 안 보임', pw1.d.pend
 check('A35 관리자는 대기 글·댓글을 봄', (await adm('GET', '/api/admin/board?filter=pending')).d.items.length === 1 && (await adm('GET', '/api/admin/board?kind=comment&filter=pending')).d.items.length === 1);
 await adm('POST', '/api/admin/board', { kind: 'post', action: 'show', id: pw1.d.id }); await adm('POST', '/api/admin/board', { kind: 'comment', action: 'show', id: pc1.d.id });
 check('A36 승인하면 보임', (await list()).total === 2 && (await read(vis)).d.comments.length === 1);
-check('A37 켜져 있을 때 글을 고치면 다시 승인 대기', (await own({ action: 'edit', id: vis, pw: '1234', title: '고친 글', text: '검토 중에 고친 내용이에요' })).d.pending === true && (await list()).total === 1);
+const pw2 = await write({ title: '대기 중에 지울 글', text: '승인 전에 본인이 지우는 시험 글이에요' });
+check('A37 승인 대기 중인 글도 본인이 비밀번호로 지울 수 있음', pw2.d.pending === true && (await own({ action: 'delete', id: pw2.d.id, pw: '1234' })).s === 200 && (await adm('GET', '/api/admin/board?filter=pending')).d.items.length === 0);
 await adm('POST', '/api/admin/board', { action: 'mode', premod: false });
 check('A38 끄면 다시 바로 공개', (await write({ title: '스위치를 끈 뒤의 글', text: '스위치를 끈 뒤에 올린 글이에요' })).d.pending === false);
 
@@ -155,10 +155,9 @@ const okPost = await write({ title: '새끼손가락 수어 질문', text: '새�
 // [이름, 응답, 안내가 시작해야 할 말(어느 칸인지)]
 const rb = [
   ['내용', await write({ text: '이거 씨1발 왜 안 돼요' }), '내용에'], ['제목', await write({ title: '씨 발 진짜' }), '제목에'], ['닉네임', await write({ nick: '씨발이' }), '닉네임에'],
-  ['댓글', await cmt({ post_id: okPost.d.id, text: '씨발 좋네요' }), '댓글에'], ['댓글 닉네임', await cmt({ post_id: okPost.d.id, text: '좋은 글이에요', nick: '씨.발' }), '닉네임에'],
-  ['고치기', await own({ action: 'edit', id: okPost.d.id, pw: '1234', title: '고친 제목', text: '씨발 고친 내용이에요' }), '내용에']
+  ['댓글', await cmt({ post_id: okPost.d.id, text: '씨발 좋네요' }), '댓글에'], ['댓글 닉네임', await cmt({ post_id: okPost.d.id, text: '좋은 글이에요', nick: '씨.발' }), '닉네임에']
 ].filter(([, x, head]) => !(x.s === 400 && rudeRe.test(x.d.message) && x.d.message.startsWith(head)));
-check('A42 욕설은 내용·제목·닉네임·댓글·고치기 모두 거절하고 「고운 말로」 안내(찾은 말은 첫 글자만), 「새끼손가락·시발점」 글은 올라감',
+check('A42 욕설은 내용·제목·닉네임·댓글 모두 거절하고 「고운 말로」 안내(찾은 말은 첫 글자만), 「새끼손가락·시발점」 글은 올라감',
   okPost.s === 200 && rb.length === 0 && (await list()).total === 1 && (await read(okPost.d.id)).d.post.text.includes('시발점'), rb.map(([n, x]) => n + ':' + x.s + ' ' + x.d.message).join(' | '));
 await reset();
 process.exit(0);

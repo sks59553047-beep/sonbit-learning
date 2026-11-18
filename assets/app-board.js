@@ -1,11 +1,11 @@
 // 손빛 배움터 — 의견 게시판(익명, 일반 게시판 형태). 글·댓글은 Cloudflare 서버(functions/api/board)에 저장되고 누구나 읽을 수 있다.
-// 화면: 목록(번호·제목·글쓴이·날짜·조회, 쪽 번호, 검색) / 글 보기(+댓글) / 글쓰기·수정 / 이용 안내.
-// 주소: #board(목록) #board/12(글) #board/write #board/edit/12 #board/rules — 뒤로 가기·새로 고침·주소 공유가 된다.
+// 화면: 목록(번호·제목·글쓴이·날짜·조회, 쪽 번호, 검색) / 글 보기(+댓글) / 글쓰기 / 이용 안내. 글 고치기는 2026-11-19 없앰(지우기만).
+// 주소: #board(목록) #board/12(글) #board/write #board/rules — 뒤로 가기·새로 고침·주소 공유가 된다.
 // 화면 동작 코드는 assets/app-*.js 로 나뉘어 있고 index.html 에서 app-core → … → app-player → app-board → app-start 순서로 읽힌다.
 'use strict';
 const BOARD_REASONS = ['욕설·혐오', '광고·도배', '개인정보', '기타'];
 const BLIM = { titleMin: 2, textMin: 5, commentMin: 2, max: 10000, pwMin: 4 };   // 서버(functions/_lib/board.js LIM)와 같은 값
-const board = { arg: { p: 'list', page: 1 }, lastList: { p: 'list', page: 1 }, opened: 0, sending: false, edit: null, post: null, premod: false };
+const board = { arg: { p: 'list', page: 1 }, lastList: { p: 'list', page: 1 }, opened: 0, sending: false, post: null, premod: false };
 const bReported = () => { const a = store.get('breported', []); return Array.isArray(a) ? a : []; };   // 이 기기에서 이미 신고한 글(p12)·댓글(c5)
 function bMarkReported(key) { const a = bReported(); if (!a.includes(key)) store.set('breported', a.concat(key).slice(-300), true); }
 const p2 = n => String(n).padStart(2, '0');
@@ -28,12 +28,12 @@ async function boardFetch(url, body) {
 }
 
 // ---------- 주소와 화면 ----------
-function bHash(a) { return a.p === 'read' ? '#board/' + a.id : a.p === 'write' ? '#board/write' : a.p === 'edit' ? '#board/edit/' + a.id : a.p === 'rules' ? '#board/rules' : '#board'; }
+function bHash(a) { return a.p === 'read' ? '#board/' + a.id : a.p === 'write' ? '#board/write' : a.p === 'rules' ? '#board/rules' : '#board'; }
 function boardRoute(hash) {
   const m = String(hash || '').replace(/^#/, '').split('/');
   if (m[1] === 'write') return { p: 'write' };
   if (m[1] === 'rules') return { p: 'rules' };
-  if (m[1] === 'edit' && +m[2] > 0) return { p: 'edit', id: +m[2] };
+  if (m[1] === 'edit' && +m[2] > 0) return { p: 'read', id: +m[2] };   // 고치기를 없애기 전의 주소(#board/edit/12)는 글 보기로
   if (+m[1] > 0) return { p: 'read', id: +m[1] };
   return { p: 'list', page: 1 };
 }
@@ -45,10 +45,9 @@ function boardNav(a, how = 'push') {
 }
 function renderBoard(a, focus) {
   a = a || { p: 'list', page: 1 };
-  if (a.p === 'edit' && !(board.edit && board.edit.id === a.id)) a = { p: 'read', id: a.id };   // 새로 고침 등으로 비밀번호 확인이 없으면 글 보기로
   board.arg = a;
   if (a.p === 'read') bRead(a, focus);
-  else if (a.p === 'write' || a.p === 'edit') bWrite(a, focus);
+  else if (a.p === 'write') bWrite(a, focus);
   else if (a.p === 'rules') bRules(focus);
   else bList(a, focus);
 }
@@ -124,11 +123,11 @@ async function bRead(a, focus) {
   const done = bReported().includes('p' + p.id), nick = store.get('bnick', '');
   bShow(`<article class="bread card" aria-labelledby="bpH">
       <h2 id="bpH" class="bread-t" tabindex="-1">${esc(p.title)}</h2>
-      <p class="bmeta2"><b class="bwho">${esc(p.nick)}</b><span>${bDateFull(p.created)}</span><span>조회 ${p.views}</span>${p.updated ? '<span>수정됨</span>' : ''}</p>
+      <p class="bmeta2"><b class="bwho">${esc(p.nick)}</b><span>${bDateFull(p.created)}</span><span>조회 ${p.views}</span></p>
       <div class="btext bbody">${esc(p.text)}</div>
     </article>
     <div class="bacts"><button type="button" class="btn line small" data-blist>목록</button><span class="bsp"></span>
-      <button type="button" class="btn ghost small" data-bown="edit">수정</button><button type="button" class="btn ghost small" data-bown="delete">삭제</button>
+      <button type="button" class="btn ghost small" data-bown="delete">삭제</button>
       <button type="button" class="btn ghost small" data-breport="p${p.id}"${done ? ' disabled' : ''}>${done ? '신고함' : '신고'}</button></div>
     <div class="bpanel card" id="bPostPanel" hidden></div>
     <section class="bcomments card" aria-labelledby="bcH">
@@ -147,7 +146,7 @@ async function bRead(a, focus) {
 }
 function bPwForm(mode, id, label) {
   return `<form class="bpw" data-mode="${mode}" data-id="${id}" novalidate><label class="lbl2" for="bpw-${mode}-${id}">${label}</label>
-    <div class="bpwrow"><input class="bin" type="password" id="bpw-${mode}-${id}" maxlength="30" autocomplete="current-password"><button type="submit" class="btn primary small">${mode === 'edit' ? '확인' : '지우기'}</button><button type="button" class="btn ghost small" data-pclose>취소</button></div>
+    <div class="bpwrow"><input class="bin" type="password" id="bpw-${mode}-${id}" maxlength="30" autocomplete="current-password"><button type="submit" class="btn primary small">지우기</button><button type="button" class="btn ghost small" data-pclose>취소</button></div>
     <p class="note amber bpwmsg" role="alert" hidden></p></form>`;
 }
 function bReportForm(key) {
@@ -156,20 +155,19 @@ function bReportForm(key) {
 }
 function bOpenPanel(panel, html) { panel.innerHTML = html; panel.hidden = false; const f = $('input', panel); if (f) f.focus(); }
 
-// ---------- 글쓰기·수정 ----------
+// ---------- 글쓰기(2026-11-19 작업자님 요청으로 글 고치기는 없앰) ----------
 function bWrite(a, focus) {
-  const edit = a.p === 'edit' ? board.edit : null;
   bShow(`<form class="card bwform" id="bwForm" novalidate>
-      <h2 id="bpH" tabindex="-1">${edit ? '글 수정' : '글쓰기'}</h2>
-      <p class="note">이름·전화번호 같은 개인정보와 링크·이메일은 올릴 수 없어요. <button type="button" class="blink" data-brules>이용 안내</button></p>
-      ${edit ? '' : `<div class="bwrow"><div><label class="lbl2" for="bwNick">닉네임</label><input class="bin" id="bwNick" maxlength="12" placeholder="익명" value="${esc(store.get('bnick', ''))}" autocomplete="off"></div>
+      <h2 id="bpH" tabindex="-1">글쓰기</h2>
+      <p class="note">이름·전화번호 같은 개인정보와 링크·이메일은 올릴 수 없어요. 올린 글은 고칠 수 없으니 한 번 더 읽어 보고 올려 주세요. <button type="button" class="blink" data-brules>이용 안내</button></p>
+      <div class="bwrow"><div><label class="lbl2" for="bwNick">닉네임</label><input class="bin" id="bwNick" maxlength="12" placeholder="익명" value="${esc(store.get('bnick', ''))}" autocomplete="off"></div>
         <div><label class="lbl2" for="bwPw">비밀번호</label><input class="bin" id="bwPw" type="password" maxlength="30" autocomplete="new-password" aria-describedby="bwPwHelp"></div></div>
-        <p class="bhelp" id="bwPwHelp">비밀번호는 글을 고치거나 지울 때 필요해요(4글자 이상). 잊으면 되찾을 수 없어요.</p>`}
-      <label class="lbl2" for="bwTitle">제목</label><input class="bin" id="bwTitle" maxlength="100" value="${edit ? esc(edit.title) : ''}" autocomplete="off">
-      <label class="lbl2" for="bwText">내용</label><textarea class="bptext" id="bwText" rows="10">${edit ? esc(edit.text) : ''}</textarea>
+        <p class="bhelp" id="bwPwHelp">비밀번호는 글을 지울 때 필요해요(4글자 이상). 잊으면 되찾을 수 없어요.</p>
+      <label class="lbl2" for="bwTitle">제목</label><input class="bin" id="bwTitle" maxlength="100" autocomplete="off">
+      <label class="lbl2" for="bwText">내용</label><textarea class="bptext" id="bwText" rows="10"></textarea>
       <input type="text" id="bwHp" class="visually-hidden" tabindex="-1" autocomplete="off" aria-hidden="true">
       <p class="note" id="bwMsg" role="status" hidden></p>
-      <div class="bwbtns"><button type="button" class="btn line" data-bcancel>취소</button><button type="submit" class="btn primary" id="bwSubmit">${edit ? '수정 완료' : '등록'}</button></div>
+      <div class="bwbtns"><button type="button" class="btn line" data-bcancel>취소</button><button type="submit" class="btn primary" id="bwSubmit">등록</button></div>
     </form>`, focus);
   board.opened = Date.now();
 }
@@ -182,7 +180,7 @@ function bRules(focus) {
       <li>손빛 배움터를 쓰며 느낀 점, 바라는 점, 하고 싶은 이야기를 <b>이름 없이</b> 남기는 곳이에요. 올라온 글과 댓글은 누구나 볼 수 있어요.</li>
       <li>이름·전화번호·주소 같은 <b>개인정보는 적지 마세요.</b> 링크와 이메일도 올릴 수 없어요.</li>
       <li>닉네임을 비우면 「익명」으로 보여요. 운영자로 오해할 수 있는 닉네임은 쓸 수 없어요.</li>
-      <li>쓸 때 정한 비밀번호로 <b>글은 직접 고치거나 지울 수 있고, 댓글은 지울 수 있어요.</b> 비밀번호를 잊으면 되찾을 수 없으니, 지워야 할 글이 있으면 「신고」를 눌러 주세요.</li>
+      <li>글과 댓글은 쓸 때 정한 <b>비밀번호로 직접 지울 수 있어요.</b> 올린 글은 고칠 수 없으니, 고치고 싶으면 지우고 다시 써 주세요. 비밀번호를 잊으면 되찾을 수 없으니, 지워야 할 글이 있으면 「신고」를 눌러 주세요.</li>
       <li><b>욕설이 들어간 글·댓글·닉네임은 올릴 수 없어요.</b> 다른 사람을 헐뜯거나 괴롭히는 글, 광고는 운영자가 지우고, 서로 다른 세 분이 신고하면 자동으로 숨겨져요.</li>
       <li>도배를 막으려고 글은 10분에 2개·하루 5개, 댓글은 10분에 5개·하루 30개까지 올릴 수 있어요.</li>
       <li>접속 주소는 도배를 막고 조회수를 세려고 알아볼 수 없는 형태로 잠깐만 쓰고, 글에는 남기지 않아요.</li>
@@ -215,9 +213,8 @@ $('#view-board').addEventListener('click', async e => {
   if (pg) { boardNav({ ...board.arg, page: +pg.dataset.bpage }); return; }
   if (t.closest('[data-pclose]')) { const panel = t.closest('.bpanel'); panel.hidden = true; panel.innerHTML = ''; return; }
   const own = t.closest('[data-bown]');
-  if (own) {                                                     // 글 수정·삭제: 글을 쓸 때 정한 비밀번호를 묻는다
-    const mode = own.dataset.bown, id = board.post.id;
-    bOpenPanel($('#bPostPanel'), bPwForm(mode, id, mode === 'edit' ? '글을 쓸 때 정한 비밀번호를 넣어 주세요.' : '이 글을 지울까요? 글을 쓸 때 정한 비밀번호를 넣어 주세요. 댓글도 함께 지워져요.'));
+  if (own) {                                                     // 글 삭제: 글을 쓸 때 정한 비밀번호를 묻는다
+    bOpenPanel($('#bPostPanel'), bPwForm('delete', board.post.id, '이 글을 지울까요? 글을 쓸 때 정한 비밀번호를 넣어 주세요. 댓글도 함께 지워져요.'));
     return;
   }
   const cdel = t.closest('[data-cdel]');
@@ -252,38 +249,33 @@ $('#view-board').addEventListener('submit', async e => {
     if (bLen(q) < 2) { toast('검색어를 두 글자 이상 넣어 주세요.'); return; }
     boardNav({ p: 'list', page: 1, q, field: $('#bsField').value }); return;
   }
-  if (f.classList.contains('bpw')) {                             // 비밀번호 확인(글 수정·삭제, 댓글 삭제)
+  if (f.classList.contains('bpw')) {                             // 비밀번호 확인(글 삭제, 댓글 삭제)
     const mode = f.dataset.mode, id = +f.dataset.id, pw = $('input', f).value, btn = $('button[type=submit]', f), msg = $('.bpwmsg', f);
     if (!pw) { msg.textContent = '비밀번호를 넣어 주세요.'; msg.hidden = false; return; }
     btn.disabled = true;
-    const r = mode === 'cdel' ? await boardFetch('/api/board/comment', { action: 'delete', id, pw }) : await boardFetch('/api/board/post', { action: mode === 'edit' ? 'check' : 'delete', id, pw });
+    const r = mode === 'cdel' ? await boardFetch('/api/board/comment', { action: 'delete', id, pw }) : await boardFetch('/api/board/post', { action: 'delete', id, pw });
     btn.disabled = false;
     if (!r.ok) { msg.textContent = r.data.message || '처리하지 못했어요.'; msg.hidden = false; $('input', f).select(); return; }
-    if (mode === 'edit') { board.edit = { id, pw, title: r.data.title, text: r.data.text }; boardNav({ p: 'edit', id }); return; }
     if (mode === 'delete') { toast('글을 지웠어요.'); boardNav({ ...board.lastList }, 'replace'); return; }
     toast('댓글을 지웠어요.'); bRead(board.arg, false); return;
   }
-  if (f.id === 'bwForm') {                                       // 글쓰기·수정
+  if (f.id === 'bwForm') {                                       // 글쓰기
     if (board.sending) return;
-    const edit = board.arg.p === 'edit' ? board.edit : null;
     const title = $('#bwTitle').value.replace(/\s+/g, ' ').trim(), text = $('#bwText').value.trim();
-    const nick = edit ? '' : $('#bwNick').value.trim(), pw = edit ? edit.pw : $('#bwPw').value;
+    const nick = $('#bwNick').value.trim(), pw = $('#bwPw').value;
     const stop = (m, el) => { bMsg('#bwMsg', m, true); if (el) $(el).focus(); };
-    if (!edit && bLen(pw) < BLIM.pwMin) return stop(`비밀번호를 ${BLIM.pwMin}글자 이상 정해 주세요. 나중에 고치거나 지울 때 필요해요.`, '#bwPw');
+    if (bLen(pw) < BLIM.pwMin) return stop(`비밀번호를 ${BLIM.pwMin}글자 이상 정해 주세요. 나중에 글을 지울 때 필요해요.`, '#bwPw');
     if (bLen(title) < BLIM.titleMin) return stop('제목을 2글자 이상 적어 주세요.', '#bwTitle');
     if (bLen(text) < BLIM.textMin) return stop('내용을 5글자 이상 적어 주세요.', '#bwText');
     if (bLen(text) > BLIM.max) return stop(`내용이 너무 길어요. 10,000글자까지 쓸 수 있어요(지금 ${bLen(text).toLocaleString('ko-KR')}글자).`, '#bwText');
-    board.sending = true; $('#bwSubmit').disabled = true; bMsg('#bwMsg', edit ? '고치는 중…' : '올리는 중…');
-    const r = edit
-      ? await boardFetch('/api/board/post', { action: 'edit', id: edit.id, pw, title, text })
-      : await boardFetch('/api/board', { title, text, nick, pw, hp: $('#bwHp').value, ms: Date.now() - board.opened });
+    board.sending = true; $('#bwSubmit').disabled = true; bMsg('#bwMsg', '올리는 중…');
+    const r = await boardFetch('/api/board', { title, text, nick, pw, hp: $('#bwHp').value, ms: Date.now() - board.opened });
     board.sending = false; const sb = $('#bwSubmit'); if (sb) sb.disabled = false;
     if (!r.ok) { bMsg('#bwMsg', r.data.message || '올리지 못했어요. 잠시 뒤에 다시 해 주세요.', true); return; }
-    if (!edit) store.set('bnick', nick, true);
-    board.edit = null;
-    if (r.data.pending) { toast(edit ? '고쳤어요. 운영자가 확인한 뒤에 다시 보여요.' : '올렸어요. 운영자가 확인한 뒤에 다른 분들께 보여요.'); boardNav({ p: 'list', page: 1 }, 'replace'); return; }
-    toast(edit ? '글을 고쳤어요.' : '글을 올렸어요. 고맙습니다.');
-    boardNav({ p: 'read', id: edit ? edit.id : r.data.id }, 'replace'); return;
+    store.set('bnick', nick, true);
+    if (r.data.pending) { toast('올렸어요. 운영자가 확인한 뒤에 다른 분들께 보여요.'); boardNav({ p: 'list', page: 1 }, 'replace'); return; }
+    toast('글을 올렸어요. 고맙습니다.');
+    boardNav({ p: 'read', id: r.data.id }, 'replace'); return;
   }
   if (f.id === 'bcForm') {                                       // 댓글 쓰기
     if (board.sending) return;

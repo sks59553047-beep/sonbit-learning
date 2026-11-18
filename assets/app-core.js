@@ -155,10 +155,17 @@ function fingerNames(d) {
   });
 }
 // 한국수어사전 공식 수형 설명(있으면): [설명, 표제어 번호, 'id'|'name']
-function officialOf(w) { return (typeof KSL_OFFICIAL !== 'undefined' && KSL_OFFICIAL[w.id]) || null; }
+// 국립국어원 설명이 없으면 서울복지포털 「수어 표준사전」 설명(ksl6-data.js, 영상과 비교해 같은 동작만)을 쓴다
+function officialOf(w) {
+  const o = typeof KSL_OFFICIAL !== 'undefined' && KSL_OFFICIAL[w.id];
+  if (o) return o;
+  const s = typeof KSL_SEOUL !== 'undefined' && KSL_SEOUL[w.id];
+  return s ? [s[0], s[1], 'seoul'] : null;
+}
 function descOf(w) { const o = officialOf(w); return o ? fingerNames(o[0]) : cleanDesc(w.d); }
 function officialNoteHtml(w) {
   const o = officialOf(w); if (!o) return '';
+  if (o[2] === 'seoul') return '<p class="onote">서울복지포털 「수어 표준사전」(서울특별시)의 설명이에요. 영상과 동작이 조금 다를 수 있어요.</p>';
   return o[2] === 'name'
     ? '<p class="onote">국립국어원 한국수어사전의 같은 뜻 표제어 설명이에요. 영상과 동작이 조금 다를 수 있어요.</p>'
     : '<p class="onote">국립국어원 한국수어사전의 공식 수형 설명이에요.</p>';

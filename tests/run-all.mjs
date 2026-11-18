@@ -25,6 +25,7 @@ const TESTS = [
   ['점자 규정 예시 227개', '../braille-tests/run-all.mjs', [], false, false, /불일치 0/],
   ['퀴즈 문제 시뮬레이션(정답 둘·보기 겹침·난이도 배분)', 'quiz-sim.mjs', [], false, false, /모든 점검 통과/],
   ['색 대비(밝은·어두운 화면)', 'contrast.mjs', [], false, false, /기준 미달 0 건/],
+  ['의견 게시판 욕설 거르기(막을 말·통과시킬 멀쩡한 말)', 'board-words.mjs', [], false],
   ['첫 화면과 기본 흐름', 'smoke.mjs', [BASE, 'mobile'], true],
   ['교육 영상 두 자리 배치·10편 열림', 'video-placement.mjs', [BASE, 'mobile'], true],
   ['다른 AI 검토 1차 보완(퀴즈 전환·복습 표시·점자 칸 수·복사 안내)', 'review1-fixes.mjs', [BASE, 'mobile'], true],

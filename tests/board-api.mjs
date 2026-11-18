@@ -147,5 +147,18 @@ check('A40 검색: 제목(9개)·글쓴이(3개)·제목+내용(1개), 「%」 �
 await reset(); last = 0;
 for (let i = 0; i < 11; i++) last = (await call('GET', '/api/admin/board', { admin: 'guess' + i, ip: '203.0.113.99' })).s;
 check('A41 관리 비밀번호를 10번 넘게 틀리면, 맞는 비밀번호도 잠깐 막힘(429)', last === 429 && (await call('GET', '/api/admin/board', { admin: ADMIN, ip: '203.0.113.99' })).s === 429 && (await call('GET', '/api/admin/board', { admin: ADMIN, ip: '203.0.113.50' })).s === 200);
+
+// ---------- 욕설 거르기(2026-11-19) ----------
+await reset();
+const rudeRe = /쓸 수 없는 말\(「씨\*」\).*고운 말/;
+const okPost = await write({ title: '새끼손가락 수어 질문', text: '새끼손가락을 펴는 수어가 시발점이에요' });
+// [이름, 응답, 안내가 시작해야 할 말(어느 칸인지)]
+const rb = [
+  ['내용', await write({ text: '이거 씨1발 왜 안 돼요' }), '내용에'], ['제목', await write({ title: '씨 발 진짜' }), '제목에'], ['닉네임', await write({ nick: '씨발이' }), '닉네임에'],
+  ['댓글', await cmt({ post_id: okPost.d.id, text: '씨발 좋네요' }), '댓글에'], ['댓글 닉네임', await cmt({ post_id: okPost.d.id, text: '좋은 글이에요', nick: '씨.발' }), '닉네임에'],
+  ['고치기', await own({ action: 'edit', id: okPost.d.id, pw: '1234', title: '고친 제목', text: '씨발 고친 내용이에요' }), '내용에']
+].filter(([, x, head]) => !(x.s === 400 && rudeRe.test(x.d.message) && x.d.message.startsWith(head)));
+check('A42 욕설은 내용·제목·닉네임·댓글·고치기 모두 거절하고 「고운 말로」 안내(찾은 말은 첫 글자만), 「새끼손가락·시발점」 글은 올라감',
+  okPost.s === 200 && rb.length === 0 && (await list()).total === 1 && (await read(okPost.d.id)).d.post.text.includes('시발점'), rb.map(([n, x]) => n + ':' + x.s + ' ' + x.d.message).join(' | '));
 await reset();
 process.exit(0);

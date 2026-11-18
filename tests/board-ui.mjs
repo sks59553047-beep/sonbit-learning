@@ -31,7 +31,7 @@ check('U2 누르면 게시판 목록(주소 #board, 제목 「의견 게시판�
 check('U3 처음엔 「전체 0개」·글이 없다는 안내, 맨 위에 공지(이용 안내)', /전체 0개/.test(await txt('.bcount')) && /아직 올라온 글이 없어요/.test(await txt('.btable')) && (await cnt('.bnotice')) === 1);
 check(`U4 ${desktop ? '넓은 화면은 표 머리줄(번호·제목·글쓴이·날짜·조회)이 보임' : '휴대폰은 표 머리줄 없이 두 줄 목록'}`, (await vis('.bth')) === desktop && /번호제목글쓴이날짜조회/.test((await txt('.bth')).replace(/ /g, '')));
 await click('[data-brules]', 600);
-check('U5 공지를 누르면 이용 안내(주소 #board/rules, 비밀번호로 직접 지우기 안내)', (await hash()) === '#board/rules' && /게시판 이용 안내/.test(await txt('#bpH')) && /비밀번호로 직접 고치거나 지울 수 있어요/.test(await txt('.boardrules')) && (await focusId()) === 'bpH');
+check('U5 공지를 누르면 이용 안내(주소 #board/rules, 비밀번호로 직접 지우기·욕설 안 됨 안내)', (await hash()) === '#board/rules' && /게시판 이용 안내/.test(await txt('#bpH')) && /비밀번호로 직접 고치거나 지울 수 있어요/.test(await txt('.boardrules')) && /욕설이 들어간 글·댓글·닉네임은 올릴 수 없어요/.test(await txt('.boardrules')) && (await focusId()) === 'bpH');
 await click('[data-blist]', 800);
 
 // ---------- 글쓰기 ----------
@@ -45,6 +45,8 @@ check('U7 빈 칸이면 보내지 않고 차례로 안내(비밀번호 4글자 �
 await sleep(1800);
 await setv('#bwText', '연락은 010-1234-5678 로 주세요 감사합니다'); await submit('#bwForm');
 check('U8 서버가 거절한 글은 이유를 알림(전화번호)', /전화번호/.test(await txt('#bwMsg')), await txt('#bwMsg'));
+await setv('#bwText', '이거 씨1발 왜 안 돼요 알려 주세요'); await submit('#bwForm');
+check('U8b 욕설이 든 글은 「고운 말로 바꿔 주세요」 안내(찾은 말은 「씨*」로 가려 보여 줌), 쓴 내용은 그대로 남음', /내용에 쓸 수 없는 말\(「씨\*」\).*고운 말로/.test(await txt('#bwMsg')) && /씨1발/.test(await ev(`document.querySelector('#bwText').value`)), await txt('#bwMsg'));
 const LONG = '수어 사전에 이런 단어가 더 있으면 좋겠어요.\n' + '사회복지 상담 사례관리 바우처 '.repeat(40).trim();
 await setv('#bwNick', '수어배움이'); await setv('#bwText', LONG); await submit('#bwForm', 1500);
 const id1 = Number((await hash()).split('/')[1]);

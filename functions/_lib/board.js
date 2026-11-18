@@ -1,6 +1,8 @@
 // 의견 게시판 공통 도구(functions/api/board/*, functions/api/admin/board.js 가 함께 쓴다).
 // 이 파일은 주소(route)가 아니라 공용 부품이라 이름이 _lib 로 시작한다.
 // 2026-11-18 일반 게시판 형태로 바꿈: 제목·닉네임·비밀번호(본인 수정·삭제), 조회수, 댓글, 쪽 번호, 검색.
+// 2026-11-19 욕설 거르기(badwords.js) 추가.
+import { badWord } from './badwords.js';
 export const PAGE = 20, HIDE_AT = 3;
 // 글자 수: 작업자님 요청으로 500자 제한을 없앰. 책 한 권을 붙여 넣는 장난만 막으려고 내용·댓글은 1만 자에서만 멈춘다.
 export const LIM = { textMin: 5, textMax: 10000, commentMin: 2, commentMax: 10000, titleMin: 2, titleMax: 100, nickMax: 12, pwMin: 4, pwMax: 30 };
@@ -57,6 +59,8 @@ function personal(text) {
   if (RE.phone.test(text) || RE.rrn.test(text)) return '전화번호나 주민등록번호 같은 개인정보는 올릴 수 없어요.';
   return '';
 }
+// 욕설을 찾았을 때 보여 줄 말. 찾은 말은 첫 글자만 보여 준다(어디를 고칠지 알 수 있게).
+const rude = (what, w) => `${what}에 쓸 수 없는 말(「${w}」)이 들어 있어요. 고운 말로 바꿔 주세요.`;
 // 글·제목·댓글을 다듬고 검사한다. 통과하면 { text }, 아니면 { error: 사용자에게 보여 줄 말 }
 // what 은 「내용」「제목」「댓글」(모두 받침이 있어 「을/이」로 끝맺음)
 export function checkText(raw, { min = LIM.textMin, max = LIM.textMax, what = '내용', oneLine = false } = {}) {
@@ -66,6 +70,7 @@ export function checkText(raw, { min = LIM.textMin, max = LIM.textMax, what = '�
   if (len < min) return { error: `${what}을 ${min}글자 이상 적어 주세요.` };
   if (len > max) return { error: `${what}이 너무 길어요. ${max.toLocaleString('ko-KR')}글자까지 쓸 수 있어요(지금 ${len.toLocaleString('ko-KR')}글자).` };
   if (!/[가-힣a-zA-Z][^]*[가-힣a-zA-Z]/.test(text)) return { error: `${what}에 글자가 들어 있는 문장을 적어 주세요.` };
+  const b = badWord(text); if (b) return { error: rude(what, b) };
   const p = personal(text); if (p) return { error: p };
   if (RE.repeat.test(text)) return { error: '같은 글자를 너무 많이 반복했어요.' };
   return { text };
@@ -76,6 +81,7 @@ export function checkNick(raw) {
   if (!nick) return { nick: '익명' };
   if ([...nick].length > LIM.nickMax) return { error: `닉네임은 ${LIM.nickMax}글자까지예요.` };
   if (/운영|관리자|관리인|admin|손빛|sonbit/i.test(nick.replace(/\s/g, ''))) return { error: '운영자로 오해할 수 있는 닉네임은 쓸 수 없어요.' };
+  const b = badWord(nick); if (b) return { error: rude('닉네임', b) };
   const p = personal(nick); if (p) return { error: p };
   return { nick };
 }

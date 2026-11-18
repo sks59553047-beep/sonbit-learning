@@ -39,7 +39,10 @@ const TESTS = [
   ['기능 전체(단어장·검색·퀴즈·기록 내보내기/가져오기)', 'features.mjs', [BASE], true, true],
   ['종합(퀴즈 종류×난이도×범위 19가지 완주 등)', 'qa.mjs', [BASE, 'mobile'], true, true],
   ...(LIVE ? [['실제 주소 파일이 내 컴퓨터 파일과 같음', 'verify-live.mjs', [], false]]
-    : [['좁은 화면(320~390px)·큰 글자에서 넘침 없음', 'overflow.mjs', [], true, true], ['두 칸 패드가 좁은 화면에 들어감', 'pad-two-fit.mjs', [], true]])
+    : [['좁은 화면(320~390px)·큰 글자에서 넘침 없음', 'overflow.mjs', [], true, true], ['두 칸 패드가 좁은 화면에 들어감', 'pad-two-fit.mjs', [], true],
+       // 게시판은 내 컴퓨터의 시험용 저장소(SQLite)에만 글을 쓴다. 실제 주소 시험(--live)에서는 진짜 게시판에 글이 올라가므로 돌리지 않는다.
+       ['의견 게시판 서버(글 검사·도배 제한·신고 3건 자동 숨김·관리자)', 'board-api.mjs', [BASE], false],
+       ['의견 게시판 화면(「의견」 버튼·글쓰기·신고·관리 화면)', 'board-ui.mjs', [BASE, 'mobile'], true]])
 ].filter(t => !(QUICK && t[4]));
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));

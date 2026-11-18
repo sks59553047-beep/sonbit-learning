@@ -444,3 +444,27 @@ body{word-break:keep-all;overflow-wrap:break-word}
 .padbtns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 @media (max-width:440px){ .padcells.two .braillecell{padding:12px;gap:9px} .padcells.two .braillecell .dot{width:44px;height:44px;font-size:1rem} }
 @media (max-width:360px){ .padcells.two{gap:8px} .padcells.two .braillecell{padding:10px;gap:8px} .padcells.two .braillecell .dot{width:40px;height:40px} }
+
+/* ---------- 의견 게시판: 위쪽 「의견」 버튼, 글쓰기, 글 목록, 신고 ---------- */
+.topbar-actions{align-items:center}
+.btn-board{display:inline-flex;align-items:center;gap:6px;min-height:42px;padding:0 14px 0 11px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ink);font-weight:800;font-size:0.8125rem;cursor:pointer}
+.btn-board:hover{border-color:var(--teal)}
+.btn-board .bi{display:grid;place-items:center;color:var(--teal)}
+@media (max-width:359px){ .btn-board{padding:0;width:42px;justify-content:center} .btn-board .bt{display:none} }
+.boardrules{margin:10px 0 0;padding-left:20px;font-size:0.8438rem;line-height:1.65;color:var(--muted)}
+.boardrules b{color:var(--ink)}
+.bform .bptext{margin-top:6px}
+.bformrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}
+#boardMsg{margin-top:10px}
+.blist{display:flex;flex-direction:column;gap:12px;margin-top:16px}
+.bpost{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:14px 16px;box-shadow:var(--shadow)}
+.btext{white-space:pre-wrap;overflow-wrap:anywhere;font-size:0.9688rem;line-height:1.65;margin:0}
+.bmeta{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;font-size:0.75rem;color:var(--muted)}
+.blink{border:0;background:none;color:var(--muted);text-decoration:underline;font-weight:700;font-size:0.8125rem;cursor:pointer;min-height:36px;padding:0 8px}
+.blink:disabled{text-decoration:none;cursor:default;opacity:.8}
+.breport{margin-top:10px;border-top:1px solid var(--line);padding-top:10px}
+.breport fieldset{border:0;margin:0;padding:0}
+.breport legend{font-size:0.8125rem;font-weight:800;margin-bottom:6px;padding:0}
+.rsn{display:flex;align-items:center;gap:8px;min-height:40px;font-size:0.9063rem}
+.rbtns{display:flex;gap:8px;margin-top:8px}
+#view-board .btn.block{margin-top:14px}

@@ -37,13 +37,21 @@
 | `features.mjs` | 단어장, 검색, 퀴즈(연습·도전·이어 풀기·복습), 기록 내보내기·가져오기·지우기 |
 | `qa.mjs` | 종합: 퀴즈 종류×난이도×범위 19가지를 끝까지 풀기 등 |
 | `overflow.mjs` | 320·360·390px 화면과 큰 글자에서 옆으로 넘치는 곳이 없는지 |
+| `board-api.mjs` | 의견 게시판 서버: 글 검사(짧은 글·링크·이메일·전화·주민번호·반복), 도배 제한, 신고 3건 자동 숨김, 관리자 비밀번호·잠금, 숨김·공개·삭제, 검토 후 공개, 쪽 넘기기(내 컴퓨터에서만) |
+| `board-ui.mjs` | 의견 게시판 화면: 위쪽 「의견」 버튼 자리, 글쓰기·거절 안내, 글 속 HTML이 실행되지 않음, 신고, 관리 화면(/admin)(내 컴퓨터에서만) |
 | `error-report-live.mjs` | 실제 사이트에서 일부러 오류를 내면 GitHub 이슈(auto-error)가 생기는지(실제 주소에서만, gh 로그인 필요, 만든 이슈는 스스로 닫음) |
 | `verify-live.mjs` | 실제 주소의 파일이 내 컴퓨터 파일과 글자 하나까지 같은지(`--live`에서만) |
 
-`lib/cdp.mjs`는 크롬을 조작하는 도우미, `lib/serve.mjs`는 시험용 정적 서버입니다.
+`lib/cdp.mjs`는 크롬을 조작하는 도우미, `lib/serve.mjs`는 시험용 서버입니다. 시험용 서버는 `functions/api`의 진짜 함수 코드를 그대로 돌리고, Cloudflare D1 대신 내 컴퓨터 메모리의 SQLite(`lib/dev-api.mjs`, `board/schema.sql`)를 씁니다. 그래서 게시판 시험은 진짜 게시판에 글을 남기지 않습니다.
 
 ## 오류 자동 보고
 
 사이트(`assets/error-report.js`)가 사용자 화면의 오류를 `/api/error`로 보내면, Cloudflare 함수(`functions/api/error.js`)가 GitHub 이슈(라벨 `auto-error`)로 올립니다. 개인정보는 보내지 않습니다. GitHub 열쇠는 Cloudflare 비밀값 `GITHUB_TOKEN`(이 저장소 이슈 쓰기 권한만)에만 있습니다. 사이트를 올릴 때 `functions` 폴더를 wrangler 를 실행하는 폴더에 함께 두어야 함수가 같이 올라갑니다.
 
 새 오류 확인: `gh issue list --label auto-error`
+
+## 의견 게시판
+
+글은 Cloudflare D1 저장소 `sonbit-board`(표 구조: `board/schema.sql`)에 저장되고, `functions/api/board`(읽기·쓰기·신고)와 `functions/api/admin/board`(관리)가 다룹니다. 저장하는 것은 글과 시각뿐이고, 접속 주소는 비밀값 `BOARD_SALT`를 섞어 알아볼 수 없게 바꾼 값으로만 도배 제한과 중복 신고 막기에 씁니다. 관리 화면은 https://sonbit.pages.dev/admin 이고 비밀번호는 Cloudflare 비밀값 `ADMIN_PASSWORD`에만 있습니다(저장소에 적지 않음). 신고 3건으로 숨겨진 글이 생기면 GitHub 이슈(라벨 `board-report`, 글 번호만)로 알립니다.
+
+신고로 숨겨진 글 확인: `gh issue list --label board-report`

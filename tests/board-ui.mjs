@@ -31,7 +31,7 @@ check('U2 누르면 게시판 목록(주소 #board, 제목 「의견 게시판�
 check('U3 처음엔 「전체 0개」·글이 없다는 안내, 맨 위에 공지(이용 안내)', /전체 0개/.test(await txt('.bcount')) && /아직 올라온 글이 없어요/.test(await txt('.btable')) && (await cnt('.bnotice')) === 1);
 check(`U4 ${desktop ? '넓은 화면은 표 머리줄(번호·제목·글쓴이·날짜·조회)이 보임' : '휴대폰은 표 머리줄 없이 두 줄 목록'}`, (await vis('.bth')) === desktop && /번호제목글쓴이날짜조회/.test((await txt('.bth')).replace(/ /g, '')));
 await click('[data-brules]', 600);
-check('U5 공지를 누르면 이용 안내(주소 #board/rules, 비밀번호로 직접 지우기·욕설 안 됨 안내)', (await hash()) === '#board/rules' && /게시판 이용 안내/.test(await txt('#bpH')) && /비밀번호로 직접 고치거나 지울 수 있어요/.test(await txt('.boardrules')) && /욕설이 들어간 글·댓글·닉네임은 올릴 수 없어요/.test(await txt('.boardrules')) && (await focusId()) === 'bpH');
+check('U5 공지를 누르면 이용 안내(주소 #board/rules, 비밀번호로 직접 지우기·욕설 안 됨 안내)', (await hash()) === '#board/rules' && /게시판 이용 안내/.test(await txt('#bpH')) && /글은 직접 고치거나 지울 수 있고, 댓글은 지울 수 있어요/.test(await txt('.boardrules')) && !/글과 댓글은 쓸 때/.test(await txt('.boardrules')) && /욕설이 들어간 글·댓글·닉네임은 올릴 수 없어요/.test(await txt('.boardrules')) && (await focusId()) === 'bpH');
 await click('[data-blist]', 800);
 
 // ---------- 글쓰기 ----------

@@ -44,7 +44,8 @@ function senseListHtml(w) {
 }
 // 펼친 단어: ① 단어장 담기 ② 영상·그림 ③ 동작 설명 ④ 뜻·예문 ⑤ 손모양과 위치
 function wordBodyHtml(w) {
-  const actions = `<div class="wactions">${favBtnHtml(w)}</div>`;
+  const share = `<button type="button" class="sharebtn" data-share="${esc(w.id)}"><span aria-hidden="true">🔗</span> 링크 공유</button>`;
+  const actions = `<div class="wactions">${favBtnHtml(w)}${share}</div>`;
   if (w.x) return actions + kslVideoBoxHtml(w.k, w.w, w.id) + officialBlockHtml(w) + senseListHtml(w) + signInfoHtml(w);
   return actions + (w.k ? kslVideoBoxHtml(w.k, w.w, w.id) : '') + descHtml(w) + aliasHtml(w);
 }
@@ -128,20 +129,58 @@ $('#signHome').addEventListener('click', e => {
   signTopic = b.dataset.topic; signCho = ''; renderSign(); window.scrollTo(0, 0);
 });
 $('#signTopicBack').addEventListener('click', () => { signTopic = ''; signCho = ''; renderSign(); window.scrollTo(0, 0); });
-$('#signSearch').addEventListener('input', e => { signQuery = e.target.value.trim(); signPinId = ''; renderSign(); });
+$('#signSearch').addEventListener('input', e => {
+  signQuery = e.target.value.trim(); signPinId = ''; renderSign();
+  if (/^#sign\//.test(location.hash)) history.replaceState({ view: 'sign' }, '', '#sign');   // 다른 단어를 찾기 시작하면 주소에서 단어 번호를 뗀다
+});
 $('#signCho').addEventListener('click', e => { const b = e.target.closest('[data-cho]'); if (!b) return; signCho = b.dataset.cho === '전체' ? '' : b.dataset.cho; renderSign(); });
 $('#signActions').addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (b) dispatchAct(b.dataset.act, b.dataset.arg); });
-// 퀴즈 해설 등에서 사전의 특정 단어를 바로 열어 준다
+// ---------- 단어 바로가기 주소(2026-11-19): #sign/단어번호(예: #sign/N421, #sign/KSL-0001) ----------
+// 퀴즈 해설 「사전에서 다시 보기」와 공유받은 링크가 모두 이 길로 그 단어를 펼쳐 보여 준다.
 function openWordInDictionary(w) {
+  store.set('track', 'sign');
+  go('sign', { arg: { wid: w.id } });
+}
+// go('sign', { arg: { wid } }) 에서 부른다: 그 단어를 검색해 맨 위에 놓고 펼친다
+function showSignWord(wid) {
+  const w = WORD_BY_ID.get(String(wid)); if (!w) return;
   signTopic = ''; signCho = ''; signQuery = w.w; signPinId = w.id;
   $('#signSearch').value = w.w;
-  store.set('track', 'sign');
-  go('sign'); renderSign();
-  const row = $('#signList .wordrow[data-wid="' + w.id + '"]');
+  renderSign();
+  const row = [...$$('#signList .wordrow')].find(r => r.dataset.wid === String(w.id));
   if (row) { row.open = true; setTimeout(() => row.scrollIntoView({ block: 'center' }), 80); }
+}
+// 주소(#sign/번호)에서 단어를 찾는다. 없는 번호면 안내하고 수어 첫 화면으로
+function signRoute(hash) {
+  const id = decodeURIComponent(String(hash || '').replace(/^#/, '').split('/')[1] || '');
+  if (!id) return undefined;
+  if (WORD_BY_ID.has(id)) return { wid: id };
+  setTimeout(() => toast('링크의 수어를 찾지 못했어요. 주제나 검색으로 찾아 주세요.'), 300);
+  return undefined;
+}
+function wordLink(w) { return location.origin + location.pathname + '#sign/' + encodeURIComponent(w.id); }
+// 휴대폰은 공유 창(카카오톡·문자 등), 컴퓨터는 링크 복사. 복사가 막히면 링크 칸을 보여 주고 골라 둔다
+async function shareWord(w, btn) {
+  const url = wordLink(w), title = `「${w.w}」 수어 — 손빛 배움터`;
+  if (navigator.share && window.matchMedia && matchMedia('(pointer: coarse)').matches) {
+    try { await navigator.share({ title, text: title, url }); return; } catch (e) { if (e && e.name === 'AbortError') return; }
+  }
+  try {
+    if (!navigator.clipboard) throw new Error('no clipboard');
+    await navigator.clipboard.writeText(url);
+    toast(`「${w.w}」 링크를 복사했어요. 붙여 넣어 보내 주세요.`);
+  } catch (e) {
+    const box = btn.closest('.wactions');
+    let inp = box.querySelector('.sharelink');
+    if (!inp) { inp = document.createElement('input'); inp.className = 'sharelink'; inp.readOnly = true; inp.setAttribute('aria-label', '이 수어의 링크'); box.appendChild(inp); }
+    inp.value = url; inp.focus(); inp.select();
+    toast('링크를 복사하지 못했어요. 아래 칸의 주소를 길게 눌러 복사해 주세요.');
+  }
 }
 $('#signList').addEventListener('toggle', e => { if (e.target.open) { fillWordBody(e.target); markDid('sign'); } }, true);
 $('#signList').addEventListener('click', e => {
+  const sb = e.target.closest('[data-share]');
+  if (sb) { const w = WORD_BY_ID.get(sb.dataset.share); if (w) shareWord(w, sb); return; }
   const fb = e.target.closest('[data-fav]');
   if (fb) {
     const id = fb.dataset.fav, on = toggleFav(id);

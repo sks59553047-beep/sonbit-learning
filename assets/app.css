@@ -172,7 +172,8 @@ button.rbox{width:100%;text-align:left;font:inherit;color:inherit;background:var
 .wordrow .vbadge.none{visibility:hidden}
 .wordrow .wbody{padding:0 14px 16px;display:flex;flex-direction:column;gap:10px}
 .wactions{display:flex;gap:8px;flex-wrap:wrap}
-.favbtn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:8px 14px;font-weight:800;font-size:0.8438rem;cursor:pointer;min-height:40px}
+.favbtn,.sharebtn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:8px 14px;font-weight:800;font-size:0.8438rem;cursor:pointer;min-height:40px}
+.sharelink{flex:1 1 100%;min-width:0;font:inherit;font-size:0.8125rem;color:var(--ink);background:var(--card);border:1px solid var(--field);border-radius:10px;padding:8px 10px}
 .favbtn .fs{color:var(--muted);font-size:1.0625rem;line-height:1}
 .favbtn[aria-pressed="true"]{background:var(--amber-bg);border-color:var(--amber);color:var(--amber)}
 .favbtn[aria-pressed="true"] .fs{color:var(--amber)}

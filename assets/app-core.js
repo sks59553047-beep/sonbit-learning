@@ -84,7 +84,9 @@ function go(view, opts) {
   $$('.navbtn').forEach(b => { const on = b.dataset.nav === view; b.classList.toggle('active', on); if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
   $('#pageTitle').textContent = TITLES[view] || '손빛 배움터';
   if (view !== 'player') { window.scrollTo(0, 0); setPlayerSrc(''); }
-  if (opts.push !== false) history.pushState({ view, arg: opts.arg }, '', '#' + view);
+  const wid = view === 'sign' && opts.arg && opts.arg.wid;   // 수어 사전의 특정 단어(#sign/번호)
+  if (opts.push !== false) history.pushState({ view, arg: opts.arg }, '', '#' + view + (wid ? '/' + encodeURIComponent(wid) : ''));
+  if (wid) showSignWord(wid);
   if (view === 'player' && opts.arg) openPlayer(opts.arg.id);
   if (view === 'home') renderHome();
   if (view === 'board') renderBoard(opts.arg);
@@ -101,8 +103,9 @@ window.addEventListener('popstate', e => {
   if (e.state && e.state.view) { go(e.state.view, { push: false, arg: e.state.arg }); return; }
   // 기록에 화면 정보가 없을 때(주소창에 #board/12 처럼 직접 넣었거나 처음 연 화면으로 돌아옴): 주소를 읽어 그 화면으로. 영상 화면은 영상 정보가 없어 학습으로
   const h = location.hash.slice(1).split('/')[0], v = VIEWS.includes(h) && h !== 'player' ? h : 'home';
-  const arg = v === 'board' ? boardRoute(location.hash) : undefined;
+  const arg = v === 'board' ? boardRoute(location.hash) : v === 'sign' ? signRoute(location.hash) : undefined;
   if (v === 'board') history.replaceState({ view: 'board', arg }, '', bHash(arg));
+  if (v === 'sign') history.replaceState({ view: 'sign', arg }, '', '#sign' + (arg ? '/' + encodeURIComponent(arg.wid) : ''));
   go(v, { push: false, arg });
 });
 $('#playerBack').addEventListener('click', () => { history.back(); });

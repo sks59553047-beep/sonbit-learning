@@ -30,6 +30,7 @@ const TESTS = [
   ['교육 영상 두 자리 배치·10편 열림', 'video-placement.mjs', [BASE, 'mobile'], true],
   ['다른 AI 검토 1차 보완(퀴즈 전환·복습 표시·점자 칸 수·복사 안내)', 'review1-fixes.mjs', [BASE, 'mobile'], true],
   ['다른 AI 검토 2차 보완(저장 실패·대본 순서·백업·범위 이름)', 'review2-fixes.mjs', [BASE], true],
+  ['수어 단어 링크(#sign/번호로 열기·링크 공유·뒤로 가기)', 'sign-link.mjs', [BASE], true],
   ['키보드만으로 퀴즈 풀기', 'keyboard.mjs', [BASE, 'desktop'], true],
   ['영상을 못 불러올 때 안내', 'video-fail.mjs', [BASE], true],
   ['예전 방식 기록 정리', 'migrate.mjs', [BASE], true],

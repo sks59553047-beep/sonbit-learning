@@ -21,4 +21,9 @@ if (start === 'board') {                       // 게시판은 글 주소(#board
   const arg = boardRoute(location.hash);
   history.replaceState({ view: 'board', arg, first: true }, '', bHash(arg));   // 예전 주소(#board/edit/12)는 글 주소로 바꿔 보여 준다
   go('board', { push: false, arg });
+} else if (start === 'sign') {                 // 수어 단어 링크(#sign/N421)로 바로 들어올 수 있다. 없는 번호면 안내하고 수어 첫 화면
+  const arg = signRoute(location.hash);
+  history.replaceState({ view: 'sign', arg, first: true }, '', '#sign' + (arg ? '/' + encodeURIComponent(arg.wid) : ''));
+  if (arg) store.set('track', 'sign');
+  go('sign', { push: false, arg });
 } else go(VIEWS.includes(start) ? start : 'home', { push: false });

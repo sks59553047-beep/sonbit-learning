@@ -236,25 +236,8 @@
         <button class="icon-btn" id="boardBack" type="button" aria-label="뒤로 가기"></button>
         <h1 id="boardH" tabindex="-1" style="font-size:1.25rem;font-weight:800">의견 게시판</h1>
       </div>
-      <div class="card" style="margin-top:12px">
-        <p class="note">손빛 배움터를 쓰며 느낀 점, 바라는 점, 하고 싶은 이야기를 이름 없이 남기는 곳이에요. 올라온 글은 누구나 볼 수 있어요.</p>
-        <ul class="boardrules">
-          <li>이름·전화번호·주소 같은 <b>개인정보는 적지 마세요.</b> 링크와 이메일도 올릴 수 없어요.</li>
-          <li>다른 사람을 헐뜯거나 괴롭히는 글, 광고는 운영자가 지우고, 신고가 3건 쌓이면 자동으로 숨겨져요.</li>
-          <li>올린 글은 직접 지울 수 없어요. 지워야 할 글은 「신고」를 눌러 주세요.</li>
-          <li>접속 주소는 도배를 막으려고 알아볼 수 없는 형태로 잠깐만 쓰고, 글에는 남기지 않아요.</li>
-        </ul>
-      </div>
-      <form class="card bform" id="boardForm" novalidate>
-        <label for="boardText" class="lbl2" style="margin-top:0">남기고 싶은 말</label>
-        <textarea class="bptext" id="boardText" maxlength="500" rows="4" placeholder="예: 수어 사전에 이런 단어가 있으면 좋겠어요."></textarea>
-        <input type="text" id="boardHp" name="nick_confirm" class="visually-hidden" tabindex="-1" autocomplete="off" aria-hidden="true">
-        <div class="bformrow"><span id="boardCount" class="note" aria-hidden="true">0 / 500</span><button class="btn primary" id="boardSubmit" type="submit">올리기</button></div>
-        <p class="note" id="boardMsg" role="status" hidden></p>
-      </form>
-      <p class="note amber" id="boardPremod" hidden>지금은 새 글을 운영자가 확인한 뒤에 보여 드리고 있어요.</p>
-      <div id="boardList" class="blist" aria-live="polite"></div>
-      <button class="btn line block" id="boardMore" type="button" hidden>더 보기</button>
+      <!-- 목록·글 보기·글쓰기·이용 안내는 assets/app-board.js 가 이 자리에 그린다 -->
+      <div id="boardPage" class="bpage"></div>
     </section>
 
     <!-- ===== 영상 플레이어 ===== -->

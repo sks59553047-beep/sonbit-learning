@@ -6,29 +6,33 @@
 <meta name="robots" content="noindex, nofollow">
 <title>손빛 배움터 — 게시판 관리</title>
 <style>
-  :root{--ink:#121830;--muted:#546078;--line:#dfe3ee;--teal:#00685e;--mint:#d3f5ee;--danger:#b3261e;--danger-bg:#fde8e6;--amber:#a05200;--amber-bg:#fff0dc;--surface:#f5f6fa;--card:#fff}
+  :root{--ink:#121830;--muted:#546078;--line:#dfe3ee;--teal:#00685e;--mint:#d3f5ee;--danger:#b3261e;--danger-bg:#fde8e6;--amber:#a05200;--amber-bg:#fff0dc;--surface:#f5f6fa;--card:#fff;--navy:#111848}
   *{box-sizing:border-box} body{margin:0;font-family:"Noto Sans KR","Malgun Gothic",system-ui,sans-serif;background:var(--surface);color:var(--ink);line-height:1.55}
-  main{max-width:720px;margin:0 auto;padding:20px 16px 60px} h1{font-size:1.25rem;margin:0 0 4px} p{margin:0}
+  main{max-width:760px;margin:0 auto;padding:20px 16px 60px} h1{font-size:1.25rem;margin:0 0 4px} p{margin:0}
   .muted{color:var(--muted);font-size:.875rem} .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-top:12px}
   input[type=password]{width:100%;font:inherit;padding:11px 12px;border:1.5px solid #7d879c;border-radius:10px;background:#fff;color:var(--ink)}
   button{font:inherit;font-weight:700;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink);padding:9px 14px;cursor:pointer;min-height:42px}
   button.primary{background:var(--teal);border-color:var(--teal);color:#fff} button.danger{background:var(--danger-bg);border-color:var(--danger);color:var(--danger)}
-  button:focus-visible,input:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
-  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center} .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
-  .chip{border-radius:999px;padding:7px 14px;min-height:38px} .chip[aria-pressed=true]{background:#111848;border-color:#111848;color:#fff}
+  button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center} .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+  .chip{border-radius:999px;padding:7px 14px;min-height:38px} .chip[aria-pressed=true]{background:var(--navy);border-color:var(--navy);color:#fff}
+  .kinds{display:flex;gap:0;margin-top:14px;border:1px solid var(--line);border-radius:12px;overflow:hidden;width:max-content}
+  .kinds button{border:0;border-radius:0;min-width:110px} .kinds button[aria-pressed=true]{background:var(--teal);color:#fff}
   .post{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-top:12px}
   .post.hidden{background:var(--danger-bg);border-color:var(--danger)} .post.pending{background:var(--amber-bg);border-color:var(--amber)}
-  .txt{white-space:pre-wrap;overflow-wrap:anywhere;margin:6px 0 10px} .tag{display:inline-block;font-size:.75rem;font-weight:800;border-radius:999px;padding:2px 10px;background:var(--mint);color:#00574f;margin-right:6px}
+  .ttl{font-weight:800;margin:6px 0 0;overflow-wrap:anywhere}
+  .txt{white-space:pre-wrap;overflow-wrap:anywhere;margin:6px 0 10px;max-height:16em;overflow:auto} .tag{display:inline-block;font-size:.75rem;font-weight:800;border-radius:999px;padding:2px 10px;background:var(--mint);color:#00574f;margin-right:6px}
   .hidden .tag.st{background:#fff;color:var(--danger)} .pending .tag.st{background:#fff;color:var(--amber)}
   #msg{margin-top:10px;font-weight:700} #msg.bad{color:var(--danger)}
   .sw{display:flex;gap:10px;align-items:flex-start} .sw input{width:22px;height:22px;margin-top:2px}
+  a{color:var(--teal);font-weight:700}
   [hidden]{display:none!important}
 </style>
 </head>
 <body>
 <main>
   <h1>의견 게시판 관리</h1>
-  <p class="muted">작업자 전용 화면이에요. 비밀번호는 이 탭을 닫으면 지워져요. <a href="/#board" style="color:var(--teal);font-weight:700">게시판 보기</a></p>
+  <p class="muted">작업자 전용 화면이에요. 비밀번호는 이 탭을 닫으면 지워져요. <a href="/#board">게시판 보기</a></p>
 
   <form class="card" id="login">
     <label for="pw" style="font-weight:800">관리 비밀번호</label>
@@ -38,9 +42,10 @@
 
   <section id="panel" hidden>
     <div class="card">
-      <label class="sw"><input type="checkbox" id="premod"><span><b>검토 후 공개</b><br><span class="muted">켜면 새 글이 바로 보이지 않고, 아래 「공개」를 눌러야 다른 분들께 보여요. 나쁜 글이 몰릴 때만 켜세요.</span></span></label>
+      <label class="sw"><input type="checkbox" id="premod"><span><b>검토 후 공개</b><br><span class="muted">켜면 새 글과 댓글이 바로 보이지 않고, 아래 「공개」를 눌러야 다른 분들께 보여요. 나쁜 글이 몰릴 때만 켜세요.</span></span></label>
     </div>
-    <div class="chips" role="group" aria-label="글 거르기" id="chips"></div>
+    <div class="kinds" role="group" aria-label="글 또는 댓글" id="kinds"></div>
+    <div class="chips" role="group" aria-label="거르기" id="chips"></div>
     <div id="list"></div>
     <div class="row" style="margin-top:14px"><button id="more" hidden>더 보기</button></div>
   </section>
@@ -50,9 +55,10 @@
 (function () {
   'use strict';
   var $ = function (s) { return document.querySelector(s); };
-  var key = sessionStorage.getItem('sonbit-admin') || '', filter = 'all', posts = [], more = false, counts = {};
+  var key = sessionStorage.getItem('sonbit-admin') || '', kind = 'post', filter = 'all', items = [], more = false, counts = { post: {}, comment: {} };
   var FILTERS = [['all', '전체'], ['reported', '신고 있음'], ['hidden', '숨겨짐'], ['pending', '승인 대기'], ['visible', '공개 중']];
-  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  var NAME = { post: '글', comment: '댓글' };
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function msg(t, bad) { var m = $('#msg'); m.textContent = t || ''; m.className = bad ? 'bad' : ''; }
   function date(sec) { var d = new Date(sec * 1000), p = function (n) { return String(n).padStart(2, '0'); }; return d.getFullYear() + '.' + p(d.getMonth() + 1) + '.' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()); }
   async function api(method, url, body) {
@@ -62,54 +68,63 @@
       return { ok: r.ok && d.ok !== false, status: r.status, d: d };
     } catch (e) { return { ok: false, status: 0, d: { message: '인터넷에 연결되지 않았어요.' } }; }
   }
+  function sum(o) { var n = 0; for (var k in o) if (k !== 'reported') n += o[k]; return n; }
   function chips() {
+    $('#kinds').innerHTML = ['post', 'comment'].map(function (k) { return '<button type="button" data-k="' + k + '" aria-pressed="' + (kind === k) + '">' + NAME[k] + ' ' + sum(counts[k] || {}) + '</button>'; }).join('');
+    var c = counts[kind] || {};
     $('#chips').innerHTML = FILTERS.map(function (f) {
-      var n = f[0] === 'all' ? '' : f[0] === 'reported' ? '' : ' ' + (counts[f[0]] || 0);
-      return '<button class="chip" type="button" data-f="' + f[0] + '" aria-pressed="' + (filter === f[0]) + '">' + f[1] + n + '</button>';
+      var n = f[0] === 'all' ? sum(c) : (c[f[0]] || 0);
+      return '<button class="chip" type="button" data-f="' + f[0] + '" aria-pressed="' + (filter === f[0]) + '">' + f[1] + ' ' + n + '</button>';
     }).join('');
   }
   function draw() {
     chips();
-    $('#list').innerHTML = posts.length ? posts.map(function (p) {
+    $('#list').innerHTML = items.length ? items.map(function (p) {
       var st = p.status === 'hidden' ? '숨겨짐' : p.status === 'pending' ? '승인 대기' : '공개 중';
       var rs = (p.reasons || []).map(function (r) { return esc(r.reason) + ' ' + r.count; }).join(' · ');
-      return '<article class="post ' + p.status + '" data-id="' + p.id + '"><div><span class="tag st">' + st + '</span><span class="muted">#' + p.id + ' · ' + date(p.created) + '</span>' +
+      var head = kind === 'post'
+        ? '<span class="muted">#' + p.id + ' · ' + esc(p.nick) + ' · ' + date(p.created) + ' · 조회 ' + p.views + ' · 댓글 ' + p.ccount + (p.updated ? ' · 수정됨' : '') + (p.haspw ? '' : ' · 비밀번호 없음') + '</span>' +
+          (p.status === 'visible' ? ' <a href="/#board/' + p.id + '" target="_blank" rel="noopener">사이트에서 보기</a>' : '')
+        : '<span class="muted">댓글 #' + p.id + ' · ' + esc(p.nick) + ' · ' + date(p.created) + '</span>';
+      return '<article class="post ' + p.status + '" data-id="' + p.id + '"><div><span class="tag st">' + st + '</span>' + head +
         (p.reports ? ' <span class="tag" style="background:#fff;color:var(--danger)">신고 ' + p.reports + '건</span>' : '') + '</div>' +
+        (kind === 'post' ? '<p class="ttl">' + esc(p.title) + '</p>' : '<p class="muted" style="margin-top:6px">글 #' + p.post_id + ' 「' + esc(p.post_title || '지워진 글') + '」에 단 댓글</p>') +
         '<p class="txt">' + esc(p.text) + '</p>' + (rs ? '<p class="muted" style="margin-bottom:10px">신고 이유: ' + rs + '</p>' : '') +
         '<div class="row">' + (p.status === 'visible' ? '<button data-a="hide">숨기기</button>' : '<button class="primary" data-a="show">공개</button>') + '<button class="danger" data-a="delete">삭제</button></div></article>';
-    }).join('') : '<p class="muted" style="margin-top:14px">이 조건의 글이 없어요.</p>';
+    }).join('') : '<p class="muted" style="margin-top:14px">이 조건의 ' + NAME[kind] + '이 없어요.</p>';
     $('#more').hidden = !more;
   }
   async function load(add) {
-    var before = add && posts.length ? '&before=' + posts[posts.length - 1].id : '';
-    var r = await api('GET', '/api/admin/board?filter=' + filter + before);
+    var before = add && items.length ? '&before=' + items[items.length - 1].id : '';
+    var r = await api('GET', '/api/admin/board?kind=' + kind + '&filter=' + filter + before);
     if (!r.ok) {
       if (r.status === 401) { sessionStorage.removeItem('sonbit-admin'); key = ''; $('#panel').hidden = true; $('#login').hidden = false; }
       msg(r.d.message || '불러오지 못했어요.', true); return false;
     }
-    posts = add ? posts.concat(r.d.posts) : r.d.posts; more = r.d.more; counts = r.d.counts || {};
-    $('#premod').checked = !!r.d.premod; $('#login').hidden = true; $('#panel').hidden = false; msg(''); draw(); return true;
+    items = add ? items.concat(r.d.items) : r.d.items; more = r.d.more; counts = r.d.counts || counts;
+    $('#premod').checked = !!r.d.premod; $('#login').hidden = true; $('#panel').hidden = false; draw(); return true;
   }
   $('#login').addEventListener('submit', async function (e) {
     e.preventDefault(); key = $('#pw').value; $('#pw').value = '';
-    if (await load(false)) sessionStorage.setItem('sonbit-admin', key); else key = '';
+    if (await load(false)) { sessionStorage.setItem('sonbit-admin', key); msg(''); } else key = '';
   });
-  $('#chips').addEventListener('click', function (e) { var b = e.target.closest('[data-f]'); if (b) { filter = b.dataset.f; load(false); } });
+  $('#kinds').addEventListener('click', function (e) { var b = e.target.closest('[data-k]'); if (b) { kind = b.dataset.k; filter = 'all'; msg(''); load(false); } });
+  $('#chips').addEventListener('click', function (e) { var b = e.target.closest('[data-f]'); if (b) { filter = b.dataset.f; msg(''); load(false); } });
   $('#more').addEventListener('click', function () { load(true); });
   $('#premod').addEventListener('change', async function (e) {
     var on = e.target.checked, r = await api('POST', '/api/admin/board', { action: 'mode', premod: on });
     if (!r.ok) { e.target.checked = !on; msg(r.d.message || '바꾸지 못했어요.', true); return; }
-    msg(on ? '이제 새 글은 승인해야 보여요.' : '이제 새 글이 바로 보여요.');
+    msg(on ? '이제 새 글과 댓글은 승인해야 보여요.' : '이제 새 글과 댓글이 바로 보여요.');
   });
   $('#list').addEventListener('click', async function (e) {
     var b = e.target.closest('[data-a]'); if (!b) return;
-    var art = b.closest('.post'), id = Number(art.dataset.id), a = b.dataset.a;
-    if (a === 'delete' && !confirm('#' + id + ' 글을 완전히 지울까요? 되돌릴 수 없어요.')) return;
+    var art = b.closest('.post'), id = Number(art.dataset.id), a = b.dataset.a, n = NAME[kind];
+    if (a === 'delete' && !confirm('#' + id + ' ' + n + '을 완전히 지울까요?' + (kind === 'post' ? ' 댓글도 함께 지워져요.' : '') + ' 되돌릴 수 없어요.')) return;
     b.disabled = true;
-    var r = await api('POST', '/api/admin/board', { action: a, id: id });
+    var r = await api('POST', '/api/admin/board', { kind: kind, action: a, id: id });
     if (!r.ok) { b.disabled = false; msg(r.d.message || '처리하지 못했어요.', true); return; }
-    msg(a === 'delete' ? '#' + id + ' 글을 지웠어요.' : a === 'hide' ? '#' + id + ' 글을 숨겼어요.' : '#' + id + ' 글을 공개했어요.');
-    load(false);
+    await load(false);
+    msg('#' + id + ' ' + n + '을 ' + (a === 'delete' ? '지웠어요.' : a === 'hide' ? '숨겼어요.' : '공개했어요.'));
   });
   if (key) load(false);
 })();

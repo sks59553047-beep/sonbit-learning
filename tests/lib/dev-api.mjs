@@ -20,7 +20,7 @@ export function makeD1(schemaSql) {
 export async function createApi(repo) {
   const schema = fs.readFileSync(path.join(repo, 'board', 'schema.sql'), 'utf8');
   const env = { DB: makeD1(schema), BOARD_SALT: 'test-salt', ADMIN_PASSWORD: 'test-admin-pw', LOCAL_DEV: '1' };   // 시험용 비밀값(진짜 값 아님)
-  const reset = () => { env.DB._db.exec('DELETE FROM posts; DELETE FROM reports; DELETE FROM limits; DELETE FROM sqlite_sequence; UPDATE settings SET v = \'0\' WHERE k = \'premod\';'); };
+  const reset = () => { env.DB._db.exec('DELETE FROM posts; DELETE FROM reports; DELETE FROM comments; DELETE FROM creports; DELETE FROM limits; DELETE FROM sqlite_sequence; UPDATE settings SET v = \'0\' WHERE k = \'premod\';'); };
   const mods = new Map();
   // 요청 주소 → 함수 파일(Cloudflare Pages 와 같은 규칙: 파일 경로가 주소, index.js 는 폴더 주소)
   async function find(pathname) {

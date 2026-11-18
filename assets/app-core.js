@@ -87,7 +87,7 @@ function go(view, opts) {
   if (opts.push !== false) history.pushState({ view, arg: opts.arg }, '', '#' + view);
   if (view === 'player' && opts.arg) openPlayer(opts.arg.id);
   if (view === 'home') renderHome();
-  if (view === 'board') renderBoard();
+  if (view === 'board') renderBoard(opts.arg);
   if (view === 'braille' && !$('#bp-learn').hidden) renderLearnPanel();   // 영상을 보고 돌아오면 「봤어요」 표시를 새로 그린다
   if (view === 'quiz' && !quizState.active) renderQuizHub();
   if (opts.push !== false) { const h = $('#view-' + view + ' h1'); if (h) h.focus({ preventScroll: true }); }
@@ -97,7 +97,14 @@ $$('[data-nav]').forEach(el => el.addEventListener('click', () => {
   if (v === 'sign' || v === 'braille') store.set('track', v);
   go(v);
 }));
-window.addEventListener('popstate', e => { const v = (e.state && e.state.view) || 'home'; go(v, { push: false, arg: e.state && e.state.arg }); });
+window.addEventListener('popstate', e => {
+  if (e.state && e.state.view) { go(e.state.view, { push: false, arg: e.state.arg }); return; }
+  // 기록에 화면 정보가 없을 때(주소창에 #board/12 처럼 직접 넣었거나 처음 연 화면으로 돌아옴): 주소를 읽어 그 화면으로. 영상 화면은 영상 정보가 없어 학습으로
+  const h = location.hash.slice(1).split('/')[0], v = VIEWS.includes(h) && h !== 'player' ? h : 'home';
+  const arg = v === 'board' ? boardRoute(location.hash) : undefined;
+  if (v === 'board') history.replaceState({ view: 'board', arg }, '', location.hash);
+  go(v, { push: false, arg });
+});
 $('#playerBack').addEventListener('click', () => { history.back(); });
 
 // ================= 수어 데이터 =================

@@ -41,8 +41,10 @@ const TESTS = [
   ...(LIVE ? [['실제 주소 파일이 내 컴퓨터 파일과 같음', 'verify-live.mjs', [], false]]
     : [['좁은 화면(320~390px)·큰 글자에서 넘침 없음', 'overflow.mjs', [], true, true], ['두 칸 패드가 좁은 화면에 들어감', 'pad-two-fit.mjs', [], true],
        // 게시판은 내 컴퓨터의 시험용 저장소(SQLite)에만 글을 쓴다. 실제 주소 시험(--live)에서는 진짜 게시판에 글이 올라가므로 돌리지 않는다.
-       ['의견 게시판 서버(글 검사·도배 제한·신고 3건 자동 숨김·관리자)', 'board-api.mjs', [BASE], false],
-       ['의견 게시판 화면(「의견」 버튼·글쓰기·신고·관리 화면)', 'board-ui.mjs', [BASE, 'mobile'], true]])
+       ['의견 게시판 저장소 바꾸기(첫 판 → 일반 게시판 구조, 있던 글 보존)', 'board-migrate.mjs', [], false],
+       ['의견 게시판 서버(글·댓글·본인 수정/삭제·조회수·신고·관리자·쪽 번호·검색)', 'board-api.mjs', [BASE], false],
+       ['의견 게시판 화면 — 휴대폰(목록·글쓰기·댓글·수정·삭제·신고·관리 화면)', 'board-ui.mjs', [BASE, 'mobile'], true],
+       ['의견 게시판 화면 — 컴퓨터(표 목록)', 'board-ui.mjs', [BASE, 'desktop'], true, true]])
 ].filter(t => !(QUICK && t[4]));
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));

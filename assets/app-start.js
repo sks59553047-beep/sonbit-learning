@@ -16,5 +16,9 @@ renderPadCell(); renderPadResult();
 showBraillePanel(store.get('bpanel', 'convert'));
 renderBraillePanel();
 renderSign();
-const start = (location.hash || '#home').slice(1);
-go(VIEWS.includes(start) ? start : 'home', { push: false });
+const start = (location.hash || '#home').slice(1).split('/')[0];
+if (start === 'board') {                       // 게시판은 글 주소(#board/12 등)로 바로 들어올 수 있다
+  const arg = boardRoute(location.hash);
+  history.replaceState({ view: 'board', arg, first: true }, '', location.hash);
+  go('board', { push: false, arg });
+} else go(VIEWS.includes(start) ? start : 'home', { push: false });

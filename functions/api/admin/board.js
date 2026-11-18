@@ -1,7 +1,7 @@
 // 관리자 전용(헤더 X-Admin-Key = 관리 비밀번호). 관리 화면(/admin)이 쓴다.
-// GET  /api/admin/board?filter=all|visible|hidden|pending|reported&before=<번호>  글 목록(50개씩, 신고 이유 포함)
-// POST /api/admin/board  { action: delete|hide|show|mode, id, premod }
-import { allow, fail, json, now, originOk, readJson, sha256, who } from '../../_lib/board.js';
+// GET  /api/admin/board?kind=post|comment&filter=all|visible|hidden|pending|reported&before=<번호>  글·댓글 목록(50개씩, 신고 이유 포함)
+// POST /api/admin/board  { kind: post|comment, action: delete|hide|show, id }  또는  { action: 'mode', premod }
+import { allow, deletePost, fail, intId, json, now, originOk, premodOn, readJson, recount, sha256, who } from '../../_lib/board.js';
 
 async function authed(request, env) {
   if (!env.ADMIN_PASSWORD || !env.BOARD_SALT) return { error: fail(503, '관리 비밀번호가 아직 정해지지 않았어요.') };
@@ -20,24 +20,35 @@ async function authed(request, env) {
   return { ok: true };
 }
 
+const counts = async (env, tbl) => {
+  const { results } = await env.DB.prepare(`SELECT status, COUNT(*) AS c FROM ${tbl} GROUP BY status`).all();
+  const o = Object.fromEntries(results.map(r => [r.status, r.c]));
+  o.reported = (await env.DB.prepare(`SELECT COUNT(*) AS c FROM ${tbl} WHERE reports > 0`).first()).c;
+  return o;
+};
+
 export async function onRequestGet({ request, env }) {
   if (!env.DB) return fail(503, '게시판을 아직 쓸 수 없어요.');
   const a = await authed(request, env); if (a.error) return a.error;
-  const u = new URL(request.url), filter = u.searchParams.get('filter') || 'all', before = parseInt(u.searchParams.get('before') || '0', 10) || 0;
+  const u = new URL(request.url), comment = u.searchParams.get('kind') === 'comment';
+  const filter = u.searchParams.get('filter') || 'all', before = parseInt(u.searchParams.get('before') || '0', 10) || 0;
+  const P = comment ? 'c.' : '';
   const where = [], args = [];
-  if (['visible', 'hidden', 'pending'].includes(filter)) { where.push('status = ?'); args.push(filter); }
-  if (filter === 'reported') where.push('reports > 0');
-  if (before) { where.push('id < ?'); args.push(before); }
-  const { results } = await env.DB.prepare(`SELECT id, text, created, status, reports FROM posts ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY id DESC LIMIT 51`).bind(...args).all();
-  const posts = results.slice(0, 50);
-  if (posts.length) {
-    const ids = posts.map(p => p.id);
-    const rs = await env.DB.prepare(`SELECT post_id, reason, COUNT(*) AS c FROM reports WHERE post_id IN (${ids.map(() => '?').join(',')}) GROUP BY post_id, reason`).bind(...ids).all();
-    for (const p of posts) p.reasons = rs.results.filter(r => r.post_id === p.id).map(r => ({ reason: r.reason, count: r.c }));
+  if (['visible', 'hidden', 'pending'].includes(filter)) { where.push(P + 'status = ?'); args.push(filter); }
+  if (filter === 'reported') where.push(P + 'reports > 0');
+  if (before) { where.push(P + 'id < ?'); args.push(before); }
+  const W = where.length ? 'WHERE ' + where.join(' AND ') : '';
+  const sql = comment
+    ? `SELECT c.id, c.post_id, c.nick, c.text, c.created, c.status, c.reports, p.title AS post_title FROM comments c LEFT JOIN posts p ON p.id = c.post_id ${W} ORDER BY c.id DESC LIMIT 51`
+    : `SELECT id, title, nick, text, created, updated, status, reports, views, ccount, (pw != '') AS haspw FROM posts ${W} ORDER BY id DESC LIMIT 51`;
+  const { results } = await env.DB.prepare(sql).bind(...args).all();
+  const items = results.slice(0, 50);
+  if (items.length) {
+    const ids = items.map(p => p.id), col = comment ? 'comment_id' : 'post_id';
+    const rs = await env.DB.prepare(`SELECT ${col} AS id, reason, COUNT(*) AS c FROM ${comment ? 'creports' : 'reports'} WHERE ${col} IN (${ids.map(() => '?').join(',')}) GROUP BY ${col}, reason`).bind(...ids).all();
+    for (const p of items) p.reasons = rs.results.filter(r => r.id === p.id).map(r => ({ reason: r.reason, count: r.c }));
   }
-  const cnt = await env.DB.prepare("SELECT status, COUNT(*) AS c FROM posts GROUP BY status").all();
-  const pre = await env.DB.prepare("SELECT v FROM settings WHERE k = 'premod'").first();
-  return json({ ok: true, posts, more: results.length > 50, counts: Object.fromEntries(cnt.results.map(r => [r.status, r.c])), premod: !!pre && pre.v === '1' });
+  return json({ ok: true, kind: comment ? 'comment' : 'post', items, more: results.length > 50, counts: { post: await counts(env, 'posts'), comment: await counts(env, 'comments') }, premod: await premodOn(env) });
 }
 
 export async function onRequestPost({ request, env }) {
@@ -50,15 +61,23 @@ export async function onRequestPost({ request, env }) {
     await env.DB.prepare("INSERT INTO settings (k, v) VALUES ('premod', ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v").bind(d.premod ? '1' : '0').run();
     return json({ ok: true, premod: !!d.premod });
   }
-  const id = Number.isInteger(d.id) ? d.id : 0;
-  if (!id) return fail(400, '글 번호가 없어요.');
-  if (d.action === 'delete') {
-    await env.DB.prepare('DELETE FROM reports WHERE post_id = ?').bind(id).run();
-    await env.DB.prepare('DELETE FROM posts WHERE id = ?').bind(id).run();
+  const id = intId(d.id);
+  if (!id) return fail(400, '번호가 없어요.');
+  if (d.kind === 'comment') {
+    const c = await env.DB.prepare('SELECT post_id FROM comments WHERE id = ?').bind(id).first();
+    if (!c) return fail(404, '이미 지워진 댓글이에요.');
+    if (d.action === 'delete') { await env.DB.prepare('DELETE FROM creports WHERE comment_id = ?').bind(id).run(); await env.DB.prepare('DELETE FROM comments WHERE id = ?').bind(id).run(); }
+    else if (d.action === 'hide') await env.DB.prepare("UPDATE comments SET status = 'hidden' WHERE id = ?").bind(id).run();
+    else if (d.action === 'show') {                                       // 다시 공개(또는 승인): 신고 수를 0 으로 되돌려 새로 센다
+      await env.DB.prepare('DELETE FROM creports WHERE comment_id = ?').bind(id).run();
+      await env.DB.prepare("UPDATE comments SET status = 'visible', reports = 0 WHERE id = ?").bind(id).run();
+    } else return fail(400, '알 수 없는 동작이에요.');
+    await recount(env, c.post_id);
     return json({ ok: true });
   }
+  if (d.action === 'delete') { await deletePost(env, id); return json({ ok: true }); }
   if (d.action === 'hide') { await env.DB.prepare("UPDATE posts SET status = 'hidden' WHERE id = ?").bind(id).run(); return json({ ok: true }); }
-  if (d.action === 'show') {                                              // 다시 공개(또는 승인): 신고 수를 0 으로 되돌려 새로 센다
+  if (d.action === 'show') {
     await env.DB.prepare('DELETE FROM reports WHERE post_id = ?').bind(id).run();
     await env.DB.prepare("UPDATE posts SET status = 'visible', reports = 0 WHERE id = ?").bind(id).run();
     return json({ ok: true });

@@ -85,7 +85,9 @@ function go(view, opts) {
   $('#pageTitle').textContent = TITLES[view] || '손빛 배움터';
   if (view !== 'player') { window.scrollTo(0, 0); setPlayerSrc(''); }
   const wid = view === 'sign' && opts.arg && opts.arg.wid;   // 수어 사전의 특정 단어(#sign/번호)
-  if (opts.push !== false) history.pushState({ view, arg: opts.arg }, '', '#' + view + (wid ? '/' + encodeURIComponent(wid) : ''));
+  const pid = view === 'player' && opts.arg && opts.arg.id;  // 교육 영상(#player/영상번호) — 새로 고침해도 같은 영상이 열리게
+  const sub = wid || pid;
+  if (opts.push !== false) history.pushState({ view, arg: opts.arg }, '', '#' + view + (sub ? '/' + encodeURIComponent(sub) : ''));
   if (wid) showSignWord(wid);
   if (view === 'player' && opts.arg) openPlayer(opts.arg.id);
   if (view === 'home') renderHome();
@@ -102,13 +104,29 @@ $$('[data-nav]').forEach(el => el.addEventListener('click', () => {
 window.addEventListener('popstate', e => {
   if (e.state && e.state.view) { go(e.state.view, { push: false, arg: e.state.arg }); return; }
   // 기록에 화면 정보가 없을 때(주소창에 #board/12 처럼 직접 넣었거나 처음 연 화면으로 돌아옴): 주소를 읽어 그 화면으로. 영상 화면은 영상 정보가 없어 학습으로
-  const h = location.hash.slice(1).split('/')[0], v = VIEWS.includes(h) && h !== 'player' ? h : 'home';
-  const arg = v === 'board' ? boardRoute(location.hash) : v === 'sign' ? signRoute(location.hash) : undefined;
+  const h = location.hash.slice(1).split('/')[0];
+  let v = VIEWS.includes(h) ? h : 'home';
+  const arg = v === 'board' ? boardRoute(location.hash) : v === 'sign' ? signRoute(location.hash) : v === 'player' ? playerRoute(location.hash) : undefined;
+  if (v === 'player' && !arg) v = 'home';   // 영상 번호가 없거나 모르는 영상이면 학습 화면으로
   if (v === 'board') history.replaceState({ view: 'board', arg }, '', bHash(arg));
   if (v === 'sign') history.replaceState({ view: 'sign', arg }, '', '#sign' + (arg ? '/' + encodeURIComponent(arg.wid) : ''));
+  if (v === 'player') history.replaceState({ view: 'player', arg }, '', '#player/' + encodeURIComponent(arg.id));
   go(v, { push: false, arg });
 });
-$('#playerBack').addEventListener('click', () => { history.back(); });
+// 영상 주소(#player/영상번호)에서 영상을 찾는다. 없으면 undefined
+function playerRoute(hash) {
+  const id = decodeURIComponent(String(hash || '').replace(/^#/, '').split('/')[1] || '');
+  return id && VIDEO_LIST.some(v => v.id === id) ? { id } : undefined;
+}
+// 영상 화면의 뒤로: 사이트 안에서 왔으면 앞 화면으로, 주소로 바로 열었거나 새로 고침했으면 학습 화면으로(사이트 밖으로 나가지 않게)
+$('#playerBack').addEventListener('click', () => { const s = history.state; if (s && s.view && !s.first) history.back(); else go('home'); });
+// 「본문으로 바로가기」(키보드·화면낭독기): 주소를 바꾸지 않고, 지금 보고 있는 화면의 제목으로 초점만 옮긴다
+$('.skiplink').addEventListener('click', e => {
+  e.preventDefault();
+  const h = $('.view.active h1') || $('#main');
+  if (!h.hasAttribute('tabindex')) h.setAttribute('tabindex', '-1');
+  h.focus();
+});
 
 // ================= 수어 데이터 =================
 const ALL_WORDS = KSL_WORDS.concat(KSL_EXTRA.map(x => ({ id: 'N' + x.i, w: x.w, t: x.t, x: true, g: x.g, e: x.e, k: '/signFile/video/' + x.m })));

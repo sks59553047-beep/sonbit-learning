@@ -26,4 +26,8 @@ if (start === 'board') {                       // 게시판은 글 주소(#board
   history.replaceState({ view: 'sign', arg, first: true }, '', '#sign' + (arg ? '/' + encodeURIComponent(arg.wid) : ''));
   if (arg) store.set('track', 'sign');
   go('sign', { push: false, arg });
+} else if (start === 'player') {               // 교육 영상 주소(#player/영상번호): 새로 고침해도 같은 영상. 번호가 없거나 모르는 영상이면 학습 화면
+  const arg = playerRoute(location.hash);
+  if (arg) { history.replaceState({ view: 'player', arg, first: true }, '', '#player/' + encodeURIComponent(arg.id)); go('player', { push: false, arg }); }
+  else { history.replaceState({ view: 'home', first: true }, '', '#home'); go('home', { push: false }); }
 } else go(VIEWS.includes(start) ? start : 'home', { push: false });

@@ -122,7 +122,26 @@ function renderSign() {
     else $('#signList').innerHTML = '<div class="empty">이 주제에는 단어가 없어요.</div>';
     return;
   }
-  $('#signList').innerHTML = list.slice(0, 150).map(w => wordRowHtml(w, searching)).join('') + (list.length > 150 ? `<p class="note" style="text-align:center">검색어를 더 자세히 적으면 좁혀져요 (${list.length}개 중 150개 표시)</p>` : '');
+  signShown = { list, searching, n: Math.min(SIGN_PAGE, list.length) };
+  $('#signList').innerHTML = list.slice(0, signShown.n).map(w => wordRowHtml(w, searching)).join('') + moreBtnHtml();
+}
+// 목록은 150개씩 보여 주고, 끝에 「더 보기」(2026-11-20 외부 평가: 「일반 단어」 342개 중 150개만 보이던 것)
+const SIGN_PAGE = 150;
+let signShown = { list: [], searching: false, n: 0 };
+function moreBtnHtml() {
+  const { list, n } = signShown, left = list.length - n;
+  return left > 0 ? `<button type="button" class="btn line block signmore" data-signmore>더 보기 (${n.toLocaleString('ko-KR')} / ${list.length.toLocaleString('ko-KR')}개)</button>` : '';
+}
+// 이미 펼친 단어는 그대로 두고, 다음 150개를 뒤에 붙인 뒤 새로 붙은 첫 단어로 초점을 옮긴다
+function showMoreWords() {
+  const { list, searching, n } = signShown, next = list.slice(n, n + SIGN_PAGE);
+  if (!next.length) return;
+  const btn = $('#signList [data-signmore]');
+  btn.insertAdjacentHTML('beforebegin', next.map(w => wordRowHtml(w, searching)).join(''));
+  signShown.n = n + next.length;
+  const first = $(`#signList .wordrow[data-wid="${CSS.escape(String(next[0].id))}"] summary`);
+  btn.outerHTML = moreBtnHtml();
+  if (first) first.focus();
 }
 $('#signHome').addEventListener('click', e => {
   const b = e.target.closest('[data-topic]'); if (!b) return;
@@ -179,6 +198,7 @@ async function shareWord(w, btn) {
 }
 $('#signList').addEventListener('toggle', e => { if (e.target.open) { fillWordBody(e.target); markDid('sign'); } }, true);
 $('#signList').addEventListener('click', e => {
+  if (e.target.closest('[data-signmore]')) { showMoreWords(); return; }
   const sb = e.target.closest('[data-share]');
   if (sb) { const w = WORD_BY_ID.get(sb.dataset.share); if (w) shareWord(w, sb); return; }
   const fb = e.target.closest('[data-fav]');

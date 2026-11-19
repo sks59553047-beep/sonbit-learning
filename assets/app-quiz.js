@@ -99,9 +99,9 @@ function startQuizFromAnywhere(kind, force) {
 }
 // ---- 퀴즈 홈 ----
 function modeNoteText(m) {
-  return m === 'challenge' ? '도전: 힌트 없이 10문제, 목숨 3개예요. 목숨이 모두 없어지면 끝나요.' : '연습: 목숨이 없고 힌트를 쓸 수 있어요. 틀려도 설명을 보며 천천히 익혀요.';
+  return m === 'challenge' ? '도전: 힌트 없이 10문제, 목숨 3개로 풀어요.' : '연습: 힌트를 쓸 수 있고, 틀려도 끝나지 않아요.';
 }
-const SCOPE_NOTE = { all: '모든 범위에서 골고루 나와요.', cho: '첫소리 13개를 연습해요. (한글 점자 ①)', vb: '기본 모음·받침과 쉬운 낱말을 연습해요. (②③)', num: '숫자와 문장부호를 연습해요. (④)', two: '된소리·겹모음·겹받침과 낱말을 연습해요. (⑤)', abbr: '약자·약어와 줄여 쓰는 낱말을 연습해요. (⑥)' };
+const SCOPE_NOTE = { all: '모든 범위에서 나와요.', cho: '첫소리 13개 (한글 점자 ①)', vb: '기본 모음·받침, 쉬운 낱말 (②③)', num: '숫자·문장부호 (④)', two: '된소리·겹모음·겹받침 (⑤)', abbr: '약자·약어 (⑥)' };
 function renderQuizHub() {
   quizState = { active: false };
   const run = loadRun(), mode = modeNow(), lv = levelNow(), scope = scopeNow();
@@ -122,14 +122,14 @@ function renderQuizHub() {
       </div>
       <p class="note" id="qlevelNote" style="margin-top:8px">${esc(QZ.LEVEL_NOTES[lv])}</p></div>
     <div class="qcards c1">
-      <button class="qcard" type="button" data-quiz="sign"><span class="qci">${icon('hand', 24)}</span><span class="qct">수어 퀴즈</span><span class="qcs">영상을 보고 뜻을 맞히고, 뜻을 보고 알맞은 영상을 골라요. (수어 ${QZ.eligible.length.toLocaleString('ko-KR')}개에서 10문제)</span><span class="qcg" aria-hidden="true">›</span></button>
+      <button class="qcard" type="button" data-quiz="sign"><span class="qci">${icon('hand', 24)}</span><span class="qct">수어 퀴즈</span><span class="qcs">영상 보고 뜻 맞히기, 뜻 보고 영상 고르기 (수어 ${QZ.eligible.length.toLocaleString('ko-KR')}개 중 10문제)</span><span class="qcg" aria-hidden="true">›</span></button>
     </div>
     <div class="card"><div class="section-h"><h2>점자 범위</h2></div>
       <div class="chiprow wrap" role="group" aria-label="점자 범위" style="margin-top:10px">${QZ.SCOPES.map(s => `<button type="button" class="chip${s.key === scope ? ' active' : ''}" data-qscope="${s.key}" aria-pressed="${s.key === scope}">${esc(s.label)}</button>`).join('')}</div>
       <p class="note" id="qscopeNote" style="margin-top:10px">${esc(SCOPE_NOTE[scope])}</p></div>
     <div class="qcards c2">
-      <button class="qcard braille" type="button" data-quiz="braille"><span class="qci">${icon('braille', 24)}</span><span class="qct">점자 읽기</span><span class="qcs">점 모양을 보고 글자·숫자·낱말을 맞혀요.</span><span class="qcg" aria-hidden="true">›</span></button>
-      <button class="qcard braille" type="button" data-quiz="build"><span class="qci">${icon('pencil', 24)}</span><span class="qct">점자 쓰기</span><span class="qcs">글자·숫자·낱말을 보고 점을 직접 눌러 써 봐요.</span><span class="qcg" aria-hidden="true">›</span></button>
+      <button class="qcard braille" type="button" data-quiz="braille"><span class="qci">${icon('braille', 24)}</span><span class="qct">점자 읽기</span><span class="qcs">점 모양 보고 글자 맞히기</span><span class="qcg" aria-hidden="true">›</span></button>
+      <button class="qcard braille" type="button" data-quiz="build"><span class="qci">${icon('pencil', 24)}</span><span class="qct">점자 쓰기</span><span class="qcs">글자 보고 점을 직접 눌러 쓰기</span><span class="qcg" aria-hidden="true">›</span></button>
     </div>
     <div class="reviewrow">
       <button class="revchip" type="button" data-quiz="review"><span class="rn">${wrongN}</span><span class="rl">틀린 문제 복습<span class="rs">${wrongN ? '틀린 문제를 다시 풀어요' : '틀린 문제가 여기에 모여요'}</span></span></button>
@@ -249,9 +249,9 @@ function recordAnswer(q, correct) {
   saveRun();
 }
 function feedbackMsgHtml(correct, q) {
-  if (correct) return '정답이에요! 잘하셨어요.';
-  if (q.clueType === 'build') return `아쉬워요. 「${esc(q.answer)}」의 점 모양은 아래 설명을 확인해 보세요.`;
-  if (q.clueType === 'pickvideo') return `아쉬워요. 「${esc(q.answer)}」 수어는 「정답」이라고 표시된 영상이에요.`;
+  if (correct) return '정답이에요!';
+  if (q.clueType === 'build') return `아쉬워요. 「${esc(q.answer)}」의 점 모양은 아래를 보세요.`;
+  if (q.clueType === 'pickvideo') return `아쉬워요. 「${esc(q.answer)}」 수어는 「정답」 표시가 붙은 영상이에요.`;
   return `아쉬워요. 정답은 「${esc(q.answer)}」예요.`;
 }
 function showFeedback(q, correct, explainHtml) {
@@ -351,8 +351,8 @@ function renderQuizResult() {
   if (s.done > 0) { if (s.kind === 'sign' || s.kind === 'fav') markDid('quiz-sign'); else if (s.kind === 'braille' || s.kind === 'build') markDid('quiz-braille'); }
   const total = s.qs.length, pct = s.done ? Math.round(s.score / s.done * 100) : 0, wrongN = s.wrong.length;
   const why = s.ended ? `중간에 끝냈어요 (${total}문제 중 ${s.done}문제 풀이)` : (s.mode === 'challenge' && s.lives <= 0 ? `목숨을 모두 썼어요 (${total}문제 중 ${s.done}문제 풀이)` : '');
-  const msg = !s.done ? '푼 문제가 없어요. 다시 시작해 볼까요?' : pct >= 80 ? '정말 잘했어요! 다음에도 도전해 보세요.' : pct >= 50 ? '좋아요! 조금만 더 연습하면 돼요.' : '틀린 문제를 다시 풀면서 익혀 보세요.';
-  const wrongList = wrongN ? `<p class="note" style="margin:10px 0;text-align:left">틀린 문제: ${s.wrong.map(q => esc(q.answer)).join(' · ')}<br>틀린 문제는 퀴즈 첫 화면의 「틀린 문제 복습」에 저장돼요.</p>` : '';
+  const msg = !s.done ? '푼 문제가 없어요.' : pct >= 80 ? '잘했어요!' : pct >= 50 ? '좋아요. 조금만 더 해 봐요.' : '틀린 문제를 다시 풀어 보세요.';
+  const wrongList = wrongN ? `<p class="note" style="margin:10px 0;text-align:left">틀린 문제: ${s.wrong.map(q => esc(q.answer)).join(' · ')}<br>「틀린 문제 복습」에 모아 둬요.</p>` : '';
   const study = s.kind === 'braille' || s.kind === 'build' ? ['braille', '점자 표 보기'] : ['sign', '수어 사전 보기'];
   const scopeTxt = (s.kind === 'braille' || s.kind === 'build') ? ' · ' + scopeLabel(s.scope) : '';
   // 점수에 맞춰 난이도를 바꿔 볼 것을 권한다(끝까지 푼 퀴즈만)

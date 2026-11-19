@@ -15,5 +15,6 @@ find "$OUT" -name desktop.ini -delete
 # 올린 판이 어느 커밋인지 화면 머리에 적는다(오류 보고에 함께 실림)
 sed -i "s/name=\"sonbit-version\" content=\"[^\"]*\"/name=\"sonbit-version\" content=\"$V\"/" "$OUT/sonbit-dist/index.html"
 cd "$OUT"
-npx -y wrangler pages deploy sonbit-dist --project-name sonbit --branch main --commit-dirty=true
+# BRANCH=preview bash deploy.sh 로 올리면 미리보기 주소(https://preview.sonbit.pages.dev)에만 올라가고 실제 주소는 그대로다
+npx -y wrangler pages deploy sonbit-dist --project-name sonbit --branch "${BRANCH:-main}" --commit-dirty=true
 echo "올린 판: $V"

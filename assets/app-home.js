@@ -133,7 +133,6 @@ function renderHomeReview() {
 function renderHome() {
   $('#statWords').textContent = ALL_WORDS.length.toLocaleString('ko-KR');
   $('#statVideos').textContent = VIDEO_LIST.length;
-  $('#statBraille').textContent = BRAILLE_TEST_COUNT;
   renderHomeNext(); renderHomeReview(); renderHomeVideos(); renderRoadmap(roadTrack);
   $('#roadHint').hidden = hasActivity();
   renderRecords();
@@ -147,23 +146,8 @@ function dispatchAct(act, arg) {
   else if (act === 'resume') resumeQuiz();
   else if (act === 'quizkind') startQuizFromAnywhere(arg);
   else if (act === 'signtopics') { signQuery = ''; signTopic = ''; $('#signSearch').value = ''; renderSign(); $('#signSearch').focus(); }
-  else if (act === 'signnum') { store.set('track', 'sign'); signQuery = ''; signTopic = NUM_TOPIC; signCho = ''; $('#signSearch').value = ''; go('sign'); renderSign(); }
-  else if (act === 'brailletable') { store.set('track', 'braille'); go('braille'); showBraillePanel('table', true); }
 }
 $('#view-home').addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (b) dispatchAct(b.dataset.act, b.dataset.arg); });
-// 첫 화면 찾기 칸(2026-11-20): 수어는 사전 검색으로, 점자는 글자 바꾸기로 넘겨준다
-$('#homeSignForm').addEventListener('submit', e => {
-  e.preventDefault();
-  const q = $('#homeSignQ').value.trim(); if (!q) { $('#homeSignQ').focus(); return; }
-  store.set('track', 'sign'); signTopic = ''; signCho = ''; signPinId = ''; signQuery = q; $('#signSearch').value = q;
-  go('sign'); renderSign();
-});
-$('#homeBrailleForm').addEventListener('submit', e => {
-  e.preventDefault();
-  const t = $('#homeBrailleQ').value.trim(); if (!t) { $('#homeBrailleQ').focus(); return; }
-  store.set('track', 'braille'); $('#bpInput').value = t.slice(0, 200); renderBraillePanel();
-  go('braille'); showBraillePanel('convert');
-});
 
 // ---------------- 내 학습 기록: 보기·내보내기·가져오기·지우기 ----------------
 function renderRecords() {

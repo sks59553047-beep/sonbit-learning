@@ -538,23 +538,8 @@ label.lbl2{display:block}
 .blink:disabled{text-decoration:none;cursor:default;opacity:.8}
 @media (max-width:359px){ .bwrow{grid-template-columns:1fr} .bsearch select{max-width:96px} }
 
-/* ---------- 첫 화면 찾기 칸·바로 가기·접힌 출처(2026-11-20) ---------- */
-.hero-find{padding:20px 18px 18px}
-.hero-find h2{margin-top:0;font-size:1.3125rem}
-.hfind{display:flex;align-items:center;gap:8px;margin-top:12px;max-width:760px}
-.hfind label{flex:0 0 2.6em;font-weight:800;font-size:0.9375rem;color:#fff}
-.hfind input{flex:1 1 auto;min-width:0;font:inherit;font-size:1rem;color:#121830;background:#fff;border:0;border-radius:12px;padding:10px 12px;min-height:46px}
-.hfind input::placeholder{color:#5d6680}
-.hbtn{flex:0 0 5.4em;font:inherit;font-weight:800;font-size:0.9375rem;color:#fff;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.55);border-radius:12px;padding:0 14px;min-height:46px;cursor:pointer}
-.hbtn:hover{background:rgba(255,255,255,.26)}
-.hero-find .hstats{margin-top:14px;gap:6px}
-.hero-find .hstats span{padding:5px 11px;font-size:0.75rem}
-.hero-find .hstats b{font-size:0.875rem}
-.homequick{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px}
-@media (min-width:760px){.homequick{grid-template-columns:repeat(4,1fr)}}
-.qbtn{display:flex;align-items:center;gap:8px;font:inherit;font-weight:800;font-size:0.9375rem;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 14px;min-height:50px;cursor:pointer;text-align:left}
-.qbtn .qi{font-size:1.25rem;line-height:1}
-#homeVideoList .vdesc{display:none}
+/* ---------- 학습 화면: 기초 영상 설명 한 줄·접힌 자료 출처(2026-11-20) ---------- */
+#homeVideoList .vdesc{-webkit-line-clamp:1}
 .srcfold{padding:12px 16px}
 .srcfold summary{display:flex;align-items:center;justify-content:space-between;cursor:pointer;list-style:none;min-height:28px}
 .srcfold summary::-webkit-details-marker{display:none}
@@ -562,3 +547,9 @@ label.lbl2{display:block}
 .srcfold summary::after{content:"▾";color:var(--muted);font-size:0.875rem}
 .srcfold[open] summary::after{content:"▴"}
 .srcfold .sourcelist{font-size:0.8125rem}
+.hfeat{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:8px}
+.hfeat li{display:flex;gap:10px;align-items:flex-start;background:rgba(255,255,255,.1);border-radius:12px;padding:9px 12px;color:#e6e8fc;font-size:0.875rem;line-height:1.5}
+.hfeat .fi{flex:0 0 1.4em;font-size:1.0625rem;line-height:1.35;text-align:center}
+.hfeat b{color:#fff;font-weight:800}
+.hfeat li>span>b:first-child{display:block}
+.hero .hstart{margin-top:12px;font-size:0.875rem;font-weight:700;color:#fff}

@@ -63,39 +63,25 @@
     <section class="view" id="view-home" aria-labelledby="homeH">
       <h1 id="homeH" class="visually-hidden" tabindex="-1">학습 홈</h1>
 
-      <!-- 2026-11-20 첫 화면 개편: 찾기(수어 검색·점자 바꾸기)를 맨 위에, 학습은 그 아래 -->
-      <div class="hero hero-find">
-        <h2>수어·점자 바로 찾기</h2>
-        <form class="hfind" id="homeSignForm" role="search" aria-label="수어 단어 찾기">
-          <label for="homeSignQ">수어</label>
-          <input id="homeSignQ" type="search" placeholder="단어 입력 (예: 감사합니다)" autocomplete="off" enterkeyhint="search">
-          <button class="hbtn" type="submit">찾기</button>
-        </form>
-        <form class="hfind" id="homeBrailleForm" aria-label="점자로 바꾸기">
-          <label for="homeBrailleQ">점자</label>
-          <input id="homeBrailleQ" type="text" maxlength="200" placeholder="한글 입력 (예: 손빛)" autocomplete="off" enterkeyhint="go">
-          <button class="hbtn" type="submit">바꾸기</button>
-        </form>
-        <div class="hstats">
-          <span><b id="statWords">1,190</b> 수어</span>
-          <span><b id="statVideos">10</b> 교육 영상</span>
-          <span><b id="statBraille">227</b> 점자 규정 예시 확인</span>
-        </div>
+      <!-- 2026-11-20 정리: 학습 탭은 처음 배우는 곳(찾기는 아래 「수어」·「점자」 탭). 글은 줄이고 자료 출처는 접어 둠 -->
+      <div class="hero">
+        <span class="kick">오늘도 손빛과 함께</span>
+        <h2>공식 자료로 배우는<br>수어와 점자</h2>
+        <p class="hsub">수어와 점자를 처음 배우는 분, 농인·시각장애인과 소통하고 싶은 분을 위한 무료 학습 사이트예요. 회원 가입 없이 바로 쓸 수 있어요.</p>
+        <ul class="hfeat">
+          <li><span class="fi" aria-hidden="true">✋</span><span><b>수어 사전</b> 단어 <b id="statWords">1,190</b>개를 국립국어원 영상과 그림으로 찾아봐요.</span></li>
+          <li><span class="fi" aria-hidden="true">⠿</span><span><b>점자</b> 한글을 「한국 점자 규정」에 맞게 점자로 바꾸고, 연습 패드로 직접 찍어 봐요.</span></li>
+          <li><span class="fi" aria-hidden="true">✏️</span><span><b>교육 영상·퀴즈</b> 영상 <b id="statVideos">10</b>편과 퀴즈로 익히고, 틀린 문제는 다시 풀어요.</span></li>
+        </ul>
+        <p class="hstart">처음이라면 아래 기초 영상부터 보세요.</p>
       </div>
-
-      <nav class="homequick" aria-label="바로 가기">
-        <button class="qbtn" type="button" data-act="nav" data-arg="sign"><span class="qi" aria-hidden="true">✋</span>수어 주제별</button>
-        <button class="qbtn" type="button" data-act="signnum"><span class="qi" aria-hidden="true">🔢</span>기본 숫자</button>
-        <button class="qbtn" type="button" data-act="brailletable"><span class="qi" aria-hidden="true">⠿</span>점자 표</button>
-        <button class="qbtn" type="button" data-act="nav" data-arg="quiz"><span class="qi" aria-hidden="true">✏️</span>퀴즈</button>
-      </nav>
 
       <div id="homeNext"></div>
       <div class="reviewrow" id="homeReview" hidden></div>
 
       <section id="homeVideos" aria-labelledby="basicVidH">
         <div class="roadhead">
-          <h2 id="basicVidH" tabindex="-1" style="font-size:1.1875rem;font-weight:800">처음이라면, 기초 영상</h2>
+          <h2 id="basicVidH" tabindex="-1" style="font-size:1.1875rem;font-weight:800">기초 영상</h2>
           <span class="roadprog" id="basicProg" aria-live="polite"></span>
         </div>
         <p class="note" id="basicSub" style="margin-top:6px"></p>
@@ -104,7 +90,7 @@
 
       <section aria-labelledby="roadH">
         <div class="roadhead">
-          <h2 id="roadH" style="font-size:1.1875rem;font-weight:800">학습 순서</h2>
+          <h2 id="roadH" style="font-size:1.1875rem;font-weight:800">학습 로드맵</h2>
           <span class="roadprog" id="roadProg" aria-live="polite"></span>
         </div>
         <div class="roadtabs" role="group" aria-label="학습 트랙 선택" style="margin:10px 0 14px">

@@ -27,7 +27,8 @@ function setPlayerSrc(id) {
     f.poster = `videos/${id}.jpg`;
     f.src = `videos/${id}.mp4`;
     const t = document.createElement('track');
-    t.kind = 'captions'; t.srclang = 'ko'; t.label = '한국어'; t.src = `videos/${id}.vtt`; t.default = true;
+    // 자막은 처음엔 꺼 둔다(작업자님 요청 2026-11-20 — 영상 화면 아래에 같은 문장이 이미 나오고, 대본도 아래에 있다). 재생기의 자막 단추로 켤 수 있다
+    t.kind = 'captions'; t.srclang = 'ko'; t.label = '한국어'; t.src = `videos/${id}.vtt`; t.default = false;
     f.appendChild(t);
     f.addEventListener('ended', () => markWatched(id));
     f.addEventListener('timeupdate', () => { if (f.duration && f.currentTime / f.duration >= 0.85) markWatched(id); });

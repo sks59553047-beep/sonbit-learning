@@ -31,6 +31,16 @@ const p = await ev(`({ t: document.querySelector('#playerTitle').textContent, sr
 check('R5 새로 고침(주소로 바로 열기)해도 같은 영상: 제목·영상·대본이 나옴', (await active()) === 'view-player' && /수어의 시작/.test(p.t) && /v8-ksl-intro\.mp4$/.test(p.src || '') && p.lines >= 3, JSON.stringify(p));
 const script = await ev(`document.querySelector('#playerTranscript').textContent`);
 check('R5b 「수어의 시작」 대본: 법 설명은 「대한민국 농인의 공용어」, 옛 숫자 「224개」·「한국어와 함께 공용어」는 없음', /대한민국 농인의 공용어로 정하고 있어요/.test(script) && !/224/.test(script) && !/한국어와 함께 공용어/.test(script) && /궁금한 단어를 찾아 실제 수어 영상으로/.test(script));
+check('R5c 자막은 처음에 꺼져 있음(재생기 자막 단추로 켤 수 있게 자막 파일은 있음)', (await ev(`(() => { const v = document.querySelector('#playerVideo'); const t = v.textTracks[0]; return !!v.querySelector('track') && (!t || t.mode !== 'showing') })()`)));
+// 재생 바로 원하는 시간 옮기기: 서버가 영상을 부분(Range)으로 보내야 된다(실제 주소에서는 functions/videos 가 맡음)
+const seek = await ev(`(async () => { const v = document.querySelector('#playerVideo'); v.muted = true;
+  await new Promise(r => v.readyState >= 1 ? r() : v.addEventListener('loadedmetadata', r, { once: true }));
+  v.currentTime = 40; await new Promise(r => { v.addEventListener('seeked', r, { once: true }); setTimeout(r, 6000); });
+  try { await v.play(); } catch (e) {} await new Promise(r => setTimeout(r, 1500)); v.pause();
+  const s = v.seekable; return { t: v.currentTime, end: s.length ? s.end(s.length - 1) : 0, dur: v.duration } })()`);
+check('R5d 재생 바로 40초로 옮기면 40초부터 재생됨(처음으로 돌아가지 않음)', seek.t >= 39.5 && seek.t < 50 && seek.end >= seek.dur - 1, JSON.stringify(seek));
+const head = await ev(`fetch('videos/v8-ksl-intro.mp4', { headers: { Range: 'bytes=100-199' }, cache: 'no-store' }).then(r => r.status + ' ' + (r.headers.get('content-range') || ''))`);
+check('R5e 서버가 영상 일부만 달라는 요청에 206(일부)으로 답함', /^206 bytes 100-199\//.test(head), head);
 await c.click('#playerBack'); await sleep(800);
 check('R6 그 화면에서 왼쪽 위 화살표 → 사이트 안 학습 화면(사이트 밖으로 나가지 않음)', (await active()) === 'view-home' && (await ev('location.origin')) === new URL(BASE).origin && (await ev(`document.querySelector('#playerVideo').getAttribute('src')`)) === null);
 await ev(`document.querySelector('#homeVideoList [data-open-video="v1-braille-basics"]').click()`); await sleep(1200);

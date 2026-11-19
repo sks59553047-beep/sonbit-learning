@@ -118,8 +118,15 @@ function playerRoute(hash) {
   const id = decodeURIComponent(String(hash || '').replace(/^#/, '').split('/')[1] || '');
   return id && VIDEO_LIST.some(v => v.id === id) ? { id } : undefined;
 }
-// 영상 화면의 뒤로: 사이트 안에서 왔으면 앞 화면으로, 주소로 바로 열었거나 새로 고침했으면 학습 화면으로(사이트 밖으로 나가지 않게)
-$('#playerBack').addEventListener('click', () => { const s = history.state; if (s && s.view && !s.first) history.back(); else go('home'); });
+// 영상 화면의 뒤로: 사이트 안에서 왔으면 앞 화면으로. 주소로 바로 열었거나 새로 고침했으면 그 영상이 놓인 자리로
+// (기초 영상 4편 → 학습 화면, 나머지 점자 영상 → 점자 탭 「교육 영상」 칸). 사이트 밖으로는 나가지 않는다
+$('#playerBack').addEventListener('click', () => {
+  const s = history.state;
+  if (s && s.view && !s.first) { history.back(); return; }
+  const id = s && s.arg && s.arg.id;
+  if (id && !HOME_VIDEO_IDS.includes(id)) { store.set('track', 'braille'); go('braille'); showBraillePanel('learn', true); }
+  else go('home');
+});
 // 「본문으로 바로가기」(키보드·화면낭독기): 주소를 바꾸지 않고, 지금 보고 있는 화면의 제목으로 초점만 옮긴다
 $('.skiplink').addEventListener('click', e => {
   e.preventDefault();

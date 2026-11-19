@@ -29,11 +29,17 @@ check('R4 기초 영상 「수어의 시작」을 열면 주소가 #player/v8-ks
 await c.goto(BASE + '?r3d=' + Date.now() + '#player/v8-ksl-intro', 3000);
 const p = await ev(`({ t: document.querySelector('#playerTitle').textContent, src: document.querySelector('#playerVideo').getAttribute('src'), lines: document.querySelectorAll('#playerTranscript .tline').length })`);
 check('R5 새로 고침(주소로 바로 열기)해도 같은 영상: 제목·영상·대본이 나옴', (await active()) === 'view-player' && /수어의 시작/.test(p.t) && /v8-ksl-intro\.mp4$/.test(p.src || '') && p.lines >= 3, JSON.stringify(p));
+const script = await ev(`document.querySelector('#playerTranscript').textContent`);
+check('R5b 「수어의 시작」 대본: 법 설명은 「대한민국 농인의 공용어」, 옛 숫자 「224개」·「한국어와 함께 공용어」는 없음', /대한민국 농인의 공용어로 정하고 있어요/.test(script) && !/224/.test(script) && !/한국어와 함께 공용어/.test(script) && /궁금한 단어를 찾아 실제 수어 영상으로/.test(script));
 await c.click('#playerBack'); await sleep(800);
 check('R6 그 화면에서 왼쪽 위 화살표 → 사이트 안 학습 화면(사이트 밖으로 나가지 않음)', (await active()) === 'view-home' && (await ev('location.origin')) === new URL(BASE).origin && (await ev(`document.querySelector('#playerVideo').getAttribute('src')`)) === null);
 await ev(`document.querySelector('#homeVideoList [data-open-video="v1-braille-basics"]').click()`); await sleep(1200);
 await c.click('#playerBack'); await sleep(800);
 check('R7 사이트 안에서 연 영상의 화살표 → 앞 화면(학습)으로', (await active()) === 'view-home' && !/#player/.test(await hash()), await hash());
+const bvid = await ev(`VIDEO_LIST.find(v => v.track === '점자' && !HOME_VIDEO_IDS.includes(v.id)).id`);
+await c.goto(BASE + '?r3i=' + Date.now() + '#player/' + bvid, 3000);
+await c.click('#playerBack'); await sleep(800);
+check(`R7b 점자 교육 영상(${bvid})을 새로 고침한 뒤 화살표 → 점자 탭 「교육 영상」 칸(학습 화면이 아니라)`, (await active()) === 'view-braille' && !(await ev(`document.querySelector('#bp-learn').hidden`)), `${await active()}`);
 await c.goto(BASE + '?r3e=' + Date.now() + '#player/nope', 2500);
 check('R8 모르는 영상 번호(#player/nope)는 학습 화면으로', (await active()) === 'view-home', await active());
 await c.goto(BASE + '?r3f=' + Date.now() + '#player', 2500);

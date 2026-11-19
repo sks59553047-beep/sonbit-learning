@@ -47,7 +47,10 @@ function renderLearnPanel() {
   const next = (vs.find(v => !isSeen(v.id)) || {}).id;
   $('#learnProg').textContent = seenCount(vs) + ' / ' + vs.length + '편 봤어요';
   const intro = homeVideos().filter(v => v.track === '점자');   // 학습 페이지 「기초 영상」에 있는 점자 영상(점자의 시작)을 먼저 보라고 알려 준다
-  $('#learnSub').textContent = `한글 점자를 ①부터 차례로 익혀요(${vs.length}편, 모두 ${fmtSpan(totalDur(vs))}).${intro.length ? ` 처음이라면 학습 탭의 「${shortName(intro[0])}」부터 보세요.` : ''}`;
+  // 작업자님이 정한 문구(2026-11-20): 「돼요.」에서 줄을 바꿔 두 줄로
+  const span = fmtSpan(totalDur(vs)), last = span.charCodeAt(span.length - 1) - 0xAC00;
+  const ieyo = last >= 0 && last % 28 ? '이에요' : '예요';   // 「13분 9초예요」「13분이에요」
+  $('#learnSub').textContent = `한글 점자를 차례로 익히는 영상이에요. 위에서부터 보면 돼요.\n${vs.length}편을 모두 보면 ${span}${ieyo}.${intro.length ? ` 처음이라면 학습 페이지 「기초 영상」의 「${shortName(intro[0])}」부터 보세요.` : ''}`;
   $('#learnList').innerHTML = vs.map(v => vrowHtml(v, next)).join('');
 }
 function bindVideoLinks(root) {

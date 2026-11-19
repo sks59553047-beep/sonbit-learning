@@ -63,23 +63,39 @@
     <section class="view" id="view-home" aria-labelledby="homeH">
       <h1 id="homeH" class="visually-hidden" tabindex="-1">학습 홈</h1>
 
-      <div class="hero">
-        <span class="kick">오늘도 손빛과 함께</span>
-        <h2>공식 자료로 배우는<br>수어와 점자</h2>
-        <p class="hsub">국립국어원 한국수어사전의 영상·그림·설명, 「한국 점자 규정」(2024)을 따른 점자 변환기, 퀴즈와 교육 영상으로 익혀요.</p>
+      <!-- 2026-11-20 첫 화면 개편: 찾기(수어 검색·점자 바꾸기)를 맨 위에, 학습은 그 아래 -->
+      <div class="hero hero-find">
+        <h2>수어·점자 바로 찾기</h2>
+        <form class="hfind" id="homeSignForm" role="search" aria-label="수어 단어 찾기">
+          <label for="homeSignQ">수어</label>
+          <input id="homeSignQ" type="search" placeholder="단어 입력 (예: 감사합니다)" autocomplete="off" enterkeyhint="search">
+          <button class="hbtn" type="submit">찾기</button>
+        </form>
+        <form class="hfind" id="homeBrailleForm" aria-label="점자로 바꾸기">
+          <label for="homeBrailleQ">점자</label>
+          <input id="homeBrailleQ" type="text" maxlength="200" placeholder="한글 입력 (예: 손빛)" autocomplete="off" enterkeyhint="go">
+          <button class="hbtn" type="submit">바꾸기</button>
+        </form>
         <div class="hstats">
-          <span><b id="statWords">1,190</b> 수어 표현</span>
-          <span><b id="statVideos">6</b> 교육 영상</span>
+          <span><b id="statWords">1,190</b> 수어</span>
+          <span><b id="statVideos">10</b> 교육 영상</span>
           <span><b id="statBraille">227</b> 점자 규정 예시 확인</span>
         </div>
       </div>
+
+      <nav class="homequick" aria-label="바로 가기">
+        <button class="qbtn" type="button" data-act="nav" data-arg="sign"><span class="qi" aria-hidden="true">✋</span>수어 주제별</button>
+        <button class="qbtn" type="button" data-act="signnum"><span class="qi" aria-hidden="true">🔢</span>기본 숫자</button>
+        <button class="qbtn" type="button" data-act="brailletable"><span class="qi" aria-hidden="true">⠿</span>점자 표</button>
+        <button class="qbtn" type="button" data-act="nav" data-arg="quiz"><span class="qi" aria-hidden="true">✏️</span>퀴즈</button>
+      </nav>
 
       <div id="homeNext"></div>
       <div class="reviewrow" id="homeReview" hidden></div>
 
       <section id="homeVideos" aria-labelledby="basicVidH">
         <div class="roadhead">
-          <h2 id="basicVidH" tabindex="-1" style="font-size:1.1875rem;font-weight:800">기초 영상</h2>
+          <h2 id="basicVidH" tabindex="-1" style="font-size:1.1875rem;font-weight:800">처음이라면, 기초 영상</h2>
           <span class="roadprog" id="basicProg" aria-live="polite"></span>
         </div>
         <p class="note" id="basicSub" style="margin-top:6px"></p>
@@ -88,14 +104,14 @@
 
       <section aria-labelledby="roadH">
         <div class="roadhead">
-          <h2 id="roadH" style="font-size:1.1875rem;font-weight:800">학습 로드맵</h2>
+          <h2 id="roadH" style="font-size:1.1875rem;font-weight:800">학습 순서</h2>
           <span class="roadprog" id="roadProg" aria-live="polite"></span>
         </div>
         <div class="roadtabs" role="group" aria-label="학습 트랙 선택" style="margin:10px 0 14px">
           <button class="chip active" id="roadTabSign" type="button" aria-pressed="true">수어 트랙</button>
           <button class="chip" id="roadTabBraille" type="button" aria-pressed="false">점자 트랙</button>
         </div>
-        <p class="note" id="roadHint" style="margin:-4px 0 14px">처음이라면 맨 위 단계부터 차례로 해 보세요. 점자부터 배우고 싶다면 「점자 트랙」을 누르세요.</p>
+        <p class="note" id="roadHint" style="margin:-4px 0 14px">1단계부터 차례로 해 보세요.</p>
         <div class="road" id="roadList"></div>
       </section>
 
@@ -112,18 +128,18 @@
           <button class="btn danger small" id="recClearYes" type="button">지우기</button>
           <button class="btn ghost small" id="recClearNo" type="button">취소</button>
         </div>
-        <p class="note" id="recStatus" style="margin-top:12px" aria-live="polite">기록은 로그인 없이 이 브라우저에만 저장돼요. 다른 기기에서 이어서 하려면 내보내기 → 그 기기에서 가져오기를 쓰세요.</p>
+        <p class="note" id="recStatus" style="margin-top:12px" aria-live="polite">다른 기기로 옮기려면 내보낸 파일을 그 기기에서 가져오세요.</p>
       </section>
 
-      <section class="card" id="sourceCard" aria-labelledby="srcH">
-        <div class="section-h"><h2 id="srcH">자료 출처와 확인 범위</h2></div>
+      <details class="card srcfold" id="sourceCard">
+        <summary><h2 id="srcH">자료 출처</h2></summary>
         <ul class="sourcelist">
-          <li>수어 영상: 국립국어원 한국수어사전, 한국수어누리사전(저작자표시-비영리-변경금지). 누리사전 영상은 용량을 줄여 올렸어요. 수어 그림: 국립국어원 한국수어사전의 손 그림·사진만 써요(누리사전의 수어 표기 기호 그림은 배우는 분께 뜻이 잘 전해지지 않아 넣지 않았어요).</li>
-          <li>수어 동작 설명: 공공데이터포털 「한국수어사전 한국어대응표현정보」의 수형 설명. 여기에 없는 일부 단어는 서울복지포털 「수어 표준사전」(서울특별시 장애인자립지원과)의 설명을 출처를 밝혀 실었어요(영상과 비교해 같은 동작만). 설명이 없는 단어는 영상과 그림으로 확인해 주세요. 단어 주제 분류는 손빛이 규칙으로 나눈 것이라 틀릴 수 있어요.</li>
-          <li>점자: 「한국 점자 규정」(문화체육관광부고시 제2024-0005호)의 한글·약자·약어·숫자와 일부 문장 부호. 규정 예시 227개로 확인했지만 점자 전문가의 검수는 아직 받지 않았어요.</li>
-          <li>교육 영상: 손빛이 만들고 AI 목소리가 읽어요. 점검에서 오류가 확인된 영상은 고칠 때까지 내려 둬요.</li>
+          <li>수어 영상·그림: 국립국어원 한국수어사전, 한국수어누리사전(저작자표시-비영리-변경금지). 누리사전 영상은 용량을 줄였어요.</li>
+          <li>수어 동작 설명: 공공데이터포털 「한국수어사전 한국어대응표현정보」. 일부 단어는 서울복지포털 「수어 표준사전」(서울특별시) 설명으로, 영상과 같은 동작만 실었어요. 주제 분류는 손빛이 나눈 것이라 틀릴 수 있어요.</li>
+          <li>점자: 「한국 점자 규정」(문화체육관광부고시 제2024-0005호). 규정 예시 227개로 확인했고, 전문가 검수는 받지 않았어요.</li>
+          <li>교육 영상: 손빛이 만들고 AI 목소리로 읽었어요.</li>
         </ul>
-      </section>
+      </details>
     </section>
 
     <!-- ===== 수어 사전 ===== -->

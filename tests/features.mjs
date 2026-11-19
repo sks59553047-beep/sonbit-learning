@@ -254,7 +254,7 @@ check('G2b 영상을 보고 돌아오면 「봤어요」·진행·다음 영상 
 await ev(`document.querySelector('#roadList .rstep.now .rbox').click()`); await sleep(700);
 check('G2c 로드맵 「기초 영상 보기」 → 기초 영상 칸으로 이동', (await ev(`document.activeElement && document.activeElement.id`)) === 'basicVidH', await ev(`document.activeElement && document.activeElement.id`));
 await c.click('#roadTabBraille'); await sleep(300);
-check('G2d 점자 트랙: 1단계 기초 영상 보기(공통), 2단계 「점자 교육 영상 보기」', /기초 영상 보기/.test(await txt('#roadList .rstep:nth-child(1)')) && /점자 교육 영상 보기/.test(await txt('#roadList .rstep:nth-child(2)')) && /점자 탭의 「교육 영상」/.test(await txt('#roadList .rstep:nth-child(2)')), (await txt('#roadList .rstep:nth-child(2)')).replace(/\s+/g, ' ').slice(0, 80));
+check('G2d 점자 트랙: 1단계 기초 영상 보기(공통), 2단계 「점자 교육 영상 보기」', /기초 영상 보기/.test(await txt('#roadList .rstep:nth-child(1)')) && /점자 교육 영상 보기/.test(await txt('#roadList .rstep:nth-child(2)')) && /①~⑥ \d+편/.test(await txt('#roadList .rstep:nth-child(2)')), (await txt('#roadList .rstep:nth-child(2)')).replace(/\s+/g, ' ').slice(0, 80));
 await ev(`document.querySelector('#roadList .rstep:nth-child(2) .rbox').click()`); await sleep(600);
 check('G2e 눌러 보면 점자 탭의 「교육 영상」 칸이 열림(①~⑥ 6편)', (await ev(`document.querySelector('#view-braille').classList.contains('active') && !document.querySelector('#bp-learn').hidden && document.querySelectorAll('#learnList .vrow').length`)) === 6);
 await c.click('[data-nav="home"]'); await sleep(400);

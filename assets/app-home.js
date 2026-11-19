@@ -37,7 +37,7 @@ function renderHomeVideos() {
   sec.hidden = !vs.length; if (!vs.length) return;
   const next = (vs.find(v => !isSeen(v.id)) || {}).id;
   $('#basicProg').textContent = seenCount(vs) + ' / ' + vs.length + '편 봤어요';
-  $('#basicSub').textContent = `처음이라면 위에서부터 차례로 보세요. ${vs.length}편을 모두 보면 ${fmtSpan(totalDur(vs))}이에요.`;
+  $('#basicSub').textContent = `${vs.length}편 · 모두 ${fmtSpan(totalDur(vs))}`;
   $('#homeVideoList').innerHTML = vs.map(v => vrowHtml(v, next)).join('');
   $('#homeVideoList').classList.toggle('n4', vs.length >= 4);   // 4편이면 컴퓨터 화면에서 한 줄에 4개(조금 좁은 화면은 2개씩)
 }
@@ -70,15 +70,15 @@ function roadmapFor(track) {
   if (track === 'sign') {
     steps = [
       basic,
-      { title: '수어 단어 찾아보기', sub: '수어 ' + ALL_WORDS.length.toLocaleString('ko-KR') + '개 검색, 국립국어원 실제 영상으로 바로 확인', nav: 'sign', did: 'sign' },
-      { title: '수어 퀴즈로 복습', sub: '틀린 문제는 영상과 설명으로 다시 확인', nav: 'quiz', did: 'quiz-sign', review: wrongOf(['sv', 'pv']) }
+      { title: '수어 단어 찾아보기', sub: '수어 ' + ALL_WORDS.length.toLocaleString('ko-KR') + '개를 영상으로', nav: 'sign', did: 'sign' },
+      { title: '수어 퀴즈로 복습', sub: '틀린 문제는 다시 풀 수 있어요', nav: 'quiz', did: 'quiz-sign', review: wrongOf(['sv', 'pv']) }
     ];
   } else {
     steps = [
       basic,
-      { title: '점자 교육 영상 보기', sub: `한글 점자 ①부터 ⑥ 약자·약어까지 ${lv.length}편 · ${prog(lv)} (점자 탭의 「교육 영상」)`, vids: lv, act: 'braillelearn' },
+      { title: '점자 교육 영상 보기', sub: `한글 점자 ①~⑥ ${lv.length}편 · ${prog(lv)}`, vids: lv, act: 'braillelearn' },
       { title: '점자 연습 패드·변환기 써 보기', sub: '내 이름을 점자로 바꿔 보기', nav: 'braille', did: 'braille' },
-      { title: '점자 퀴즈로 복습', sub: '읽기와 직접 쓰기로 확인하기', nav: 'quiz', did: 'quiz-braille', review: wrongOf(['br', 'bu']) }
+      { title: '점자 퀴즈로 복습', sub: '읽기와 쓰기 문제', nav: 'quiz', did: 'quiz-braille', review: wrongOf(['br', 'bu']) }
     ];
   }
   return steps.filter(s => !s.vids || s.vids.length).map((s, i) => Object.assign({ label: (i + 1) + '단계' }, s));
@@ -147,8 +147,23 @@ function dispatchAct(act, arg) {
   else if (act === 'resume') resumeQuiz();
   else if (act === 'quizkind') startQuizFromAnywhere(arg);
   else if (act === 'signtopics') { signQuery = ''; signTopic = ''; $('#signSearch').value = ''; renderSign(); $('#signSearch').focus(); }
+  else if (act === 'signnum') { store.set('track', 'sign'); signQuery = ''; signTopic = NUM_TOPIC; signCho = ''; $('#signSearch').value = ''; go('sign'); renderSign(); }
+  else if (act === 'brailletable') { store.set('track', 'braille'); go('braille'); showBraillePanel('table', true); }
 }
 $('#view-home').addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (b) dispatchAct(b.dataset.act, b.dataset.arg); });
+// 첫 화면 찾기 칸(2026-11-20): 수어는 사전 검색으로, 점자는 글자 바꾸기로 넘겨준다
+$('#homeSignForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const q = $('#homeSignQ').value.trim(); if (!q) { $('#homeSignQ').focus(); return; }
+  store.set('track', 'sign'); signTopic = ''; signCho = ''; signPinId = ''; signQuery = q; $('#signSearch').value = q;
+  go('sign'); renderSign();
+});
+$('#homeBrailleForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const t = $('#homeBrailleQ').value.trim(); if (!t) { $('#homeBrailleQ').focus(); return; }
+  store.set('track', 'braille'); $('#bpInput').value = t.slice(0, 200); renderBraillePanel();
+  go('braille'); showBraillePanel('convert');
+});
 
 // ---------------- 내 학습 기록: 보기·내보내기·가져오기·지우기 ----------------
 function renderRecords() {

@@ -8,8 +8,8 @@ let signTopic = '', signQuery = '', signCho = '', signPinId = '';
 const TOPIC_COUNT = {}; ALL_WORDS.forEach(w => { TOPIC_COUNT[w.t] = (TOPIC_COUNT[w.t] || 0) + 1; });
 function topicCardHtml(t) {
   const urgent = t === '몸·건강·긴급' ? ' urgent' : '';
-  // 2026-11-20: 주제마다 붙던 이모지(🚑👋💬…)는 「AI가 만든 티」 평가로 뺐다. 이름과 단어 수만
-  return `<button class="topiccard${urgent}" data-topic="${esc(t)}" type="button"><span class="tn">${esc(t)}</span><span class="tc">${TOPIC_COUNT[t] || 0}개</span></button>`;
+  // 2026-11-20: 이모지를 한때 뺐다가(「AI 티」 평가) 너무 밋밋하다고 해서 작은 아이콘으로 되살림(카드는 두 줄 촘촘한 배치 그대로)
+  return `<button class="topiccard${urgent}" data-topic="${esc(t)}" type="button"><span class="ti" aria-hidden="true">${TOPIC_ICON[t] || '✋'}</span><span class="tn">${esc(t)}</span><span class="tc">${TOPIC_COUNT[t] || 0}개</span></button>`;
 }
 function shortcutsHtml() {
   const n = favWords().length;
@@ -107,7 +107,7 @@ function renderSign() {
   else if (signTopic === NUM_TOPIC) list = basicNumberWords();
   else list = ALL_WORDS.filter(w => w.t === signTopic).sort(byName);
   if (inTopic) {
-    $('#signTopicName').textContent = (signTopic === FAV_TOPIC ? '★ ' : '') + signTopic;
+    $('#signTopicName').textContent = (signTopic === FAV_TOPIC ? '★ ' : TOPIC_ICON[signTopic] ? TOPIC_ICON[signTopic] + ' ' : '') + signTopic;
     if (signTopic === FAV_TOPIC && list.length) { $('#signActions').hidden = false; $('#signActions').innerHTML = `<button class="btn primary small" type="button" data-act="quizkind" data-arg="fav">단어장 퀴즈 풀기 (${list.length}개)</button>`; }
     if (list.length > 40 && signTopic !== FAV_TOPIC && signTopic !== NUM_TOPIC) {
       $('#signCho').hidden = false; $('#signCho').innerHTML = choChipsHtml(list);

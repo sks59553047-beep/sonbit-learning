@@ -33,7 +33,8 @@ check('L9 소개 아래 링크(수어 사전 보기·점자로 바꿔 보기·�
 const tells = await ev(`(() => { go('home'); const h = document.querySelector('#view-home').innerText; go('sign'); const icons = [...document.querySelectorAll('#view-sign .topiccard .ti')].filter(e => e.textContent.trim()).length; go('home');
   const em = t => (t.match(/\\p{Extended_Pictographic}/gu) || []).filter(x => x !== '★').length;
   return { homeEmoji: em(h), topicIcons: icons, slogan: /오늘도 손빛과 함께/.test(h), dash: / — /.test(h) } })()`);
-check('L10 첫 화면에 이모지(★ 제외)·구호 배지·「 — 」 제목이 없고, 수어 주제 카드에는 작은 아이콘이 있음', tells.homeEmoji === 0 && tells.topicIcons > 10 && !tells.slogan && !tells.dash, JSON.stringify(tells));
+// 「오늘도 손빛과 함께」 꼬리표는 작업자님이 좋다고 해 되살림(2026-11-20)
+check('L10 첫 화면에 이모지(★ 제외)·「 — 」 제목이 없고, 「오늘도 손빛과 함께」 꼬리표와 수어 주제 아이콘은 있음', tells.homeEmoji === 0 && tells.topicIcons > 10 && tells.slogan && !tells.dash, JSON.stringify(tells));
 const look = await ev(`(() => { const k = document.querySelector('.brand .k'); const card = getComputedStyle(document.querySelector('#recordCard')); const note = getComputedStyle(document.querySelector('#recStatus')); const hero = getComputedStyle(document.querySelector('.hero'));
   return { kicker: !!k && getComputedStyle(k).display !== 'none', shadow: card.boxShadow, noteBg: note.backgroundColor, grad: /gradient/.test(getComputedStyle(document.querySelector('.brand .logo')).backgroundImage), hero: /gradient/.test(hero.backgroundImage) } })()`);
 check('L11 섞은 모양: 머리줄 「손빛 SONBIT」, 남색 첫 화면, 카드 그림자, 안내 상자 배경, 로고 그라데이션', look.kicker && look.hero && look.shadow !== 'none' && !/rgba\(0, 0, 0, 0\)|transparent/.test(look.noteBg) && look.grad, JSON.stringify(look));

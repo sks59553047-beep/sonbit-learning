@@ -556,7 +556,8 @@ label.lbl2{display:block}
 .hero::before{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.2) 1.7px,transparent 1.9px);background-size:26px 26px;-webkit-mask-image:linear-gradient(115deg,transparent 40%,#000 100%);mask-image:linear-gradient(115deg,transparent 40%,#000 100%);pointer-events:none}
 .hero::after{content:"";position:absolute;right:-60px;top:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(107,216,203,.38),transparent 70%);pointer-events:none}
 .hero>*{position:relative;z-index:1}
-.hero h2{color:#fff;font-size:1.5rem;font-weight:800;line-height:1.3}
+.hero .kick{display:inline-block;font-size:0.75rem;font-weight:800;padding:4px 12px;border-radius:999px;background:rgba(255,255,255,.16);color:#fff}   /* 「오늘도 손빛과 함께」: 작업자님이 마음에 들어 해 되살림 */
+.hero h2{color:#fff;font-size:1.5rem;font-weight:800;line-height:1.3;margin-top:12px}
 .hero .hsub{color:#dfe2fb;margin-top:8px;font-size:0.9375rem;line-height:1.6}
 .hero .hsub b{color:#fff}
 .hero .hstart{margin-top:14px;font-size:0.875rem;font-weight:700;color:#fff}

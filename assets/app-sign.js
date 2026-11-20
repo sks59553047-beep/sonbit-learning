@@ -197,9 +197,36 @@ async function shareWord(w, btn) {
     toast('링크를 복사하지 못했어요. 아래 칸의 주소를 길게 눌러 복사해 주세요.');
   }
 }
-$('#signList').addEventListener('toggle', e => { if (e.target.open) { fillWordBody(e.target); markDid('sign'); } }, true);
+$('#signList').addEventListener('toggle', e => { if (e.target.open) { fillWordBody(e.target); updateWordNav(e.target); markDid('sign'); } }, true);
+// ---------- 이전/다음 단어(2026-11-20): 펼친 단어 맨 아래에서 목록의 앞뒤 단어로 바로 넘어간다 ----------
+// 앞뒤는 지금 보이는 목록(주제·검색 결과) 순서. 마지막 단어 뒤에 「더 보기」가 남아 있으면 다음 150개를 붙이고 넘어간다.
+function rowNeighbor(det, dir) {
+  let el = dir < 0 ? det.previousElementSibling : det.nextElementSibling;
+  while (el && !el.classList.contains('wordrow') && !el.matches('[data-signmore]')) el = dir < 0 ? el.previousElementSibling : el.nextElementSibling;
+  if (el && el.matches('[data-signmore]')) { const n = signShown.n; return n < signShown.list.length ? { more: true, w: signShown.list[n] } : null; }
+  return el ? { row: el, w: WORD_BY_ID.get(el.dataset.wid) } : null;
+}
+function updateWordNav(det) {
+  const body = det.querySelector('.wbody'); if (!body) return;
+  let nav = body.querySelector('.wnav'); if (nav) nav.remove();
+  const p = rowNeighbor(det, -1), n = rowNeighbor(det, 1);
+  if (!p && !n) return;
+  const b = (dir, x, label) => x && x.w ? `<button type="button" class="wnavbtn ${dir}" data-wnav="${dir}"><span class="wl">${label}</span><b>${esc(x.w.w)}</b></button>` : '';
+  body.insertAdjacentHTML('beforeend', `<nav class="wnav" aria-label="앞뒤 단어">${b('prev', p, '‹ 이전 단어')}${b('next', n, '다음 단어 ›')}</nav>`);
+}
+function goWordNeighbor(det, dir) {
+  let nb = rowNeighbor(det, dir); if (!nb) return;
+  if (nb.more) { showMoreWords(); nb = rowNeighbor(det, dir); if (!nb || !nb.row) return; }
+  $$('video', det).forEach(v => v.pause());
+  det.open = false;
+  nb.row.open = true;
+  nb.row.scrollIntoView({ block: 'start' });
+  const s = nb.row.querySelector('summary'); if (s) s.focus({ preventScroll: true });
+}
 $('#signList').addEventListener('click', e => {
   if (e.target.closest('[data-signmore]')) { showMoreWords(); return; }
+  const wn = e.target.closest('[data-wnav]');
+  if (wn) { goWordNeighbor(wn.closest('.wordrow'), wn.dataset.wnav === 'prev' ? -1 : 1); return; }
   const sb = e.target.closest('[data-share]');
   if (sb) { const w = WORD_BY_ID.get(sb.dataset.share); if (w) shareWord(w, sb); return; }
   const fb = e.target.closest('[data-fav]');

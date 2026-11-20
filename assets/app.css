@@ -286,6 +286,12 @@ textarea.bptext:focus{border-color:var(--teal);outline:none}
 .vmeta p{color:var(--muted);margin-top:6px;font-size:0.875rem}
 .transcript{display:flex;flex-direction:column;gap:2px;max-height:280px;overflow:auto;border:1px solid var(--line);border-radius:14px;padding:6px;background:var(--card)}
 .tline{margin:0;text-align:left;padding:9px 10px;border-radius:10px;font-size:0.875rem;line-height:1.55;color:var(--muted)}
+/* 대본 따라가기(2026-11-20): 줄 = 누르면 그 부분부터 재생하는 단추, 앞에 시각, 지금 말하는 줄은 민트 바탕 */
+button.tline{display:flex;gap:10px;align-items:baseline;width:100%;border:0;background:none;font:inherit;font-size:0.875rem;cursor:pointer}
+button.tline::before{content:attr(data-time);flex:none;min-width:2.8em;font-size:0.75rem;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+button.tline:hover{background:var(--surface2)}
+button.tline.on{background:var(--mint);color:var(--ink);font-weight:600}
+button.tline.on::before{color:var(--mint-ink)}
 .backrow{display:flex;align-items:center;gap:10px}
 .backrow .icon-btn{background:var(--surface2)}
 
@@ -579,3 +585,12 @@ label.lbl2{display:block}
 .hero .hsub,.hero .hstart{max-width:40em}   /* 컴퓨터 화면에서 한 줄이 너무 길지 않게(약 40글자) */
 #bpContract{width:22px;height:22px;flex:none}   /* 누르기 쉬운 크기 */
 .bpopt{min-height:44px}
+.section-h .thint{font-size:0.75rem;color:var(--muted);font-weight:600}
+/* 이전/다음 단어(2026-11-20): 펼친 단어 맨 아래 */
+.wordrow{scroll-margin-top:84px}
+.wnav{display:flex;gap:8px;margin-top:6px;padding-top:12px;border-top:1px solid var(--line)}
+.wnavbtn{flex:1;display:flex;flex-direction:column;gap:2px;min-height:52px;padding:8px 12px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--card);color:var(--ink);font:inherit;text-align:left;cursor:pointer;min-width:0}
+.wnavbtn.next{text-align:right;margin-left:auto}
+.wnavbtn .wl{font-size:0.75rem;font-weight:700;color:var(--muted)}
+.wnavbtn b{font-size:0.9375rem;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wnavbtn:hover{border-color:var(--teal)}

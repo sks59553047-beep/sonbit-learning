@@ -53,9 +53,42 @@ async function openPlayer(id) {
     renderTranscript();
   } catch (e) { if (req !== playerReq) return; $('#playerTranscript').innerHTML = '<p class="note">자막을 불러오지 못했어요.</p>'; transcriptCues = []; }
 }
+// 대본 따라가기(2026-11-20): 지금 말하는 줄을 표시하고, 줄을 누르면 그 부분부터 재생한다.
+// 시각은 data-time 으로 두고 CSS(::before)로 보여 준다 — 줄의 글(textContent)은 대본 문장 그대로 두기 위해
 function renderTranscript() {
-  $('#playerTranscript').innerHTML = transcriptCues.map(c => `<p class="tline">${esc(c.text)}</p>`).join('') || '<p class="note">자막이 없어요.</p>';
+  $('#playerTranscript').innerHTML = transcriptCues.map((c, i) => `<button type="button" class="tline" data-cue="${i}" data-time="${fmtTime(Math.floor(c.start))}">${esc(c.text)}</button>`).join('') || '<p class="note">자막이 없어요.</p>';
+  transcriptNow = -1; syncTranscript();
 }
+let transcriptNow = -1;
+function cueAt(t) {   // 지금 시각에 해당하는 줄: 시작 시각이 지난 마지막 줄(줄 사이 쉬는 동안은 앞 줄을 그대로 표시)
+  let k = -1;
+  for (let i = 0; i < transcriptCues.length; i++) { if (transcriptCues[i].start <= t + 0.05) k = i; else break; }
+  return k;
+}
+function syncTranscript() {
+  const v = $('#playerVideo'), box = $('#playerTranscript');
+  if (!v || !box || !transcriptCues.length) return;
+  const k = v.currentTime > 0 || !v.paused ? cueAt(v.currentTime) : -1;   // 아직 재생 전이면 아무 줄도 표시하지 않는다
+  if (k === transcriptNow) return;
+  transcriptNow = k;
+  $$('.tline', box).forEach((b, i) => { b.classList.toggle('on', i === k); if (i === k) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current'); });
+  const line = k >= 0 && box.querySelector(`[data-cue="${k}"]`);
+  if (line) {   // 대본 칸 안에서만 굴린다(페이지 전체는 움직이지 않게)
+    const top = line.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop, bottom = top + line.offsetHeight;
+    if (top < box.scrollTop || bottom > box.scrollTop + box.clientHeight) box.scrollTo({ top: Math.max(0, top - 8), behavior: 'smooth' });
+  }
+}
+document.addEventListener('timeupdate', e => { if (e.target.id === 'playerVideo') syncTranscript(); }, true);
+document.addEventListener('seeked', e => { if (e.target.id === 'playerVideo') syncTranscript(); }, true);
+document.addEventListener('click', e => {
+  const b = e.target.closest('#playerTranscript .tline'); if (!b) return;
+  const c = transcriptCues[+b.dataset.cue], v = $('#playerVideo'); if (!c || !v) return;
+  v.currentTime = c.start + 0.01;
+  v.play().catch(() => {});
+  syncTranscript();
+  const r = v.getBoundingClientRect();
+  if (r.bottom < 60 || r.top > innerHeight - 60) v.scrollIntoView({ behavior: 'smooth', block: 'center' });   // 영상이 화면 밖이면 보이게
+});
 
 // ================= 영상을 불러오지 못했을 때(모든 화면 공통) =================
 // 인터넷이 끊기거나 파일을 받지 못하면 검은 화면만 남지 않게, 그 자리에 까닭·다른 방법·「다시 불러오기」를 띄운다.

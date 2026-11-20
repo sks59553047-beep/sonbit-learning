@@ -12,8 +12,8 @@ const st = await ev(`(() => { const cards = [...document.querySelectorAll('#life
     noTag: cards.filter(k => !k.querySelector('.lifehead .tag')).length, noSrc: cards.filter(k => !k.querySelector('.lifesrc a[href^="https://"]')).length,
     law: cards.filter(k => /법으로 정해짐/.test(k.querySelector('.tag').textContent)).length, lawLink: cards.filter(k => /법으로 정해짐/.test(k.querySelector('.tag').textContent) && k.querySelector('.lifesrc a').href.startsWith('https://www.law.go.kr/')).length,
     newTab: [...document.querySelectorAll('#lifeList .lifesrc a')].every(a => a.target === '_blank' && /noopener/.test(a.rel)),
-    note: /실제 시설이나 제품에 찍힌 점자와 다를 수 있어요/.test(document.querySelector('#bp-life').textContent) } })()`);
-check('L1 「생활 속 점자」 칸: 카드 12개, 모두 꼬리표(법으로 정해짐 등)와 근거 링크, 새 창으로 열림, 「실제와 다를 수 있어요」 안내', st.shown && st.pressed === 'true' && st.n === 12 && !st.noTag && !st.noSrc && st.newTab && st.note, JSON.stringify(st));
+    note: /실제 시설·제품 사진에서 점을 하나하나 읽어/.test(document.querySelector('#bp-life').textContent) && /규정」대로 만든 예시예요/.test(document.querySelector('#bp-life').textContent) } })()`);
+check('L1 「생활 속 점자」 칸: 카드 12개, 모두 꼬리표(법으로 정해짐 등)와 근거 링크, 새 창으로 열림, 「실물 확인」·「규정대로 만든 예시」 안내', st.shown && st.pressed === 'true' && st.n === 12 && !st.noTag && !st.noSrc && st.newTab && st.note, JSON.stringify(st));
 check('L2 「법으로 정해짐」 카드 7개는 모두 국가법령정보센터 원문으로 연결', st.law === 7 && st.lawLink === 7, JSON.stringify({ law: st.law, link: st.lawLink }));
 // 예시 글자의 점자 = 점자 엔진 결과(약자 사용)와 점 하나까지 같음
 const words = await ev(`(() => { const out = []; document.querySelectorAll('#lifeList .lifeword').forEach(b => {
@@ -21,6 +21,11 @@ const words = await ev(`(() => { const out = []; document.querySelectorAll('#lif
   const got = [...b.querySelectorAll('.mini')].map(m => [...m.querySelectorAll('i')].map((i, k) => i.classList.contains('on') ? k + 1 : 0).filter(Boolean).sort().join('')).join('|');
   out.push({ w, ok: want === got && want.length > 0 }); }); return out })()`);
 check(`L3 예시 글자 ${words.length}개의 점자가 엔진 결과와 같음(빈 칸·바꾸지 못한 글자 없음)`, words.length >= 15 && words.every(x => x.ok), JSON.stringify(words.filter(x => !x.ok)));
+// 실물 사진에서 점을 읽어 확인한 글자에만 「실물 확인」(2026-11-21): 엘리베이터 1·2·3·개·폐·호출·상·하, 남자화장실·여자화장실, 음료
+const rl = await ev(`(() => { const r = [...document.querySelectorAll('#lifeList .lifeword')]; const real = r.filter(b => b.querySelector('.lreal')).map(b => b.dataset.lifeword);
+  const srcOk = ['엘리베이터 버튼', '화장실 출입구', '음료 캔 뚜껑'].every(t => { const k = [...document.querySelectorAll('#lifeList .lifecard')].find(c => c.querySelector('h3').textContent === t); return k && /실물 사진/.test(k.querySelector('.lifesrc').textContent); });
+  return { real, aria: r.filter(b => b.querySelector('.lreal')).every(b => /실제 제품 사진과 같음/.test(b.getAttribute('aria-label'))), srcOk } })()`);
+check('L3b 「실물 확인」은 사진으로 확인한 11개 글자에만(탄산·맥주 등은 없음), 그 카드 근거에 실물 사진 출처', rl.real.join() === '1,2,3,개,폐,호출,상,하,남자화장실,여자화장실,음료' && rl.aria && rl.srcOk, JSON.stringify(rl));
 await ev(`[...document.querySelectorAll('#lifeList .lifeword')].find(b => b.dataset.lifeword === '탄산').click(); 1`); await sleep(600);
 const cv = await ev(`({ view: document.querySelector('.view.active').id, conv: !document.querySelector('#bp-convert').hidden, input: document.querySelector('#bpInput').value, sum: document.querySelector('#bpSummary').textContent, cells: document.querySelectorAll('#bpCells .ccell').length })`);
 check('L4 예시 글자 「탄산」을 누르면 글자 바꾸기 칸에 그 글자와 점자', cv.view === 'view-braille' && cv.conv && cv.input === '탄산' && /점자 \d+칸/.test(cv.sum) && cv.cells > 0, JSON.stringify(cv));

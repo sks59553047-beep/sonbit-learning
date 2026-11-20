@@ -47,15 +47,18 @@ $('#bpSeg').addEventListener('click', e => { const b = e.target.closest('[data-b
 function renderLifePanel() {
   const host = $('#lifeList'); if (host.dataset.done) return;
   const kindTag = k => `<span class="tag ${k === 'law' ? '' : k === 'guide' ? 'amber' : 'gray'}">${LIFE_KIND[k]}</span>`;
-  const wordBtn = w => {
+  // 예시 글자: 문자열이면 규정대로 만든 예시, { w, real } 이면 실물 사진에서 점을 읽어 같다고 확인한 글자(「실물 확인」 표시)
+  const wordBtn = x => {
+    const w = typeof x === 'string' ? x : x.w, real = typeof x === 'string' ? '' : x.real;
     const cells = KB.convert(w, { contract: true }).cells.filter(c => c.kind !== '줄바꿈' && !c.unsupported);
-    return `<button type="button" class="lifeword" data-lifeword="${esc(w)}" aria-label="${esc(w)}, 점자 ${cells.length}칸. 글자 바꾸기에서 보기"><span class="lw">${esc(w)}</span><span class="lcells">${cells.map(c => miniDots(c.dots, true)).join('')}</span></button>`;
+    return `<button type="button" class="lifeword${real ? ' real' : ''}" data-lifeword="${esc(w)}" aria-label="${esc(w)}, 점자 ${cells.length}칸${real ? ', 실제 제품 사진과 같음을 확인' : ''}. 글자 바꾸기에서 보기"><span class="lw">${esc(w)}${real ? '<span class="lreal">실물 확인</span>' : ''}</span><span class="lcells">${cells.map(c => miniDots(c.dots, true)).join('')}</span></button>`;
   };
+  const srcOf = it => it.src.concat([...new Set(it.words.map(x => typeof x === 'string' ? '' : x.real).filter(Boolean))].map(k => REAL[k]));
   host.innerHTML = LIFE_BRAILLE.map(it => `<article class="card lifecard">
       <div class="lifehead"><h3>${esc(it.place)}</h3>${kindTag(it.kind)}</div>
       ${it.words.length ? `<div class="lifewords">${it.words.map(wordBtn).join('')}</div>` : ''}
       <p class="lifesay">${esc(it.say)}</p>
-      <p class="lifesrc">근거: ${it.src.map(s => `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.label)}</a>`).join(' · ')}</p>
+      <p class="lifesrc">근거: ${srcOf(it).map(s => `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.label)}</a>`).join(' · ')}</p>
     </article>`).join('');
   host.dataset.done = '1';
 }

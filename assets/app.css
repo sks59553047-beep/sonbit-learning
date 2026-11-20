@@ -679,3 +679,6 @@ body.quizback-on main{padding-bottom:calc(160px + env(safe-area-inset-bottom,0px
 .lifesay{margin:0;font-size:1rem;line-height:1.65;color:var(--ink)}
 .lifesrc{margin:0;font-size:0.875rem;line-height:1.6;color:var(--muted)}
 .lifesrc a{color:var(--teal);font-weight:700}
+/* 생활 속 점자: 실물 사진에서 점을 읽어 같다고 확인한 글자(2026-11-21) */
+.lifeword.real{border-color:var(--teal)}
+.lifeword .lreal{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:var(--mint);color:var(--mint-ink);font-size:0.75rem;font-weight:800;vertical-align:2px}

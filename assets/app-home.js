@@ -22,7 +22,7 @@ function vrowHtml(v, nextId) {
   const seen = isSeen(v.id), isNext = v.id === nextId;
   const aria = `${v.title}. ${v.track} ${v.level}, ${fmtTime(v.dur)}.${seen ? ' 시청 완료.' : ''}${isNext ? ' 다음에 볼 영상.' : ''} 누르면 영상을 볼 수 있어요`;
   return `<button type="button" class="vrow${seen ? ' seen' : ''}" data-open-video="${esc(v.id)}" aria-label="${esc(aria)}">
-    <span class="vthumb" aria-hidden="true"><img src="videos/${esc(v.id)}.jpg" alt="" loading="lazy"><span class="vplay">${icon('play', 40)}</span><span class="vdur">${fmtTime(v.dur)}</span></span>
+    <span class="vthumb" aria-hidden="true"><img src="videos/thumbs/${esc(v.id)}.jpg" alt="" loading="lazy" width="640" height="360"><span class="vplay">${icon('play', 40)}</span><span class="vdur">${fmtTime(v.dur)}</span></span>
     <span class="vbody">
       <span class="vkick"><span class="tag">${esc(v.track)}</span><span class="tag gray">${esc(v.level)}</span>${isNext ? '<span class="tag amber">다음에 볼 영상</span>' : ''}</span>
       <span class="vtitle">${esc(v.title)}</span>
@@ -68,7 +68,7 @@ function roadmapFor(track) {
   const prog = vs => seenCount(vs) + ' / ' + vs.length + '편 봤어요';
   const wrongOf = kinds => getWrong().filter(c => kinds.includes(c.t)).length;   // 퀴즈를 마쳤어도 틀려서 복습할 문제가 남았는지(완료와 숙달을 구분)
   // 첫 단계 「기초 영상 보기」는 두 트랙이 같다(수어·점자의 시작, 사전 사용법, 소통 예절은 모두에게 기초)
-  const basic = { title: '기초 영상 보기', sub: `${hv.map(shortName).join('·')} ${hv.length}편 · ${prog(hv)}`, vids: hv, act: 'scrollvid' };
+  const basic = { title: '기초 영상 보기', sub: prog(hv), vids: hv, act: 'scrollvid' };   // 영상 이름은 바로 위 목록에 있어서 진행만
   let steps;
   if (track === 'sign') {
     steps = [
@@ -84,7 +84,7 @@ function roadmapFor(track) {
       { title: '점자 퀴즈로 복습', sub: '읽기와 쓰기 문제', nav: 'quiz', did: 'quiz-braille', review: wrongOf(['br', 'bu']) }
     ];
   }
-  return steps.filter(s => !s.vids || s.vids.length).map((s, i) => Object.assign({ label: (i + 1) + '단계' }, s));
+  return steps.filter(s => !s.vids || s.vids.length).map((s, i) => Object.assign({ label: (i + 1) + '.' }, s));
 }
 function stepDone(s) { return s.vids ? s.vids.every(v => isSeen(v.id)) : (s.did ? didFlag(s.did) : false); }
 function stepAttrs(s) { return s.act ? `data-act="${s.act}"` : `data-act="nav" data-arg="${esc(s.nav)}"`; }
@@ -94,11 +94,11 @@ function renderRoadmap(track) {
   $('#roadList').innerHTML = steps.map(s => {
     const done = stepDone(s); if (done) doneN++;
     const now = !done && !nowSet ? (nowSet = true) : false;
-    const aria = `${s.label} ${s.title}. ${s.sub}.${done ? ' 완료.' : ''}${now ? ' 지금 할 단계.' : ''}${s.review ? ` 복습할 문제 ${s.review}개 있음.` : ''}`;
+    const aria = `${s.label} ${s.title}. ${s.sub}.${done ? ' 완료.' : ''}${now ? ' 여기부터 하면 돼요.' : ''}${s.review ? ` 복습할 문제 ${s.review}개 있음.` : ''}`;
     return `<div class="rstep ${done ? 'done' : now ? 'now' : ''}">
       <div class="dot" aria-hidden="true">${done ? icon('check', 14) : ''}</div>
       <button type="button" class="rbox" ${stepAttrs(s)} aria-label="${esc(aria)}">
-        <span><span class="tt">${esc(s.label)} · ${esc(s.title)}${now ? '<span class="tag amber nowtag">지금 할 단계</span>' : ''}${s.review ? `<span class="tag amber nowtag">복습할 문제 ${s.review}개</span>` : ''}</span><span class="sub">${esc(s.sub)}</span></span>
+        <span><span class="tt">${esc(s.label)} ${esc(s.title)}${now ? '<span class="tag amber nowtag">여기부터</span>' : ''}${s.review ? `<span class="tag amber nowtag">복습할 문제 ${s.review}개</span>` : ''}</span><span class="sub">${esc(s.sub)}</span></span>
         <span class="rarrow" aria-hidden="true">›</span>
       </button>
     </div>`;
@@ -122,8 +122,8 @@ function renderHomeNext() {
   else if (hasActivity() && roadmapFor(roadTrack).every(stepDone)) {
     const other = roadTrack === 'sign' ? 'braille' : 'sign', st = roadmapFor(other).find(s => !stepDone(s));
     html = st
-      ? nextcardHtml(TRACK_NAME[roadTrack] + ' 트랙을 모두 마쳤어요', TRACK_NAME[other] + ' 트랙도 해 볼까요?', '다음 단계: ' + st.label + ' · ' + st.title, 'data-act="track" data-arg="' + other + '"', TRACK_NAME[other] + ' 트랙 보기')
-      : nextcardHtml('모든 단계를 마쳤어요', '배운 것을 퀴즈로 복습해 볼까요?', '틀린 문제와 내 단어장으로 한 번 더 익혀요', 'data-act="nav" data-arg="quiz"', '퀴즈 하러 가기');
+      ? nextcardHtml(TRACK_NAME[roadTrack] + '는 다 해 봤어요', TRACK_NAME[other] + '도 해 볼까요?', '다음: ' + st.title, 'data-act="track" data-arg="' + other + '"', TRACK_NAME[other] + ' 순서 보기')
+      : nextcardHtml('순서대로 다 해 봤어요', '퀴즈로 한 번 더 볼까요?', '틀린 문제와 내 단어장으로 다시 풀 수 있어요', 'data-act="nav" data-arg="quiz"', '퀴즈 하러 가기');
   }
   host.innerHTML = html; host.hidden = !html;
 }

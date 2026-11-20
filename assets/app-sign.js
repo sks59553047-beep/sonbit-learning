@@ -8,12 +8,13 @@ let signTopic = '', signQuery = '', signCho = '', signPinId = '';
 const TOPIC_COUNT = {}; ALL_WORDS.forEach(w => { TOPIC_COUNT[w.t] = (TOPIC_COUNT[w.t] || 0) + 1; });
 function topicCardHtml(t) {
   const urgent = t === '몸·건강·긴급' ? ' urgent' : '';
-  return `<button class="topiccard${urgent}" data-topic="${esc(t)}" type="button"><span class="ti" aria-hidden="true">${TOPIC_ICON[t] || '✋'}</span><span class="tn">${esc(t)}</span><span class="tc">${TOPIC_COUNT[t] || 0}개</span></button>`;
+  // 2026-11-20: 주제마다 붙던 이모지(🚑👋💬…)는 「AI가 만든 티」 평가로 뺐다. 이름과 단어 수만
+  return `<button class="topiccard${urgent}" data-topic="${esc(t)}" type="button"><span class="tn">${esc(t)}</span><span class="tc">${TOPIC_COUNT[t] || 0}개</span></button>`;
 }
 function shortcutsHtml() {
   const n = favWords().length;
   return `<button class="shortcut fav" data-topic="${FAV_TOPIC}" type="button"><span class="sci" aria-hidden="true">★</span><span><span class="scn">내 단어장</span><span class="scc">${n ? n + '개 담음' : '담아 둔 수어 모음'}</span></span></button>
-    <button class="shortcut" data-topic="${NUM_TOPIC}" type="button"><span class="sci" aria-hidden="true">🔢</span><span><span class="scn">기본 숫자</span><span class="scc">영·일~구·십·백·천·만</span></span></button>`;
+    <button class="shortcut" data-topic="${NUM_TOPIC}" type="button"><span class="sci num" aria-hidden="true">123</span><span><span class="scn">기본 숫자</span><span class="scc">영·일~구·십·백·천·만</span></span></button>`;
 }
 function favBtnHtml(w) {
   const on = isFav(w.id);
@@ -106,7 +107,7 @@ function renderSign() {
   else if (signTopic === NUM_TOPIC) list = basicNumberWords();
   else list = ALL_WORDS.filter(w => w.t === signTopic).sort(byName);
   if (inTopic) {
-    $('#signTopicName').textContent = (signTopic === FAV_TOPIC ? '★' : signTopic === NUM_TOPIC ? '🔢' : (TOPIC_ICON[signTopic] || '')) + ' ' + signTopic;
+    $('#signTopicName').textContent = (signTopic === FAV_TOPIC ? '★ ' : '') + signTopic;
     if (signTopic === FAV_TOPIC && list.length) { $('#signActions').hidden = false; $('#signActions').innerHTML = `<button class="btn primary small" type="button" data-act="quizkind" data-arg="fav">단어장 퀴즈 풀기 (${list.length}개)</button>`; }
     if (list.length > 40 && signTopic !== FAV_TOPIC && signTopic !== NUM_TOPIC) {
       $('#signCho').hidden = false; $('#signCho').innerHTML = choChipsHtml(list);

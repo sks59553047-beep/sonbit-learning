@@ -33,7 +33,8 @@ const lvText = s => (s.kind === 'review' ? '난이도 섞임' : '난이도 ' + L
 const toLevel = n => '「' + LEVEL_NAME[n] + '」' + (n === 1 ? '로' : '으로');                    // 하→로, 중·상→으로
 let quizState = { active: false };
 const modeNow = () => (store.get('qmode', 'practice') === 'challenge' ? 'challenge' : 'practice');
-const levelNow = () => { const v = Number(store.get('qlevel', 2)); return v === 1 || v === 3 ? v : 2; };
+// 처음 푸는 사람은 「하」부터(2026-11-20 실사용: 기본 「중」에서 충고·간접 같은 낱말이 나와 처음엔 1/10). 한 번 고르면 그 난이도를 기억한다
+const levelNow = () => { const v = Number(store.get('qlevel', 1)); return v === 2 || v === 3 ? v : 1; };
 const scopeNow = () => { const v = store.get('qscope', 'all'); return QZ.SCOPES.some(s => s.key === v) ? v : 'all'; };
 const scopeLabel = k => (QZ.SCOPES.find(s => s.key === k) || QZ.SCOPES[0]).label;
 // 풀이 상태 → 저장할 모양(기록 파일로 내보낼 때도 같은 모양)
@@ -122,7 +123,7 @@ function renderQuizHub() {
       </div>
       <p class="note" id="qlevelNote" style="margin-top:8px">${esc(QZ.LEVEL_NOTES[lv])}</p></div>
     <div class="qcards c1">
-      <button class="qcard" type="button" data-quiz="sign"><span class="qci">${icon('hand', 24)}</span><span class="qct">수어 퀴즈</span><span class="qcs">영상 보고 뜻 맞히기, 뜻 보고 영상 고르기 (수어 ${QZ.eligible.length.toLocaleString('ko-KR')}개 중 10문제)</span><span class="qcg" aria-hidden="true">›</span></button>
+      <button class="qcard" type="button" data-quiz="sign"><span class="qci">${icon('hand', 24)}</span><span class="qct">수어 퀴즈</span><span class="qcs">영상 보고 뜻 맞히기, 뜻 보고 영상 고르기 (수어 ${QZ.eligible.length.toLocaleString('ko-KR')}개 중 10문제 · 사전 ${ALL_WORDS.length.toLocaleString('ko-KR')}개 중 영상이 다른 단어와 겹치거나 이름이 긴 ${ALL_WORDS.length - QZ.eligible.length}개는 뺐어요)</span><span class="qcg" aria-hidden="true">›</span></button>
     </div>
     <div class="card"><div class="section-h"><h2>점자 범위</h2></div>
       <div class="chiprow wrap" role="group" aria-label="점자 범위" style="margin-top:10px">${QZ.SCOPES.map(s => `<button type="button" class="chip${s.key === scope ? ' active' : ''}" data-qscope="${s.key}" aria-pressed="${s.key === scope}">${esc(s.label)}</button>`).join('')}</div>
@@ -182,7 +183,7 @@ function renderQuiz() {
       ${chal ? `<span class="lives" role="img" aria-label="남은 목숨 ${s.lives}개">${livesHtml(s.lives)}</span>` : ''}
     </div>
     <div class="progress" style="margin:10px 0 12px"><b style="width:${s.done / total * 100}%"></b></div>
-    <div class="qtools">${hints}<span class="sp"></span><button class="btn line small" type="button" id="quizPause">잠시 나가기</button><button class="btn line small" type="button" id="quizEnd">끝내기</button></div>
+    <div class="qtools">${hints}<span class="sp"></span><span class="qexit"><button class="btn line small" type="button" id="quizPause">잠시 나가기</button><button class="btn line small" type="button" id="quizEnd">끝내기</button></span></div>
     <div class="qconfirm" id="quizEndConfirm" hidden style="margin-top:10px"><span>지금까지 푼 ${s.done}문제의 결과를 보고 끝낼까요?</span><button class="btn danger small" type="button" id="quizEndYes">끝내기</button><button class="btn ghost small" type="button" id="quizEndNo">계속 풀기</button></div>
     <div id="quizHint" class="note" hidden aria-live="polite" style="margin-top:10px"></div>
     <div style="margin-top:14px">${quizClueHtml(q)}</div>
@@ -228,9 +229,15 @@ function hintTextFor(q) {
     return `정답은 ${q.answer.replace(/\s+/g, '').length}글자 낱말이에요.`;
   }
   if (q.clueType === 'dots') {
-    if (q.bk === 'n') return `첫 칸은 수표(3·4·5·6번 점)예요. 숫자는 모두 ${q.answer.length}개예요.`;
-    if (q.bk === 'w' || q.bk === 'c') return `${q.answer.length}글자 낱말이에요. 모두 ${q.clue.length}칸이에요.`;
-    const n = q.clue[0].length; return q.clue.length > 1 ? `첫 칸에는 점이 ${n}개 있고, 모두 ${q.clue.length}칸이에요.` : `점이 ${n}개 있는 칸이에요.`;
+    // 2026-11-20 실사용 평가: 「점이 3개」처럼 이미 보이는 것 대신, 점 번호로 읽어 주고 점자 표의 어느 줄에서 찾으면 되는지 알려 준다
+    const dn = c => (c && c.length ? c.join('·') + '번 점' : '빈칸');
+    if (q.bk === 'n') return `첫 칸은 수표(3·4·5·6번 점)라 숫자가 시작돼요. 첫 숫자 칸은 ${dn(q.clue[1])}이에요. 점자 표 「숫자」에서 찾아보세요.`;
+    if (q.bk === 'w' || q.bk === 'c') return `${q.answer.length}글자 낱말이에요. 첫 칸은 ${dn(q.clue[0])}이에요.`;
+    // 퀴즈 묶음 이름 → 점자 탭 「점자 표」의 칸 이름(첫소리·모음·받침·숫자·약자·약어·문장부호)
+    const TG = { '첫소리': '첫소리', '된소리': '첫소리', '모음': '모음', '겹모음': '모음', '받침': '받침', '쌍받침': '받침', '겹받침': '받침', '숫자': '숫자', '약자': '약자·약어', '약어': '약자·약어', '문장부호': '문장부호' };
+    const tg = TG[String(q.group || '').replace(/\(.*\)/, '')];
+    const where = tg ? `점자 표 「${tg}」에서` : '점자 표에서';
+    return q.clue.length > 1 ? `첫 칸은 ${dn(q.clue[0])}, 둘째 칸은 ${dn(q.clue[1])}이에요. ${where} 찾아보세요.` : `점 번호로 읽으면 ${dn(q.clue[0])}이에요. ${where} 이 번호를 찾아보세요.`;
   }
   if (q.clueType === 'build') {
     if (q.bk === 'n') return `수표(3·4·5·6번 점)로 시작하고, 그다음 숫자 ${q.answer.length}개를 이어 써요.`;

@@ -594,3 +594,10 @@ label.lbl2{display:block}
 .wnavbtn .wl{font-size:0.75rem;font-weight:700;color:var(--muted)}
 .wnavbtn b{font-size:0.9375rem;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .wnavbtn:hover{border-color:var(--teal)}
+/* 이름이 같은 수어 번호·안내(2026-11-20) */
+.wordrow .wmark{flex:none;margin-left:-4px;color:var(--teal);font-weight:800;font-size:0.9375rem}
+.samenote{margin:0;padding:8px 12px;border-radius:10px;background:var(--surface2);font-size:0.875rem;line-height:1.6;color:var(--ink)}
+.samenote .linkbtn{margin:0 0 0 2px;padding:0;min-height:24px;font-size:0.875rem}
+.bplegend{margin:10px 0 0;font-size:0.8125rem;line-height:1.6;color:var(--muted)}
+/* 퀴즈 위 단추 줄: 「잠시 나가기·끝내기」는 한 묶음으로(좁은 화면에서 「끝내기」만 아랫줄로 떨어지지 않게, 2026-11-20) */
+.qtools .qexit{display:flex;gap:8px;margin-left:auto}

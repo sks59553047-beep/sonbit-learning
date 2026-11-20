@@ -124,12 +124,23 @@ function renderBraillePanel() {
   $('#bpCells').innerHTML = cells.map(c => {
     const label = c.kind === '띄어쓰기' ? '␣' : (c.text || '');
     const tip = c.kind + (c.rule ? ' · ' + c.rule : '');
-    return `<div class="ccell ${c.unsupported ? 'unverified' : ''}" title="${esc(tip)}">${miniDots(c.dots)}<label>${esc(label)}</label><small>${esc(c.kind === '띄어쓰기' || c.unsupported ? c.kind : c.kind.replace(/\(.*\)/, ''))}</small></div>`;
+    return `<div class="ccell ${c.unsupported ? 'unverified' : ''}" title="${esc(tip)}">${miniDots(c.dots)}<label>${esc(label)}</label><small>${esc(c.kind === '띄어쓰기' || c.unsupported ? c.kind : kindPlain(c.kind))}</small></div>`;
   }).join('');
+  // 칸 아래 이름(첫소리·모음·약자…)이 무슨 뜻인지, 이번 결과에 나온 것만 한 줄로 풀어 준다(2026-11-20 실사용 평가: 「초성·중성」이 어렵다)
+  const used = [...new Set(cells.filter(c => !c.unsupported).map(c => kindPlain(c.kind)))].filter(k => KIND_HELP[k]);
+  $('#bpLegend').hidden = !used.length; $('#bpLegend').textContent = used.map(k => `${k}: ${KIND_HELP[k]}`).join(' · ');
   const uni = cells.map(c => (c.kind === '띄어쓰기' ? ' ' : (c.unsupported ? '?' : dotsToUnicode(c.dots)))).join('');
   $('#bpOutWrap').hidden = !text; $('#bpOut').textContent = uni; $('#bpOutNote').hidden = !bad;
   if (text) markDid('braille');
 }
+// 점자 칸 아래 이름: 규정 용어(초성·중성) 대신 쉬운 말로. 칸에 마우스를 올리면(title) 규정 용어와 조항이 그대로 나온다
+const KIND_WORD = { '초성': '첫소리', '중성': '모음', '종성': '받침', '단독 자모': '낱자' };
+function kindPlain(k) { const b = String(k).replace(/\(.*\)/, ''); return KIND_WORD[b] || b; }
+const KIND_HELP = {
+  '첫소리': '글자 맨 앞 자음(초성)', '모음': 'ㅏ·ㅓ 같은 가운데 소리(중성)', '받침': '글자 아래 자음(종성)',
+  '약자': '자주 쓰는 글자를 한 칸으로 줄여 쓴 것', '약어': '「그래서」 같은 낱말을 두 칸으로 줄여 쓴 것',
+  '된소리표': 'ㄲ·ㄸ처럼 된소리 앞에 붙이는 칸', '수표': '여기부터 숫자라는 표시', '자릿점': '숫자 사이 쉼표', '소수점': '숫자 사이 마침표', '낱자': '글자 없이 따로 쓴 자음·모음'
+};
 $('#bpInput').addEventListener('input', renderBraillePanel);
 $('#bpContract').addEventListener('change', renderBraillePanel);
 const BP_EXAMPLES = ['그래서 가나다', '성정청 억울한 것', '2025년 3월 1일', '안녕하세요.'];

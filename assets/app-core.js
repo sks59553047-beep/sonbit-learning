@@ -153,21 +153,86 @@ function firstCho(w) { const c = choOf(w.w).charAt(0); return CHO_FOLD[c] || c; 
 function byName(a, b) { return a.w.localeCompare(b.w, 'ko'); }
 function normQ(q) { return String(q).replace(/\s+/g, ''); }
 function hasRealVideo(w) { return !!w.k; }
+// ---- 말끝이 바뀐 꼴로도 찾기(2026-11-20 실사용 평가: 「고마워요」·「괜찮아요」·「배고파요」 → 결과 없음) ----
+// 흔한 말끝을 기본형(…다)으로 바꿔 본 꼴들: 고마워요·고맙습니다 → 고맙다, 아파요 → 아프다, 사랑해 → 사랑하다, 가세요 → 가다, 어디예요 → 어디.
+// 확실한 꼴(strong: -요·-습니다·-세요·-해·-워·받침 뒤 -아/-어)과 추측한 꼴(weak: 받침 없는 줄임 꼴 가→가다, 아파→아프다)을 나눈다.
+// 맞는지 볼 때: 확실한 꼴끼리는 서로 맞춰 보고, 추측한 꼴은 상대의 원래 글자와만 맞춘다(「사과」·「사고」가 둘 다 「사고다」로 추측돼 엉뚱하게 맞물리지 않게).
+const H_V = 'ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ', H_B = 17;   // 받침 ㅂ 번호
+function hSplit(ch) { const c = ch.charCodeAt(0) - 0xAC00; return c >= 0 && c <= 11171 ? [Math.floor(c / 588), Math.floor(c % 588 / 28), c % 28] : null; }
+function hJoin(a, b, c) { return String.fromCharCode(0xAC00 + a * 588 + b * 28 + c); }
+const formCache = new Map();
+function baseForms(s) {
+  s = String(s).toLowerCase().replace(/\s+/g, '');
+  if (formCache.has(s)) return formCache.get(s);
+  const strong = new Set(s ? [s] : []), weak = new Set(), add = x => { if (x) strong.add(x); }, guess = x => { if (x) weak.add(x); };
+  if (s.length >= 2) {
+    let t = s;
+    if (/습니[다까]$/.test(t)) add(t.replace(/습니[다까]$/, '다'));                                   // 고맙습니다 → 고맙다
+    else if (/니[다까]$/.test(t)) { const p = t.slice(0, -2), h = hSplit(p.slice(-1)); if (h && h[2] === H_B) add(p.slice(0, -1) + hJoin(h[0], h[1], 0) + '다'); }   // 감사합니다 → 감사하다, 갑니다 → 가다
+    if (/(이에요|예요|에요|이야)$/.test(t)) add(t.replace(/(이에요|예요|에요|이야)$/, ''));             // 어디예요 → 어디
+    if (/으?세요$/.test(t)) add(t.replace(/으?세요$/, '다'));                                          // 가세요 → 가다, 앉으세요 → 앉다
+    if (/요$/.test(t)) { t = t.slice(0, -1); add(t); }                                                 // 좋아요 → 좋아
+    const last = t.slice(-1), stem = t.slice(0, -1), h = hSplit(last), hp = stem ? hSplit(stem.slice(-1)) : null;
+    if (h) {
+      if (last === '해') add(stem + '하다');                                                           // 사랑해 → 사랑하다
+      else if ((last === '워' || last === '와') && hp && hp[2] === 0) add(stem.slice(0, -1) + hJoin(hp[0], hp[1], H_B) + '다');   // 고마워 → 고맙다
+      else if ((last === '아' || last === '어') && hp && hp[2] !== 0) add(stem + '다');                // 괜찮아 → 괜찮다, 먹어 → 먹다(「수어」처럼 받침 없는 글자 뒤는 아님)
+      else if (h[2] === 0) {                                                                            // 받침 없는 줄임 꼴(추측)
+        guess(t + '다');                                                                                // 가 → 가다
+        const to = { 'ㅏ': 'ㅡ', 'ㅓ': 'ㅡ', 'ㅘ': 'ㅗ', 'ㅝ': 'ㅜ', 'ㅙ': 'ㅚ', 'ㅕ': 'ㅣ' }[H_V[h[1]]];   // 아파 → 아프다, 봐 → 보다, 줘 → 주다, 돼 → 되다, 마셔 → 마시다
+        if (to) guess(stem + hJoin(h[0], H_V.indexOf(to), 0) + '다');
+      }
+    }
+  }
+  const r = { raw: s, strong, all: new Set([...strong, ...weak]) };
+  formCache.set(s, r); return r;
+}
+// 두 말(검색어 꼴 a, 단어 쪽 꼴 b)이 같은 말로 볼 수 있는지
+function sameForm(a, b) {
+  for (const x of a.strong) if (b.strong.has(x)) return true;
+  return a.all.has(b.raw) || b.all.has(a.raw);
+}
+// 단어 쪽 꼴: 이름 / 다른 말·뜻풀이를 낱말로 나눈 것(괄호 안 설명은 뺌)
+function tokensOf(w) { return [w.al || '', w.x ? (w.g || '') : ''].join(',').split(/[,/·]/).map(s => s.replace(/\([^)]*\)|\{[^}]*\}/g, '').trim()).filter(Boolean); }
+function wordForms(w) {
+  if (!w._forms) { const toks = tokensOf(w).map(baseForms); w._forms = { name: baseForms(w.w), toks, tok: new Set(toks.map(t => t.raw)) }; }
+  return w._forms;
+}
+const nameForm = (w, qf) => sameForm(qf, wordForms(w).name);
+const otherForm = (w, qf) => wordForms(w).toks.some(t => sameForm(qf, t));
 function matchWord(w, q) {
   const qn = normQ(q); if (!qn) return true;
   const name = w.w.toLowerCase().replace(/\s+/g, '');
   if (name.includes(qn)) return true;
   if (/^[ㄱ-ㅎ]+$/.test(qn)) { if (choOf(name).includes(qn)) return true; return !!(w.al && choOf(w.al.replace(/\s+/g, '')).includes(qn)); }
+  const qf = baseForms(qn);
+  if (nameForm(w, qf) || otherForm(w, qf)) return true;
   if (w.x) return (w.g || '').toLowerCase().includes(q);
   if ((w.al || '').toLowerCase().includes(q)) return true;
   return (w.d || '').toLowerCase().includes(q);
 }
-// 검색 결과 순서: 이름이 똑같은 것 → 이름이 검색어로 시작 → 이름에 포함 → 초성 일치 → 뜻풀이에서만 찾은 것
+// 검색 결과 순서: 이름이 똑같은 것 → 이름이 검색어로 시작 → 다른 말이 검색어와 똑같은 것(고맙습니다 → 감사합니다)
+// → 이름의 기본형이 같은 것(아프다 → 아파요) → 이름에 포함 → 다른 말·뜻풀이 낱말의 기본형이 같은 것 → 초성 일치 → 뜻풀이 글에서만 찾은 것
 function rankWord(w, q) {
   const qn = normQ(q), name = w.w.toLowerCase().replace(/\s+/g, '');
-  if (name === qn) return 0; if (name.startsWith(qn)) return 1; if (name.includes(qn)) return 2;
-  if (/^[ㄱ-ㅎ]+$/.test(qn)) return 3; return 4;
+  if (name === qn) return 0;
+  if (/^[ㄱ-ㅎ]+$/.test(qn)) return name.startsWith(qn) ? 1 : name.includes(qn) ? 2 : 3;
+  const qf = baseForms(qn);
+  if (name.startsWith(qn)) return 1;
+  if (wordForms(w).tok.has(qn)) return 1.2;
+  if (nameForm(w, qf)) return 1.5;
+  if (name.includes(qn)) return 2;
+  if (otherForm(w, qf)) return 2.5;
+  // 뜻풀이 글에서만 찾은 것끼리는 검색어가 든 뜻이 짧을수록(그 낱말의 중심 뜻일수록) 앞에: 「수어」 → 수화(수어를 하다)가 수어통역센터보다 앞
+  const lens = wordForms(w).toks.map(f => f.raw).filter(x => x.includes(qn)).map(x => x.length);
+  return 4 + Math.min(0.9, (lens.length ? Math.min(...lens) : 90) / 100);
 }
+// 이름이 같은 수어(예: 「십」 2개, 「없다」 10개)는 사전 순서대로 ①②…를 붙여 목록·앞뒤 단추에서 구분한다(2026-11-20 실사용 평가)
+const SAME_NAME = new Map();   // id → [몇 번째, 같은 이름 개수]
+(() => { const g = new Map(); ALL_WORDS.forEach(w => { if (!g.has(w.w)) g.set(w.w, []); g.get(w.w).push(w); }); g.forEach(l => { if (l.length > 1) l.forEach((w, i) => SAME_NAME.set(String(w.id), [i + 1, l.length])); }); })();
+const CIRCLED = '①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳';
+function sameMark(w) { const s = SAME_NAME.get(String(w.id)); return s ? (CIRCLED[s[0] - 1] || `(${s[0]})`) : ''; }
+function wordLabel(w) { const m = sameMark(w); return m ? `${w.w} ${m}` : w.w; }
 function cleanDesc(d) { return String(d || '').replace(/\s*[—-]\s*(국립국어원|한국수어누리사전).*$/, ''); }
 // 국립국어원 수형 설명의 손가락 번호(1지=검지 … 5지=엄지)를 이름으로 바꿔 초보자도 읽게 함
 const FINGER = { 1: '검지', 2: '중지', 3: '약지', 4: '새끼손가락', 5: '엄지' };
@@ -193,9 +258,10 @@ function officialOf(w) {
 function descOf(w) { const o = officialOf(w); return o ? fingerNames(o[0]) : cleanDesc(w.d); }
 function officialNoteHtml(w) {
   const o = officialOf(w); if (!o) return '';
-  if (o[2] === 'seoul') return '<p class="onote">서울복지포털 「수어 표준사전」(서울특별시)의 설명이에요. 영상과 동작이 조금 다를 수 있어요.</p>';
+  // 2026-11-20 실사용 평가: 「조금 다를 수 있어요」만으로는 무엇을 따라 할지 모름 → 영상이 기준이라고 분명히
+  if (o[2] === 'seoul') return '<p class="onote">서울복지포털 「수어 표준사전」(서울특별시)의 설명이에요. 영상과 다르게 보이면 영상을 따라 하세요.</p>';
   return o[2] === 'name'
-    ? '<p class="onote">국립국어원 한국수어사전의 같은 뜻 표제어 설명이에요. 영상과 동작이 조금 다를 수 있어요.</p>'
+    ? '<p class="onote">국립국어원 한국수어사전에서 같은 뜻 낱말의 설명을 가져왔어요. 영상과 다르게 보이면 영상을 따라 하세요.</p>'
     : '<p class="onote">국립국어원 한국수어사전의 공식 수형 설명이에요.</p>';
 }
 function descHtml(w) {

@@ -23,9 +23,25 @@ function favBtnHtml(w) {
 function wordRowHtml(w, showTopic) {
   const play = hasRealVideo(w) ? '<span class="vbadge" title="실제 수어 영상 있음">▶</span>' : '<span class="vbadge none">▶</span>';
   const topic = showTopic ? `<span class="wtopic">${esc(w.t)}</span>` : '';
-  const sub = w.x ? `<span class="wsub">${esc((w.g || '').split(' / ')[0].slice(0, 24))}</span>` : (w.al ? `<span class="wsub">${esc(w.al.replace(/, /g, ' · '))}</span>` : '');
+  const sub = w.x ? `<span class="wsub">${esc(senseShown(w, showTopic))}</span>` : (w.al ? `<span class="wsub">${esc(w.al.replace(/, /g, ' · '))}</span>` : '');
   const fav = `<span class="favmark" role="img" aria-label="단어장에 담긴 단어"${isFav(w.id) ? '' : ' hidden'}>★</span>`;
-  return `<details class="wordrow" data-wid="${esc(w.id)}"><summary><span class="wname">${esc(w.w)}</span>${fav}${sub}${topic}${play}</summary><div class="wbody"></div></details>`;
+  const same = SAME_NAME.get(String(w.id));
+  const mark = same ? `<span class="wmark" title="이름이 같은 수어 ${same[1]}개 중 ${same[0]}번째">${sameMark(w)}</span>` : '';
+  return `<details class="wordrow" data-wid="${esc(w.id)}"><summary><span class="wname">${esc(w.w)}</span>${mark}${fav}${sub}${topic}${play}</summary><div class="wbody"></div></details>`;
+}
+// 목록 줄의 뜻풀이: 보통은 첫 뜻, 검색해서 뜻풀이로 찾은 단어는 검색어가 든 뜻을 보여 준다(「밥」 → 「싫다」가 왜 나왔는지 보이게, 2026-11-20)
+function senseShown(w, searching) {
+  const senses = (w.g || '').split(' / ').filter(Boolean); let s = senses[0] || '';
+  const raw = searching ? signQuery.trim().toLowerCase() : '', q = normQ(raw);
+  if (q && !normQ(w.w.toLowerCase()).includes(q)) { const hit = senses.find(x => normQ(x.toLowerCase()).includes(q)); if (hit) s = hit; }
+  if (s.length <= 24) return s;
+  const i = raw ? s.toLowerCase().indexOf(raw) : -1;
+  return i > 14 ? '…' + s.slice(i - 6, i + 17) : s.slice(0, 24);
+}
+// 이름이 같은 수어가 여럿이면 펼친 단어 맨 위에 알려 준다
+function sameNameNoteHtml(w) {
+  const s = SAME_NAME.get(String(w.id)); if (!s) return '';
+  return `<p class="samenote">「${esc(w.w)}」은(는) 사전에 수어가 ${s[1]}가지 있어요(이 수어는 ${sameMark(w)}). ${w.x ? '아래 뜻과 예문으로' : '설명과 영상으로'} 어떤 때 쓰는지 비교해 보세요. <button type="button" class="linkbtn" data-suggest="${esc(w.w)}">${s[1]}가지 모두 보기</button></p>`;
 }
 // 누리사전 공식 정보(한 손/두 손, 손모양, 손 위치) — 국립국어원 자료 그대로
 function signInfoHtml(w) {
@@ -46,7 +62,7 @@ function senseListHtml(w) {
 // 펼친 단어: ① 단어장 담기 ② 영상·그림 ③ 동작 설명 ④ 뜻·예문 ⑤ 손모양과 위치
 function wordBodyHtml(w) {
   const share = `<button type="button" class="sharebtn" data-share="${esc(w.id)}"><span aria-hidden="true">🔗</span> 링크 공유</button>`;
-  const actions = `<div class="wactions">${favBtnHtml(w)}${share}</div>`;
+  const actions = `<div class="wactions">${favBtnHtml(w)}${share}</div>` + sameNameNoteHtml(w);
   if (w.x) return actions + kslVideoBoxHtml(w.k, w.w, w.id) + officialBlockHtml(w) + senseListHtml(w) + signInfoHtml(w);
   return actions + (w.k ? kslVideoBoxHtml(w.k, w.w, w.id) : '') + descHtml(w) + aliasHtml(w);
 }
@@ -85,6 +101,9 @@ function noResultHtml(raw) {
     <ul><li>띄어쓰기 없이 더 짧게 써 보세요. (예: 「학교 가다」 → 「학교」)</li><li>자음만 써도 찾을 수 있어요. (예: ㅎㄱ)</li><li>비슷한 뜻의 다른 말로도 찾아보세요.</li><li>이 사전에는 국립국어원 사전에서 영상을 확인한 ${ALL_WORDS.length.toLocaleString('ko-KR')}개 표현만 있어요. 없는 단어는 국립국어원 한국수어사전에서 직접 찾아볼 수 있어요.</li></ul>
     ${chips}<button type="button" class="btn line" data-act="signtopics">주제로 찾아보기</button></div>`;
 }
+function searchWords(q) {
+  return ALL_WORDS.filter(w => matchWord(w, q)).map((w, i) => ({ w, r: rankWord(w, q), i })).sort((a, b) => a.r - b.r || a.i - b.i).map(o => o.w);
+}
 function renderSign() {
   const q = signQuery.toLowerCase();
   const searching = !!normQ(q);
@@ -99,9 +118,16 @@ function renderSign() {
     $('#signList').innerHTML = '';
     return;
   }
-  let list;
+  let list, splitNote = '';
   if (searching) {
-    list = ALL_WORDS.filter(w => matchWord(w, q)).map((w, i) => ({ w, r: rankWord(w, q), i })).sort((a, b) => a.r - b.r || a.i - b.i).map(o => o.w);
+    list = searchWords(q);
+    // 띄어 쓴 말(「병원 가요」·「화장실 어디」)로 하나도 못 찾으면 낱말마다 나눠 찾는다. 한 글자 낱말은 이름·기본형이 똑같은 것만
+    if (!list.length && /\S\s+\S/.test(q.trim())) {
+      const parts = q.trim().split(/\s+/), seen = new Set();
+      list = [];
+      parts.forEach(p => searchWords(p).filter(w => p.length > 1 || rankWord(w, p) <= 1.5).slice(0, 20).forEach(w => { if (!seen.has(w.id)) { seen.add(w.id); list.push(w); } }));
+      if (list.length) splitNote = ` · 「${parts.join('」·「')}」로 나눠 찾았어요`;
+    }
     if (signPinId) { const k = list.findIndex(x => String(x.id) === String(signPinId)); if (k > 0) list.unshift(list.splice(k, 1)[0]); }
   } else if (signTopic === FAV_TOPIC) list = favWords();
   else if (signTopic === NUM_TOPIC) list = basicNumberWords();
@@ -116,7 +142,7 @@ function renderSign() {
     }
   }
   $('#signCount').hidden = searching && !list.length;
-  $('#signCount').textContent = searching ? `검색 결과 ${list.length}개` : `${list.length}개 단어 · 눌러서 뜻과 영상 보기`;
+  $('#signCount').textContent = searching ? `검색 결과 ${list.length}개${splitNote}` : `${list.length}개 단어 · 눌러서 뜻과 영상 보기`;
   if (!list.length) {
     if (searching) $('#signList').innerHTML = noResultHtml(signQuery);
     else if (signTopic === FAV_TOPIC) $('#signList').innerHTML = '<div class="empty">아직 담은 단어가 없어요.<br>단어를 펼쳐서 「단어장에 담기」를 눌러 보세요.</div>';
@@ -211,7 +237,7 @@ function updateWordNav(det) {
   let nav = body.querySelector('.wnav'); if (nav) nav.remove();
   const p = rowNeighbor(det, -1), n = rowNeighbor(det, 1);
   if (!p && !n) return;
-  const b = (dir, x, label) => x && x.w ? `<button type="button" class="wnavbtn ${dir}" data-wnav="${dir}"><span class="wl">${label}</span><b>${esc(x.w.w)}</b></button>` : '';
+  const b = (dir, x, label) => x && x.w ? `<button type="button" class="wnavbtn ${dir}" data-wnav="${dir}"><span class="wl">${label}</span><b>${esc(wordLabel(x.w))}</b></button>` : '';
   body.insertAdjacentHTML('beforeend', `<nav class="wnav" aria-label="앞뒤 단어">${b('prev', p, '‹ 이전 단어')}${b('next', n, '다음 단어 ›')}</nav>`);
 }
 function goWordNeighbor(det, dir) {

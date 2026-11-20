@@ -169,7 +169,8 @@ await c.click('#quizToHub'); await sleep(200);
 // ───────── P. 난이도(하·중·상)·영상 고르기 문제·난이도 권유 ─────────
 const nameOfId = id => ev(`(()=>{const id=${JSON.stringify(String(id))};const w=KSL_WORDS.find(x=>String(x.id)===id);if(w)return w.w;const e=KSL_EXTRA.find(x=>'N'+x.i===id);return e?e.w:null})()`);
 await c.click('[data-nav="quiz"]'); await sleep(300);
-check('P1 난이도 기본값은 중', (await ev(`document.querySelector('[data-qlevel="2"]').getAttribute('aria-pressed')`)) === 'true' && /^중:/.test(await txt('#qlevelNote')), await txt('#qlevelNote'));
+// 2026-11-20부터 처음 온 사람은 「하」(실사용 평가: 「중」은 처음엔 어려움)
+check('P1 난이도 기본값은 하', (await ev(`document.querySelector('[data-qlevel="1"]').getAttribute('aria-pressed')`)) === 'true' && /^하:/.test(await txt('#qlevelNote')), await txt('#qlevelNote'));
 await c.click('[data-qlevel="3"]'); await sleep(100);
 check('P2 상 선택 → 저장·설명 바뀜', (await LS('qlevel')) === 3 && /^상:/.test(await txt('#qlevelNote')) && (await ev(`document.querySelector('[data-qlevel="2"]').getAttribute('aria-pressed')`)) === 'false', await txt('#qlevelNote'));
 await c.click('[data-qscope="abbr"]'); await sleep(100);

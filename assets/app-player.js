@@ -14,7 +14,14 @@ function parseVtt(text) {
     return { start: toSec(a), end: toSec(c), text: lines.slice(lines.indexOf(timeLine) + 1).join(' ') };
   });
 }
-// 영상을 끝까지(또는 85% 이상) 봤을 때만 '시청 완료'로 기록한다. 열어 보기만 한 것은 완료가 아니다.
+// 영상을 실제로 85% 이상 재생했을 때만 '시청 완료'로 기록한다. 열어 보기만 한 것, 재생 바·대본 줄로 끝부분으로 건너뛴 것은 완료가 아니다.
+// (2026-11-20 외부 평가: 마지막 대본 줄을 누르기만 해도 완료가 됐음 → 재생 위치가 아니라 실제로 재생된 구간(video.played)의 합으로 잰다)
+const WATCHED_RATIO = 0.85;
+function playedRatio(v) {
+  if (!v.duration) return 0;
+  let s = 0; for (let i = 0; i < v.played.length; i++) s += v.played.end(i) - v.played.start(i);
+  return s / v.duration;
+}
 function markWatched(id) { if (!store.get('watched:' + id, false)) store.set('watched:' + id, true); }
 let playerReq = 0;   // 영상을 바꾸거나 플레이어를 떠날 때마다 1씩 늘린다(늦게 도착한 대본을 알아보는 번호)
 function setPlayerSrc(id) {
@@ -30,8 +37,8 @@ function setPlayerSrc(id) {
     // 자막은 처음엔 꺼 둔다(작업자님 요청 2026-11-20 — 영상 화면 아래에 같은 문장이 이미 나오고, 대본도 아래에 있다). 재생기의 자막 단추로 켤 수 있다
     t.kind = 'captions'; t.srclang = 'ko'; t.label = '한국어'; t.src = `videos/${id}.vtt`; t.default = false;
     f.appendChild(t);
-    f.addEventListener('ended', () => markWatched(id));
-    f.addEventListener('timeupdate', () => { if (f.duration && f.currentTime / f.duration >= 0.85) markWatched(id); });
+    f.addEventListener('ended', () => { if (playedRatio(f) >= WATCHED_RATIO) markWatched(id); });
+    f.addEventListener('timeupdate', () => { if (playedRatio(f) >= WATCHED_RATIO) markWatched(id); });
   }
   old.replaceWith(f);
 }

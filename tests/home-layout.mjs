@@ -28,6 +28,11 @@ for (const [i, want] of [[0, 'view-sign'], [1, 'view-braille'], [2, 'view-quiz']
   goes.push((await ev(`document.querySelector('.view.active').id`)) === want);
 }
 check('L9 소개 아래 링크(수어 사전 보기·점자로 바꿔 보기·퀴즈 풀기)를 누르면 수어·점자·퀴즈 화면으로', goes.every(Boolean), JSON.stringify(goes));
+// 점자 탭에서 교육 영상 칸을 보고 온 뒤에도 「점자로 바꿔 보기」는 글자 바꾸기 칸으로(2026-11-20 외부 평가)
+await ev(`go('braille'); showBraillePanel('learn', true); go('home'); 1`); await sleep(400);
+await ev(`document.querySelectorAll('#view-home .hlinks .hlink')[1].click()`); await sleep(500);
+const conv = await ev(`({ view: document.querySelector('.view.active').id, convert: !document.querySelector('#bp-convert').hidden, learn: !document.querySelector('#bp-learn').hidden })`);
+check('L9b 교육 영상 칸을 보고 와도 「점자로 바꿔 보기」 → 글자 바꾸기 칸', conv.view === 'view-braille' && conv.convert && !conv.learn, JSON.stringify(conv));
 // 「AI가 만든 티」 평가(2026-11-20): 첫 화면 글에 이모지·구호 배지·「제목 — 부제」를 쓰지 않음.
 // 같은 날 「너무 밋밋하다」 → 모양은 처음으로 섞어 되살림: 수어 주제 카드에는 작은 아이콘이 다시 있음
 const tells = await ev(`(() => { go('home'); const h = document.querySelector('#view-home').innerText; go('sign'); const icons = [...document.querySelectorAll('#view-sign .topiccard .ti')].filter(e => e.textContent.trim()).length; go('home');

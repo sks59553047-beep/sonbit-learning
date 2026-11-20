@@ -245,7 +245,9 @@ check('G0b 복습 칩 표시', (await cnt('#homeReview .revchip')) >= 1, (await 
 await ev(`document.querySelector('#homeVideoList [data-open-video]').click()`); await sleep(1200);
 const vid = (await LS('watched:v8-ksl-intro'));
 check('G1 영상을 열기만 하면 시청 완료가 아님', vid === null, String(vid));
-await ev(`document.querySelector('#playerVideo').dispatchEvent(new Event('ended'))`); await sleep(200);
+// 2026-11-20부터 실제로 재생한 구간(85% 이상)으로 잼 → 16배속으로 처음부터 끝까지 재생(약 5초)
+await ev(`(() => { const v = document.querySelector('#playerVideo'); v.muted = true; v.currentTime = 0; v.playbackRate = 16; v.play(); return 1 })()`);
+for (let i = 0; i < 40 && !(await ev(`document.querySelector('#playerVideo').ended`)); i++) await sleep(500);
 const watchedKeys = await ev(`Object.keys(localStorage).filter(k=>k.startsWith('sonbit:watched:'))`);
 check('G2 끝까지 보면 시청 완료로 기록', watchedKeys.length === 1, JSON.stringify(watchedKeys));
 await c.click('#playerBack'); await sleep(600);

@@ -34,6 +34,14 @@ await sleep(1200);
 const s3 = await ev(`({ t: document.querySelector('#playerVideo').currentTime, c2: transcriptCues[2].start, on: +(document.querySelector('#playerTranscript .tline.on')?.dataset.cue ?? -1) })`);
 check('T8 키보드로 셋째 줄에서 Enter → 그 부분부터 재생', s3.on === 2 && s3.t >= s3.c2 && s3.t < s3.c2 + 4, JSON.stringify(s3));
 await ev(`document.querySelector('#playerVideo').pause()`);
+// 시청 완료는 실제로 재생한 구간으로(2026-11-20 외부 평가: 마지막 줄을 누르기만 해도 완료가 됐음)
+await ev(`localStorage.removeItem('sonbit:watched:v1-braille-basics'); 1`);
+await ev(`document.querySelectorAll('#playerTranscript .tline')[transcriptCues.length - 1].click()`); await sleep(2500);
+await ev(`document.querySelector('#playerVideo').pause()`);
+check('T10 마지막 대본 줄로 건너뛰어 끝부분만 재생하면 시청 완료가 아님', (await ev(`localStorage.getItem('sonbit:watched:v1-braille-basics')`)) === null, String(await ev(`playedRatio(document.querySelector('#playerVideo')).toFixed(2)`)));
+await ev(`(() => { const v = document.querySelector('#playerVideo'); v.muted = true; v.currentTime = 0; v.playbackRate = 16; v.play(); return 1 })()`);
+for (let i = 0; i < 40 && !(await ev(`document.querySelector('#playerVideo').ended`)); i++) await sleep(500);
+check('T11 처음부터 끝까지 재생하면 시청 완료', (await ev(`localStorage.getItem('sonbit:watched:v1-braille-basics')`)) === 'true', String(await ev(`playedRatio(document.querySelector('#playerVideo')).toFixed(2)`)));
 // 다른 영상으로 바꾸면 표시가 처음부터
 await ev(`go('player', { arg: { id: 'v8-ksl-intro' } })`); await sleep(2200);
 check('T9 다른 영상을 열면 그 영상 대본이 나오고 표시된 줄 없음', /수어의 시작/.test(await ev(`document.querySelector('#playerTitle').textContent`)) && (await ev(`document.querySelectorAll('#playerTranscript .tline.on').length`)) === 0);

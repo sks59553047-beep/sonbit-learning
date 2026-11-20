@@ -144,6 +144,9 @@ function renderHome() {
 function dispatchAct(act, arg) {
   if (act === 'scrollvid') { $('#homeVideos').scrollIntoView({ behavior: 'smooth', block: 'start' }); $('#basicVidH').focus({ preventScroll: true }); }
   else if (act === 'braillelearn') { store.set('track', 'braille'); go('braille'); showBraillePanel('learn', true); }
+  // 첫 화면 「점자로 바꿔 보기」: 점자 탭이 마지막에 보던 칸(교육 영상 등)이 아니라 언제나 글자 바꾸기 칸으로(2026-11-20 외부 평가).
+  // 마우스 화면에서는 입력칸에 바로 쓸 수 있게 초점, 휴대폰은 자판이 갑자기 화면을 가리지 않게 초점은 두지 않는다
+  else if (act === 'brailleconvert') { store.set('track', 'braille'); go('braille'); showBraillePanel('convert', true); if (matchMedia('(pointer: fine)').matches) $('#bpInput').focus({ preventScroll: true }); }
   else if (act === 'track') { roadTrack = arg === 'braille' ? 'braille' : 'sign'; store.set('track', roadTrack); renderHome(); window.scrollTo(0, 0); }
   else if (act === 'nav') { if (arg === 'sign' || arg === 'braille') store.set('track', arg); go(arg); }
   else if (act === 'resume') resumeQuiz();

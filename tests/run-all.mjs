@@ -33,6 +33,7 @@ const TESTS = [
   ['다른 AI 검토 2차 보완(저장 실패·대본 순서·백업·범위 이름)', 'review2-fixes.mjs', [BASE], true],
   ['수어 단어 링크(#sign/번호로 열기·링크 공유·뒤로 가기)', 'sign-link.mjs', [BASE], true],
   ['다른 AI 검토 3차 보완(본문 바로가기·영상 주소 새로 고침·수어 목록 더 보기)', 'review3-fixes.mjs', [BASE], true],
+  ['학습 기록 옮기기(내보내기·글로 복사·글로 붙여 넣기·휴대폰 공유)', 'record-transfer.mjs', [BASE], true],
   ['키보드만으로 퀴즈 풀기', 'keyboard.mjs', [BASE, 'desktop'], true],
   ['영상을 못 불러올 때 안내', 'video-fail.mjs', [BASE], true],
   ['예전 방식 기록 정리', 'migrate.mjs', [BASE], true],

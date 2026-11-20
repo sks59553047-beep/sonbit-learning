@@ -166,13 +166,50 @@ function collectRecord() {
   const run = loadRun(); if (run) out.quizrun = runData(run);   // 풀던 퀴즈도 함께 옮긴다
   return out;
 }
-$('#recExport').addEventListener('click', () => {
-  const day = new Date().toISOString().slice(0, 10);
-  const blob = new Blob([JSON.stringify({ app: 'sonbit', version: 1, exportedAt: new Date().toISOString(), data: collectRecord() }, null, 1)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob), a = document.createElement('a');
-  a.href = url; a.download = 'sonbit-record-' + day + '.json'; document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
-  setRecStatus('기록 파일(sonbit-record-' + day + '.json)을 내려받았어요. 다른 기기에서 「기록 가져오기」로 불러오세요.');
+const recordText = () => JSON.stringify({ app: 'sonbit', version: 1, exportedAt: new Date().toISOString(), data: collectRecord() }, null, 1);
+// 내보내기(2026-11-20 작업자님 제보: 「알 수 없는 오류」로 안 받아짐 — 보안 프로그램·앱 안 브라우저 등은 파일 내려받기를 막는다. 사이트는 그걸 알 수 없다)
+// ① 휴대폰은 공유 창(파일 저장·카카오톡 보내기) ② 그 밖에는 파일 내려받기 ③ 어느 쪽이든 「글로 복사하기」를 함께 보여 준다
+$('#recExport').addEventListener('click', async () => {
+  const text = recordText(), name = 'sonbit-record-' + new Date().toISOString().slice(0, 10) + '.json';
+  $('#recCopyRow').hidden = false;
+  if (navigator.canShare && window.matchMedia && matchMedia('(pointer: coarse)').matches) {
+    const file = new File([text], name, { type: 'application/json' });
+    if (navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: '손빛 배움터 기록' }); setRecStatus('기록 파일을 보냈어요. 다른 기기에서 「기록 가져오기」로 불러오세요.'); return; }
+      catch (e) { if (e && e.name === 'AbortError') { setRecStatus('보내기를 취소했어요. 아래 「기록을 글로 복사하기」로도 옮길 수 있어요.'); return; } }
+    }
+  }
+  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' })), a = document.createElement('a');
+  a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+  setRecStatus(`기록 파일(${name}) 내려받기를 시작했어요. 브라우저의 다운로드 목록에 없거나 오류가 나면 아래 「기록을 글로 복사하기」를 써 주세요.`);
+});
+// 글로 복사하기: 복사가 막히면 글 칸을 보여 주고 모두 골라 둔다
+$('#recCopy').addEventListener('click', async () => {
+  const text = recordText(), box = $('#recCopyText');
+  try {
+    if (!navigator.clipboard) throw new Error('no clipboard');
+    await navigator.clipboard.writeText(text);
+    box.hidden = true;
+    setRecStatus('기록을 글로 복사했어요. 메모장이나 카카오톡 「나와의 채팅」에 붙여 두었다가, 옮길 기기에서 「파일 대신 글로 붙여 넣어 가져오기」에 넣으세요.');
+  } catch (e) {
+    box.value = text; box.hidden = false; box.focus(); box.select();
+    setRecStatus('자동 복사가 막혀 있어요. 위 칸의 글을 모두 골라(길게 누르기 또는 Ctrl+A) 복사해 주세요.');
+  }
+});
+// 글로 붙여 넣어 가져오기
+$('#recPasteOpen').addEventListener('click', () => {
+  const row = $('#recPasteRow'), open = row.hidden;
+  row.hidden = !open; $('#recPasteOpen').setAttribute('aria-expanded', String(open));
+  if (open) $('#recPaste').focus();
+});
+$('#recPasteGo').addEventListener('click', () => {
+  const text = $('#recPaste').value.trim();
+  if (!text) { setRecStatus('붙여 넣은 글이 없어요. 「기록을 글로 복사하기」로 복사한 글을 위 칸에 붙여 넣어 주세요.'); $('#recPaste').focus(); return; }
+  if (text.length > 600 * 1024) { setRecStatus('글이 너무 길어요. 손빛에서 복사한 기록만 가져올 수 있어요.'); return; }
+  const r = importRecord(text); setRecStatus(r.msg); toast(r.ok ? '기록을 가져왔어요' : '가져오지 못했어요');
+  if (r.ok) { $('#recPaste').value = ''; $('#recPasteRow').hidden = true; $('#recPasteOpen').setAttribute('aria-expanded', 'false'); }
+  renderHome();
 });
 // 가져온 틀린 문제 한 건을 깨끗한 모양으로 다듬는다. 지금 퀴즈로 다시 만들 수 없는 것(옛 방식·없는 단어)은 버린다.
 function cleanWrongEntry(c) {

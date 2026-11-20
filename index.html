@@ -114,6 +114,17 @@
           <button class="btn danger small" id="recClearYes" type="button">지우기</button>
           <button class="btn ghost small" id="recClearNo" type="button">취소</button>
         </div>
+        <!-- 2026-11-20: 파일 내려받기가 막힌 곳(보안 프로그램·카카오톡 같은 앱 안 브라우저)에서도 기록을 옮길 수 있게 「글로 복사·붙여 넣기」 -->
+        <div class="recalt" id="recCopyRow" hidden>
+          <span>파일이 받아지지 않았나요?</span>
+          <button class="btn ghost small" id="recCopy" type="button">기록을 글로 복사하기</button>
+        </div>
+        <textarea class="rectext" id="recCopyText" rows="4" readonly hidden aria-label="복사할 기록 글"></textarea>
+        <button class="linkbtn" id="recPasteOpen" type="button" aria-expanded="false">파일 대신 글로 붙여 넣어 가져오기</button>
+        <div id="recPasteRow" hidden>
+          <textarea class="rectext" id="recPaste" rows="4" placeholder="「기록을 글로 복사하기」로 복사해 둔 글을 여기에 붙여 넣으세요" aria-label="가져올 기록 글 붙여 넣기"></textarea>
+          <button class="btn line small" id="recPasteGo" type="button">붙여 넣은 기록 가져오기</button>
+        </div>
         <p class="note" id="recStatus" style="margin-top:12px" aria-live="polite">다른 기기로 옮기려면 내보낸 파일을 그 기기에서 가져오세요.</p>
       </section>
 

@@ -555,3 +555,8 @@ label.lbl2{display:block}
 .hero .hstart{margin-top:12px;font-size:0.875rem;font-weight:700;color:#fff}
 #learnSub{white-space:pre-line}
 .signmore{margin-top:12px}
+/* 기록 글로 복사·붙여 넣기(2026-11-20) */
+.recalt{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;font-size:0.875rem;color:var(--muted)}
+.rectext{display:block;width:100%;margin-top:10px;font:inherit;font-size:0.8125rem;color:var(--ink);background:var(--card);border:1px solid var(--field);border-radius:10px;padding:8px 10px;resize:vertical}
+.linkbtn{display:inline-block;margin-top:10px;background:none;border:0;padding:6px 0;font:inherit;font-size:0.875rem;font-weight:700;color:var(--teal);text-decoration:underline;cursor:pointer;min-height:32px}
+#recPasteRow .btn{margin-top:8px}

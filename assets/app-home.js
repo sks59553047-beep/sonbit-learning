@@ -133,9 +133,60 @@ function renderHomeReview() {
   host.innerHTML = (w ? `<button class="revchip" type="button" data-act="quizkind" data-arg="review"><span class="rn">${w}</span><span class="rl">틀린 문제 다시 풀기<span class="rs">퀴즈에서 틀린 문제 모음</span></span></button>` : '')
     + (f ? `<button class="revchip" type="button" data-act="quizkind" data-arg="fav"><span class="rn">${f}</span><span class="rl">내 단어장 퀴즈<span class="rs">담아 둔 수어로 연습</span></span></button>` : '');
 }
+// 첫 화면 「오늘의 수어」(2026-11-21): 비슷한 수어 학습 사이트(국립국어원 한국수어사전 「오늘의 수어」, Signing Savvy 「Sign of the Day」)처럼
+// 첫 화면에 실제 수어 모습을. 날짜마다 하나, 같은 낱말의 점자·뜻도 함께. 컴퓨터 화면(900px 이상)에서만 영상을 불러온다.
+// 낱말(작업자님 요청 2026-11-21: 「오늘의 수어」에 어울리는 것만 간추려, 날마다 무작위로, 같은 낱말은 한참 뒤에야 다시):
+//   퀴즈 「쉬움·보통」 생활 낱말(어려운 주제 나라·지명·법·사건·사회·제도는 이미 빠짐)에서 숫자·돈 단위와 일반 단어(뜻이 어렵거나 흔하지 않은 말이 많음)를 빼고,
+//   첫 화면에 나오면 어색한 낱말(욕·몸·술·범죄·무기 등)을 뺀다. 이 목록을 정해진 씨앗으로 한 번 섞어 하루에 하나씩 차례로 → 한 바퀴(약 480일) 돌기 전엔 겹치지 않고,
+//   같은 날에는 누구에게나 같은 낱말이 나온다.
+const TODAY_SKIP_TOPICS = new Set(['일반 단어', '숫자·돈 단위']);
+const TODAY_SKIP = new Set(('석유 알콜중독 취하다 소주 술 이혼 소변 대변 방귀 아프리카 브래지어 팬티 스타킹 감옥 총 탱크 교통사고 ' +
+  '사기 거짓 허풍 쇼하다 말다툼 추궁 혼내다 멍청이 미치다 의욕상실 원한 역겹다 속셈 무시 꺼지다 괴팍하다 뻔뻔하다 밉다 짜증 꼴찌').split(' '));
+let todayPool = null;
+function todayList() {
+  if (todayPool) return todayPool;
+  const ok = new Set(QZ.eligible.filter(w => w.tier <= 2 && !TODAY_SKIP_TOPICS.has(w.t) && !TODAY_SKIP.has(w.w)).map(w => String(w.id)));
+  const list = ALL_WORDS.filter(w => ok.has(String(w.id)) && hasRealVideo(w)).sort((a, b) => String(a.id).localeCompare(String(b.id)));
+  let s = 20261121;   // 정해진 씨앗(바꾸면 순서 전체가 바뀜)
+  const rnd = () => { s = (s + 0x6D2B79F5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  for (let i = list.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [list[i], list[j]] = [list[j], list[i]]; }
+  return (todayPool = list);
+}
+const dayNumber = d => Math.floor((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - Date.UTC(2026, 0, 1)) / 864e5);   // 2026-01-01 부터 며칠째(내 컴퓨터 날짜 기준)
+function todayWord(d) {
+  const l = todayList(); if (!l.length) return null;
+  const n = dayNumber(d || new Date());
+  return l[((n % l.length) + l.length) % l.length];
+}
+function todayMeaning(w) {
+  const m = w.x ? senseShown(w, false) : (w.al ? w.al.replace(/, /g, ' · ') : '');
+  if (m.replace(/\s+/g, '') === w.w.replace(/\s+/g, '')) return '';   // 뜻이 낱말과 똑같으면(「코끼리」 → 「코끼리」) 줄을 숨긴다
+  return m.length > 34 ? m.slice(0, 33) + '…' : m;
+}
+function renderToday() {
+  const box = $('#htoday'), w = todayWord(), v = box.querySelector('video');
+  if (!w || !matchMedia('(min-width: 900px)').matches) { box.hidden = true; v.pause(); return; }
+  const id = String(w.id), local = typeof MEDIA_VIDEO !== 'undefined' && MEDIA_VIDEO.has(id), isNuri = !/^https?:/.test(w.k);
+  const src = local ? `assets/media/${id}.mp4` : kslUrl(w.k);
+  const poster = local ? `assets/posters/${id}.jpg` : (isNuri ? kslUrl(w.k.replace(/\.mp4$/, '.jpg')) : `assets/posters/${id}.jpg`);
+  if (box.dataset.arg !== id) {
+    box.dataset.arg = id;
+    $('#htodayWord').textContent = w.w;
+    const mean = todayMeaning(w);
+    $('#htodayMean').textContent = mean ? '뜻: ' + mean : ''; $('#htodayMean').hidden = !mean;
+    $('#htodayBr').innerHTML = KB.convert(w.w, { contract: true }).cells.filter(c => c.kind !== '줄바꿈' && !c.unsupported).map(c => miniDots(c.dots, true)).join('');
+    box.setAttribute('aria-label', `오늘의 수어 「${w.w}」, 수어 사전에서 영상과 뜻 보기`);
+    v.poster = poster; v.src = src;
+  }
+  box.hidden = false;
+  if ($('#view-home').classList.contains('active')) v.play().catch(() => {});
+}
+matchMedia('(min-width: 900px)').addEventListener('change', () => renderToday());
 function renderHome() {
+  renderToday();
   $('#statWords').textContent = ALL_WORDS.length.toLocaleString('ko-KR');
-  $('#statVideos').textContent = VIDEO_LIST.length;
+  $('#statBasicVideos').textContent = HOME_VIDEO_IDS.length;                    // 학습 화면 기초 영상
+  $('#statBrailleVideos').textContent = VIDEO_LIST.length - HOME_VIDEO_IDS.length;   // 나머지는 점자 탭 교육 영상
   renderHomeNext(); renderHomeReview(); renderHomeVideos(); renderRoadmap(roadTrack);
   $('#roadHint').hidden = hasActivity();
   renderRecords();
@@ -151,6 +202,7 @@ function dispatchAct(act, arg) {
   else if (act === 'nav') { if (arg === 'sign' || arg === 'braille') store.set('track', arg); go(arg); }
   else if (act === 'resume') resumeQuiz();
   else if (act === 'quizkind') startQuizFromAnywhere(arg);
+  else if (act === 'todayword') { const w = WORD_BY_ID.get(String($('#htoday').dataset.arg)); if (w) openWordInDictionary(w); }
   else if (act === 'signtopics') { signQuery = ''; signTopic = ''; $('#signSearch').value = ''; renderSign(); $('#signSearch').focus(); }
 }
 $('#view-home').addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (b) dispatchAct(b.dataset.act, b.dataset.arg); });

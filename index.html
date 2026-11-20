@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>손빛 배움터 — 수어·점자 함께 배우기</title>
-<meta name="description" content="국립국어원 한국수어사전 자료와 한국 점자 규정(2024)을 바탕으로 한 수어 사전, 점자 변환기, 교육 영상, 퀴즈로 수어와 점자를 배우는 사이트">
+<meta name="description" content="농인·시각장애인과 소통하고 싶은 분을 위한 무료 수어·점자 학습 사이트예요. 국립국어원 영상으로 수어 1,190개를 찾아보고, 한글을 한국 점자 규정에 맞게 점자로 바꿔 보고, 교육 영상과 퀴즈로 익혀요.">
 <meta name="theme-color" content="#f5f6fa">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -14,7 +14,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="손빛 배움터">
 <meta property="og:title" content="손빛 배움터 — 수어·점자 함께 배우기">
-<meta property="og:description" content="국립국어원 한국수어사전 자료와 한국 점자 규정(2024)을 바탕으로 수어와 점자를 배워요">
+<meta property="og:description" content="수어와 점자를 처음 배우는 곳. 수어 사전·점자 바꾸기·교육 영상·퀴즈를 가입 없이 무료로 써요.">
 <meta property="og:url" content="https://sonbit.pages.dev/">
 <meta property="og:image" content="https://sonbit.pages.dev/og-image.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -22,7 +22,7 @@
 <meta name="sonbit-version" content="dev">
 <meta name="naver-site-verification" content="9922f921496f7de8a45104b513397388114767a9">
 <!-- 검색엔진이 사이트 이름을 「손빛 배움터」로 알아보게 하는 정보 -->
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"손빛 배움터","alternateName":["손빛","Sonbit","손빛 배움터 수어 점자"],"url":"https://sonbit.pages.dev/","inLanguage":"ko","description":"국립국어원 한국수어사전 자료와 한국 점자 규정(2024)을 바탕으로 수어 사전, 점자 변환기, 교육 영상, 퀴즈로 수어와 점자를 함께 배우는 사이트"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"손빛 배움터","alternateName":["손빛","Sonbit","손빛 배움터 수어 점자"],"url":"https://sonbit.pages.dev/","inLanguage":"ko","description":"농인·시각장애인과 소통하고 싶은 분을 위한 무료 수어·점자 학습 사이트예요. 국립국어원 영상으로 수어 1,190개를 찾아보고, 한글을 한국 점자 규정에 맞게 점자로 바꿔 보고, 교육 영상과 퀴즈로 익혀요."}</script>
 <script>
 /* 화면이 그려지기 전에 어두운 화면·큰 글자 설정을 먼저 적용해서, 켜자마자 번쩍이는 일을 막는다 */
 (function () {
@@ -67,17 +67,30 @@
       <!-- 2026-11-20 정리: 학습 탭은 처음 배우는 곳(찾기는 아래 「수어」·「점자」 탭). 글은 줄이고 자료 출처는 접어 둠 -->
       <!-- 2026-11-20 「AI가 만든 티」 평가: 그라데이션·점무늬·구호 배지·이모지를 빼고 흰 바탕으로. 세 줄은 누르면 그 화면으로 -->
       <div class="hero">
-        <span class="kick">오늘도 손빛과 함께</span>
-        <h2>공식 자료로 배우는<br>수어와 점자</h2>
-        <p class="hsub">수어와 점자를 처음 배우는 분, <span class="nw">농인·시각장애인과</span> 소통하고 싶은 분을 위한 무료 학습 사이트예요. 회원 가입 없이 바로 쓸 수 있어요.</p>
-        <!-- 2026-11-20: 「할 수 있는 것 3가지」 상자 목록은 AI 소개 페이지에서 흔한 꼴이라 문장으로 풀고, 링크만 남김 -->
-        <p class="hsub">국립국어원 영상과 그림으로 수어 <b id="statWords">1,190</b>개를 찾아볼 수 있고, 한글을 「한국 점자 규정」에 맞게 점자로 바꿔 볼 수 있어요. 짧은 교육 영상 <b id="statVideos">10</b>편과 퀴즈로 익힐 수도 있어요.</p>
-        <p class="hlinks">
-          <button type="button" class="hlink" data-act="nav" data-arg="sign">수어 사전 보기</button>
-          <button type="button" class="hlink" data-act="brailleconvert">점자로 바꿔 보기</button>
-          <button type="button" class="hlink" data-act="nav" data-arg="quiz">퀴즈 풀기</button>
-        </p>
-        <p class="hstart">처음이라면 아래 기초 영상부터 보세요.</p>
+        <!-- 2026-11-21: 컴퓨터 화면은 두 칸(왼쪽 = 무슨 사이트인지 + 시작 단추, 오른쪽 = 할 수 있는 것), 휴대폰은 같은 순서로 세로로.
+             할 일은 한 줄에 하나(이름 + 한 줄 설명), 줄 전체가 누르는 곳. 아이콘 없이 옅은 바탕만(2026-11-20 「AI 티」 평가).
+             교육 영상은 있는 곳이 달라 기초(학습 화면 아래)·한글 점자(점자 탭)로 나눔 -->
+        <div class="hintro">
+          <span class="kick">오늘도 손빛과 함께</span>
+          <h2>수어와 점자를<br>처음 배우는 곳</h2>
+          <p class="hsub">손빛 배움터는 <span class="nw">농인·시각장애인과</span> 소통하고 싶은 분을 위한 무료 학습 사이트예요. <span class="nw">가입 없이 바로 쓸 수 있어요.</span></p>
+          <button type="button" class="hstart" data-act="scrollvid"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg>처음이라면 기초 영상부터</button>
+          <!-- 「오늘의 수어」(컴퓨터 화면만): 수어 사이트들처럼 첫 화면에 실제 수어 모습 + 같은 낱말의 점자. 누르면 수어 사전의 그 단어로 -->
+          <button type="button" class="htoday" id="htoday" data-act="todayword" hidden>
+            <video muted loop playsinline preload="none" tabindex="-1" aria-hidden="true"></video>
+            <span class="htt"><small>오늘의 수어</small><b id="htodayWord"></b><span class="hmean" id="htodayMean"></span><span class="hbr" id="htodayBr" aria-hidden="true"></span><span class="hgo">수어 사전에서 보기 ›</span></span>
+          </button>
+        </div>
+        <div class="hcanbox">
+          <p class="hcanh" id="hcanH">여기서 할 수 있는 것</p>
+          <ul class="hcan" aria-labelledby="hcanH">
+            <!-- 2026-11-21: 아래 탭(학습·수어·점자·퀴즈)과 1:1로 — 읽고 나면 어느 탭을 누르면 되는지 안다. 아이콘도 아래 탭과 같다 -->
+            <li><button type="button" class="hrow" data-act="scrollvid"><span class="hi" data-hicon="home"></span><b>학습</b><span>기초 영상 <span id="statBasicVideos">4</span>편과 배우는 순서로 차근차근 시작해요</span></button></li>
+            <li><button type="button" class="hrow" data-act="nav" data-arg="sign"><span class="hi" data-hicon="hand"></span><b>수어</b><span>단어 <span id="statWords">1,190</span>개를 국립국어원 영상과 그림으로 찾아봐요</span></button></li>
+            <li><button type="button" class="hrow" data-act="brailleconvert"><span class="hi" data-hicon="braille"></span><b>점자</b><span>한글을 점자로 바꿔 보고, 영상 <span id="statBrailleVideos">6</span>편과 연습 패드로 익혀요</span></button></li>
+            <li><button type="button" class="hrow" data-act="nav" data-arg="quiz"><span class="hi" data-hicon="quiz"></span><b>퀴즈</b><span>배운 수어와 점자를 문제로 풀며 실력을 확인해요</span></button></li>
+          </ul>
+        </div>
       </div>
 
       <div id="homeNext"></div>
@@ -272,7 +285,7 @@
         <h2 id="playerTitle"></h2>
         <p id="playerDesc"></p>
       </div>
-      <div class="section-h"><h2 style="font-size:0.9375rem">대본(자막) 따라 읽기</h2><span class="thint">줄을 누르면 그 부분부터 나와요</span></div>
+      <div class="section-h"><h2 style="font-size:1rem">대본(자막) 따라 읽기</h2><span class="thint">줄을 누르면 그 부분부터 나와요</span></div>
       <div class="transcript" id="playerTranscript"></div>
     </section>
 

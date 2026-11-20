@@ -104,7 +104,7 @@ function suggestWords(raw) {
 }
 function noResultHtml(raw) {
   const sug = suggestWords(raw);
-  const chips = sug.length ? `<div><p class="lbl" style="font-size:.75rem;font-weight:800;color:var(--teal);margin-bottom:6px">이런 단어는 어때요?</p><div class="suggest">${sug.map(w => `<button type="button" class="chip" data-suggest="${esc(w)}">${esc(w)}</button>`).join('')}</div></div>` : '';
+  const chips = sug.length ? `<div><p class="lbl" style="font-size:.8125rem;font-weight:800;color:var(--teal);margin-bottom:6px">이런 단어는 어때요?</p><div class="suggest">${sug.map(w => `<button type="button" class="chip" data-suggest="${esc(w)}">${esc(w)}</button>`).join('')}</div></div>` : '';
   return `<div class="card nores"><h3>「${esc(raw)}」에 맞는 수어를 찾지 못했어요</h3>
     <ul><li>띄어쓰기 없이 더 짧게 써 보세요. (예: 「학교 가다」 → 「학교」)</li><li>자음만 써도 찾을 수 있어요. (예: ㅎㄱ)</li><li>비슷한 뜻의 다른 말로도 찾아보세요.</li><li>이 사전에는 국립국어원 사전에서 영상을 확인한 ${ALL_WORDS.length.toLocaleString('ko-KR')}개 표현만 있어요. 없는 단어는 국립국어원 한국수어사전에서 직접 찾아볼 수 있어요.</li></ul>
     ${chips}<button type="button" class="btn line" data-act="signtopics">주제로 찾아보기</button></div>`;

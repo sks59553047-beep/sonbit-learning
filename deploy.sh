@@ -14,6 +14,10 @@ cp -r functions wrangler.toml "$OUT/"
 find "$OUT" -name desktop.ini -delete
 # 올린 판이 어느 커밋인지 화면 머리에 적는다(오류 보고에 함께 실림)
 sed -i "s/name=\"sonbit-version\" content=\"[^\"]*\"/name=\"sonbit-version\" content=\"$V\"/" "$OUT/sonbit-dist/index.html"
+# 브라우저가 예전 파일을 그대로 쓰지 않게 화면 파일(js·css) 주소에 올린 때를 붙인다(2026-11-21: 미리보기에서 새 아이콘이 안 나옴 — 예전 app-core.js 를 씀)
+STAMP="$V-$(date +%Y%m%d%H%M%S)"
+sed -i -E "s#(src|href)=\"(assets/[^\"?]+\.(js|css))\"#\1=\"\2?v=$STAMP\"#g" "$OUT/sonbit-dist/index.html"
+echo "파일 주소 표시: ?v=$STAMP ($(grep -c "?v=$STAMP" "$OUT/sonbit-dist/index.html")곳)"
 cd "$OUT"
 # BRANCH=preview bash deploy.sh 로 올리면 미리보기 주소(https://preview.sonbit.pages.dev)에만 올라가고 실제 주소는 그대로다
 npx -y wrangler pages deploy sonbit-dist --project-name sonbit --branch "${BRANCH:-main}" --commit-dirty=true

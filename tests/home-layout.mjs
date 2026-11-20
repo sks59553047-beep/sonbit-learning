@@ -8,9 +8,9 @@ const { ev, sleep } = c;
 const home = async () => { await c.fresh(BASE + '?hl=' + Date.now(), 2600); };
 
 await home();
-const hero = await ev(`(() => { const h = document.querySelector('#view-home .hero'); const subs = [...h.querySelectorAll('.hsub')].map(p => p.textContent.replace(/\\s+/g, ' ').trim()); return { t: h.querySelector('h2').textContent, subs, links: [...h.querySelectorAll('.hlinks .hlink')].map(b => b.textContent.trim()), boxes: h.querySelectorAll('.hfeat').length, start: h.querySelector('.hstart')?.textContent || '', inputs: h.querySelectorAll('input').length } })()`);
-check('L1 맨 위 카드: 제목, 누구를 위한 곳인지, 할 수 있는 것은 문장으로(수어 1,190개·점자·교육 영상 10편과 퀴즈), 링크 3개, 시작 안내(상자 목록·검색칸 없음)',
-  /공식 자료로 배우는수어와 점자/.test(hero.t) && /처음 배우는 분/.test(hero.subs[0]) && /무료/.test(hero.subs[0]) && /수어 1,190개/.test(hero.subs[1]) && /점자로 바꿔/.test(hero.subs[1]) && /10편/.test(hero.subs[1]) && hero.links.length === 3 && hero.boxes === 0 && /기초 영상부터/.test(hero.start) && hero.inputs === 0, JSON.stringify(hero));
+const hero = await ev(`(() => { const h = document.querySelector('#view-home .hero'); const subs = [...h.querySelectorAll('.hsub')].map(p => p.textContent.replace(/\\s+/g, ' ').trim()); return { t: h.querySelector('h2').textContent, subs, head: h.querySelector('.hcanh')?.textContent || '', rows: [...h.querySelectorAll('.hcan .hrow')].map(b => ({ n: b.querySelector('b').textContent, d: b.querySelector(':scope > span:not(.hi)').textContent.replace(/\\s+/g, ' ') })), boxes: h.querySelectorAll('.hfeat').length, start: h.querySelector('.hstart')?.textContent || '', inputs: h.querySelectorAll('input').length } })()`);
+check('L1 맨 위 카드(2026-11-21): 제목 「수어와 점자를 처음 배우는 곳」, 누구를 위한 무료 사이트인지, 「여기서 할 수 있는 것」 = 아래 탭 네 줄(학습 기초 영상 4편·수어 1,190개·점자 영상 6편·퀴즈), 시작 단추(상자 목록·검색칸 없음)',
+  /수어와 점자를처음 배우는 곳/.test(hero.t) && hero.subs.length === 1 && /농인·시각장애인/.test(hero.subs[0]) && /무료/.test(hero.subs[0]) && /할 수 있는 것/.test(hero.head) && hero.rows.map(r => r.n).join() === '학습,수어,점자,퀴즈' && /4편/.test(hero.rows[0].d) && /1,190개/.test(hero.rows[1].d) && /6편/.test(hero.rows[2].d) && hero.boxes === 0 && /기초 영상부터/.test(hero.start) && hero.inputs === 0, JSON.stringify(hero));
 const order = await ev(`(() => { const v = document.querySelector('#view-home'); const ids = ['.hero', '#homeVideos', '#roadList', '#recordCard', '#sourceCard']; const els = ids.map(s => v.querySelector(s)); return els.every(Boolean) && els.every((e, i) => i === 0 || (els[i - 1].compareDocumentPosition(e) & 4)) })()`);
 check('L2 순서: 소개 카드 → 기초 영상 → 학습 로드맵 → 내 학습 기록 → 자료 출처', order === true);
 check('L3 찾기 칸·바로 가기 줄은 없음(찾기는 아래 수어·점자 탭)', (await ev(`document.querySelectorAll('#view-home form, #view-home .homequick').length`)) === 0);
@@ -22,17 +22,29 @@ await ev(`document.querySelector('#sourceCard summary').click()`); await sleep(2
 check('L7 누르면 펼쳐져 출처 4줄(국립국어원·서울복지포털·점자 규정·교육 영상)', (await ev(`document.querySelector('#sourceCard').open`)) && (await ev(`document.querySelectorAll('#sourceCard .sourcelist li').length`)) === 4 && /서울복지포털 「수어 표준사전」/.test(await ev(`document.querySelector('#sourceCard').textContent`)));
 // 소개 세 줄은 누르면 그 화면으로(2026-11-20 사람처럼 써 보기에서 「버튼처럼 보이는데 반응 없음」)
 const goes = [];
-for (const [i, want] of [[0, 'view-sign'], [1, 'view-braille'], [2, 'view-quiz']]) {
+for (const [i, want] of [[0, 'view-home'], [1, 'view-sign'], [2, 'view-braille'], [3, 'view-quiz']]) {
   await ev(`go('home')`); await sleep(300);
-  await ev(`document.querySelectorAll('#view-home .hlinks .hlink')[${i}].click()`); await sleep(500);
+  await ev(`document.querySelectorAll('#view-home .hcan .hrow')[${i}].click()`); await sleep(500);
   goes.push((await ev(`document.querySelector('.view.active').id`)) === want);
 }
-check('L9 소개 아래 링크(수어 사전 보기·점자로 바꿔 보기·퀴즈 풀기)를 누르면 수어·점자·퀴즈 화면으로', goes.every(Boolean), JSON.stringify(goes));
+check('L9 「할 수 있는 것」 네 줄을 누르면 학습(기초 영상 칸)·수어·점자·퀴즈 화면으로', goes.every(Boolean), JSON.stringify(goes));
 // 점자 탭에서 교육 영상 칸을 보고 온 뒤에도 「점자로 바꿔 보기」는 글자 바꾸기 칸으로(2026-11-20 외부 평가)
 await ev(`go('braille'); showBraillePanel('learn', true); go('home'); 1`); await sleep(400);
-await ev(`document.querySelectorAll('#view-home .hlinks .hlink')[1].click()`); await sleep(500);
+await ev(`document.querySelectorAll('#view-home .hcan .hrow')[2].click()`); await sleep(500);
 const conv = await ev(`({ view: document.querySelector('.view.active').id, convert: !document.querySelector('#bp-convert').hidden, learn: !document.querySelector('#bp-learn').hidden })`);
-check('L9b 교육 영상 칸을 보고 와도 「점자로 바꿔 보기」 → 글자 바꾸기 칸', conv.view === 'view-braille' && conv.convert && !conv.learn, JSON.stringify(conv));
+check('L9b 교육 영상 칸을 보고 와도 「점자」 줄 → 글자 바꾸기 칸', conv.view === 'view-braille' && conv.convert && !conv.learn, JSON.stringify(conv));
+// 교육 영상은 있는 곳이 둘(2026-11-21): 「기초 영상」 줄 → 학습 화면의 기초 영상 칸으로 내려감, 「한글 점자 영상」 줄 → 점자 탭 교육 영상 칸
+await ev(`go('home'); window.scrollTo(0, 0); 1`); await sleep(400);
+await ev(`document.querySelectorAll('#view-home .hcan .hrow')[0].click()`); await sleep(1200);
+const vb = await ev(`({ top: Math.round(document.querySelector('#homeVideos').getBoundingClientRect().top), y: Math.round(scrollY), n: document.querySelectorAll('#homeVideoList .vrow').length, label: document.querySelectorAll('#view-home .hcan .hrow')[0].textContent })`);
+await ev(`go('home'); 1`); await sleep(300);
+await ev(`go('braille'); showBraillePanel('learn', true); 1`); await sleep(600);
+const vl = await ev(`({ view: document.querySelector('.view.active').id, learn: !document.querySelector('#bp-learn').hidden, n: document.querySelectorAll('#bp-learn [data-open-video]').length, label: document.querySelectorAll('#view-home .hcan .hrow')[2].textContent })`);
+await ev(`go('home'); window.scrollTo(0, 0); 1`); await sleep(400);
+await ev(`document.querySelector('#view-home .hero .hstart').click()`); await sleep(1200);
+const sb = await ev(`({ tag: document.querySelector('#view-home .hero .hstart').tagName, top: Math.round(document.querySelector('#homeVideos').getBoundingClientRect().top), y: Math.round(scrollY) })`);
+check('L9d 소개 왼쪽 「처음이라면 기초 영상부터」 단추 → 기초 영상 칸으로', sb.tag === 'BUTTON' && sb.y > 200 && sb.top >= 0 && sb.top < 200, JSON.stringify(sb));
+check('L9c 「학습」 줄(기초 영상 4편) → 학습 화면 기초 영상 칸으로, 「점자」 줄의 영상 편 수 = 점자 탭 교육 영상 수', vb.y > 200 && vb.top >= 0 && vb.top < 200 && vb.label.includes(vb.n + '편') && vl.view === 'view-braille' && vl.learn && vl.label.includes(vl.n + '편'), JSON.stringify({ vb, vl }));
 // 「AI가 만든 티」 평가(2026-11-20): 첫 화면 글에 이모지·구호 배지·「제목 — 부제」를 쓰지 않음.
 // 같은 날 「너무 밋밋하다」 → 모양은 처음으로 섞어 되살림: 수어 주제 카드에는 작은 아이콘이 다시 있음
 const tells = await ev(`(() => { go('home'); const h = document.querySelector('#view-home').innerText; go('sign'); const icons = [...document.querySelectorAll('#view-sign .topiccard .ti')].filter(e => e.textContent.trim()).length; go('home');
@@ -46,5 +58,21 @@ check('L11 섞은 모양: 머리줄 「손빛 SONBIT」, 남색 첫 화면, 카�
 await c.send('Emulation.setDeviceMetricsOverride', { width: 320, height: 700, deviceScaleFactor: 2, mobile: true });
 await home();
 check('L8 320px 좁은 화면에서도 옆으로 넘치지 않음', await ev(`document.documentElement.scrollWidth <= window.innerWidth`));
+// 「오늘의 수어」(2026-11-21): 휴대폰에서는 숨기고 영상도 안 불러옴, 컴퓨터 화면에서는 두 칸 소개 왼쪽 아래에 영상·점자, 누르면 사전의 그 단어
+check('L12 휴대폰: 「오늘의 수어」 숨김 + 영상 안 불러옴(데이터 아끼기)', await ev(`document.querySelector('#htoday').hidden && !document.querySelector('#htoday video').getAttribute('src')`));
+await c.send('Emulation.setDeviceMetricsOverride', { width: 1100, height: 800, deviceScaleFactor: 1, mobile: false });
+await home(); await sleep(2500);
+const td = await ev(`(() => { const b = document.querySelector('#htoday'), v = b.querySelector('video'), h = document.querySelector('.hero'), r = b.getBoundingClientRect(), last = [...document.querySelectorAll('.hcan .hrow')].pop().getBoundingClientRect(), kick = document.querySelector('.hero .kick').getBoundingClientRect(), head = document.querySelector('.hcanh').getBoundingClientRect();
+  return { shown: !b.hidden, word: document.querySelector('#htodayWord').textContent, cells: document.querySelectorAll('#htodayBr .mini').length, src: !!v.getAttribute('src'), playing: !v.paused, cols: getComputedStyle(h).gridTemplateColumns.split(' ').length, bottomGap: Math.round(Math.abs(r.bottom - last.bottom)), topGap: Math.round(Math.abs(kick.top - head.top)), id: b.dataset.arg } })()`);
+check('L13 컴퓨터 화면: 소개 두 칸, 위(「오늘도 손빛과 함께」·「여기서 할 수 있는 것」)·아래(「오늘의 수어」·마지막 줄) 끝이 맞음, 「오늘의 수어」 영상 재생·점자 칸', td.shown && td.word && td.cells > 0 && td.src && td.playing && td.cols === 2 && td.bottomGap <= 2 && td.topGap <= 4, JSON.stringify(td));
+await ev(`document.querySelector('#htoday').click()`); await sleep(1200);
+const tg = await ev(`({ view: document.querySelector('.view.active').id, open: document.querySelector('#signList .wordrow[open]')?.dataset.wid || '' })`);
+check('L14 「오늘의 수어」를 누르면 수어 사전에서 그 단어가 펼쳐짐', tg.view === 'view-sign' && tg.open === td.id, JSON.stringify(tg));
+// 날마다 무작위 + 한 바퀴 돌기 전엔 같은 낱말이 다시 안 나옴 + 간추린 목록(뺀 주제·낱말 없음)
+const rot = await ev(`(() => { const l = todayList(), n = l.length, base = new Date(2026, 10, 21), ids = [];
+  for (let k = 0; k < n + 3; k++) { const d = new Date(base); d.setDate(d.getDate() + k); ids.push(String(todayWord(d).id)); }
+  const first = ids.slice(0, n); const uniq = new Set(first).size;
+  return { n, uniq, wrap: ids[n] === ids[0] && ids[n + 1] === ids[1], skipTopic: l.filter(w => TODAY_SKIP_TOPICS.has(w.t)).length, skipWord: l.filter(w => TODAY_SKIP.has(w.w)).length, hard: l.filter(w => ['나라·지명', '법·사건', '사회·제도'].includes(w.t) && QZ.wordById(w.id).tier > 2).length, sample: first.slice(0, 7).map(id => WORD_BY_ID.get(id).w).join(' ') } })()`);
+check('L15 「오늘의 수어」: 간추린 목록(300~700개)을 날마다 하나씩, 한 바퀴 동안 겹치지 않고 그다음 바퀴는 같은 순서, 뺀 주제·낱말 없음', rot.n >= 300 && rot.n <= 700 && rot.uniq === rot.n && rot.wrap && !rot.skipTopic && !rot.skipWord && !rot.hard, JSON.stringify(rot));
 check('JS 오류 없음', c.errs.length === 0, c.errs.join(' | '));
 await c.close(); process.exit(0);

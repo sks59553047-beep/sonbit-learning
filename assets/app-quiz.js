@@ -159,8 +159,8 @@ function quizOptHtml(o, i) { return `<button class="qopt" type="button" data-opt
 function clipHtml(c, i) { return `<button type="button" class="vopt" data-opt="${esc(c.id)}" aria-label="영상 ${i + 1}번"><video src="${esc(kslUrl(c.src))}" autoplay loop muted playsinline preload="auto" tabindex="-1" aria-hidden="true"></video><span class="vn" aria-hidden="true">${i + 1}</span></button>`; }
 function quizClueHtml(q) {
   if (q.clueType === 'dots') return `<div class="qclue qclue-dots">${esc(q.prompt)}<div class="quizdots" role="img" aria-label="${esc(cellsDescription(q.clue))}">${clueCellsHtml(q.clue)}</div></div>`;
-  if (q.clueType === 'build') return `<div class="qclue">다음을 점자로 써 보세요.<div style="font-size:1.75rem;font-weight:900;margin:10px 0 2px">「${esc(q.answer)}」</div><div style="font-size:.8125rem;opacity:.85">${esc(q.group)} · ${q.clue.length}칸</div></div>`;
-  if (q.clueType === 'pickvideo') return `<div class="qclue">다음 뜻의 수어는 어느 영상일까요?<div style="font-size:1.75rem;font-weight:900;margin:10px 0 2px">「${esc(q.answer)}」</div>${q.gloss ? `<div style="font-size:.8125rem;opacity:.85">${esc(q.gloss)}</div>` : ''}</div>`;
+  if (q.clueType === 'build') return `<div class="qclue">다음을 점자로 써 보세요.<div style="font-size:1.75rem;font-weight:900;margin:10px 0 2px">「${esc(q.answer)}」</div><div style="font-size:.875rem;opacity:.85">${esc(q.group)} · ${q.clue.length}칸</div></div>`;
+  if (q.clueType === 'pickvideo') return `<div class="qclue">다음 뜻의 수어는 어느 영상일까요?<div style="font-size:1.75rem;font-weight:900;margin:10px 0 2px">「${esc(q.answer)}」</div>${q.gloss ? `<div style="font-size:.875rem;opacity:.85">${esc(q.gloss)}</div>` : ''}</div>`;
   return `<div class="qclue">이 수어 영상이 뜻하는 단어는 무엇일까요?<video class="kslvideo qvideo" id="quizClueVideo" src="${esc(kslUrl(q.clue))}" autoplay loop muted playsinline controls preload="auto" aria-label="수어 영상 문제"></video></div>`;
 }
 function buildCellsHtml(q) {

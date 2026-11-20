@@ -41,6 +41,7 @@ function icon(name, size) {
 }
 $('#logoIcon').innerHTML = icon('hand', 22).replace('currentColor', '#7ff0dd');
 $$('.navbtn').forEach(b => { const n = b.querySelector('.i'); if (n) n.innerHTML = icon(n.dataset.icon, 22); });
+$$('.hrow [data-hicon]').forEach(n => { n.innerHTML = icon(n.dataset.hicon, 22); });   // 첫 화면 「할 수 있는 것」 줄 앞 작은 그림(아래 탭과 같은 아이콘)
 $('#signSearchIcon').innerHTML = icon('search', 18);
 $('#playerBack').innerHTML = icon('back', 20);
 $('#signTopicBack').innerHTML = icon('back', 20);

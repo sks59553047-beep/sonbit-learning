@@ -22,7 +22,7 @@ fs.mkdirSync(OUT, { recursive: true });
 // [이름, 파일, 인자, 브라우저 필요, 오래 걸림, 통과 조건(출력에 이 글이 있어야)]
 // 통과 조건이 없으면 「FAIL 로 시작하는 줄이 없고 종료 코드가 0」이면 통과로 본다.
 const TESTS = [
-  ['점자 규정 예시 227개', '../braille-tests/run-all.mjs', [], false, false, /불일치 0/],
+  ['점자 규정 예시 248개(한글 227·영어 대문자 약어 21) + 범위 밖 영어 9개', '../braille-tests/run-all.mjs', [], false, false, /불일치 0/],
   ['퀴즈 문제 시뮬레이션(정답 둘·보기 겹침·난이도 배분)', 'quiz-sim.mjs', [], false, false, /모든 점검 통과/],
   ['색 대비(밝은·어두운 화면)', 'contrast.mjs', [], false, false, /기준 미달 0 건/],
   ['의견 게시판 욕설 거르기(막을 말·통과시킬 멀쩡한 말)', 'board-words.mjs', [], false],
@@ -37,6 +37,7 @@ const TESTS = [
   ['대본 따라가기·이전/다음 단어·시청 완료', 'transcript-nav.mjs', [BASE], true],
   ['실사용 평가 반영(같은 이름 수어·말끝 검색·점자 용어·힌트·처음 난이도)', 'real-use-fixes.mjs', [BASE], true],
   ['실사용 평가 반영 2(영상 고르기·약자 설명·점자 복사·단어장·퀴즈로 돌아가기·큰 글씨 제목·뒤로 가기)', 'real-use-fixes2.mjs', [BASE], true],
+  ['생활 속 점자(카드 12개·근거 링크·예시 점자·글자 바꾸기 연결·좁은 화면 버튼)', 'life-braille.mjs', [BASE], true],
   ['키보드만으로 퀴즈 풀기', 'keyboard.mjs', [BASE, 'desktop'], true],
   ['영상을 못 불러올 때 안내', 'video-fail.mjs', [BASE], true],
   ['예전 방식 기록 정리', 'migrate.mjs', [BASE], true],

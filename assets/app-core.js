@@ -16,7 +16,7 @@ const store = {
 };
 const fmtTime = s => { s = Math.round(s); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
 const shuffle = a => { const b = a.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = b[i]; b[i] = b[j]; b[j] = t; } return b; };
-const BRAILLE_TEST_COUNT = 227; // braille-tests/run-all.mjs 가 통과하는 규정 예시 수(고치면 같이 고칠 것)
+const BRAILLE_TEST_COUNT = 248; // braille-tests/run-all.mjs 가 통과하는 규정 예시 수(고치면 같이 고칠 것)
 
 // ---------------- 아이콘(인라인 SVG, 외부 폰트 없이) ----------------
 const ICONS = {

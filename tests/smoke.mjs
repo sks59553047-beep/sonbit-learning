@@ -47,7 +47,7 @@ await ev(`document.querySelector('[data-tg="약자·약어"]').click()`); await 
 await c.shot('v3_table.png');
 // 교육 영상 칸(점자 탭): 점자 영상 7편이 순서대로
 await c.click('[data-bpanel="learn"]'); await c.sleep(500);
-check('점자 탭 「교육 영상」 칸: 6편 순서대로(①~⑥)', (await ev(`document.querySelectorAll('#learnList .vrow').length`)) === 6 && (await ev(`!document.querySelector('#bp-learn').hidden && document.querySelector('#bp-table').hidden`)) === true, await ev(`[...document.querySelectorAll('#learnList .vtitle')].map(e=>e.textContent.slice(0,9)).join(' | ')`));
+check('점자 탭 「교육 영상」 칸: 7편 순서대로(①~⑥, 생활 속 점자)', (await ev(`document.querySelectorAll('#learnList .vrow').length`)) === 7 && (await ev(`!document.querySelector('#bp-learn').hidden && document.querySelector('#bp-table').hidden`)) === true, await ev(`[...document.querySelectorAll('#learnList .vtitle')].map(e=>e.textContent.slice(0,9)).join(' | ')`));
 check('교육 영상 칸: 모두 점자 영상(수어·공통 영상은 학습 페이지에)', (await ev(`[...document.querySelectorAll('#learnList .vrow')].every(r=>r.querySelector('.tag').textContent==='점자')`)) === true);
 await c.shot('v3_learn.png');
 // 퀴즈

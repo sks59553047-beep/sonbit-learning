@@ -26,6 +26,7 @@ const views = [
   ['점자 패드', async () => { await c.click('[data-bpanel="pad"]'); await ev(`document.querySelectorAll('#padCell [data-dot]')[0].click();document.querySelectorAll('#padCell [data-dot]')[3].click()`); }],
   ['점자 표(약자·약어)', async () => { await c.click('[data-bpanel="table"]'); await ev(`document.querySelector('[data-tg="약자·약어"]').click()`); }],
   ['점자 표(문장부호)', async () => { await ev(`document.querySelector('[data-tg="문장부호"]').click()`); }],
+  ['생활 속 점자', async () => { await ev(`document.querySelector('[data-bpanel="life"]').click()`); await sleep(300); }],
   ['점자 교육 영상 칸', async () => { await ev(`document.querySelector('[data-bpanel="learn"]').click()`); await sleep(500); }],
   ['홈(기초 영상·봤어요 표시)', async () => { await ev(`localStorage.setItem('sonbit:watched:v8-ksl-intro','true')`); await c.click('[data-nav="home"]'); await sleep(500); }],
   ['퀴즈 홈', async () => { await c.click('[data-nav="quiz"]'); }],

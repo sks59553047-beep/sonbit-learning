@@ -1,0 +1,27 @@
+{
+ "note": "「한국 점자 규정」(2024) 제4장 로마자 예시 가운데 대문자 약어만 쓴 것(엔진이 바꾸는 범위). 점자는 규정 본문 ASCII 표기 그대로(source/regulation-2024.txt). unsupported: 범위 밖이라 「지원 안 함」으로 나와야 하는 글(틀린 점자를 만들지 않음).",
+ "cases": [
+  { "ref": "제33항", "text": "우리나라 기차에는 KTX, 새마을호, 무궁화호 등이 있다.", "brf": "m\"oc\"<`@o;<ncz`0,,ktx\"`,re<!``ju\"`em@m7jvju`i{7o`o/i4" },
+  { "ref": "제33항", "text": "WHO: 세계 보건 기구", "brf": "0,,who\"1`,n@/`~u@)`@o@m" },
+  { "ref": "제33항 다만", "text": "KTX/새마을호/무궁화호", "brf": "0,,ktx4_/,re<!ju_/em@m7jvju" },
+  { "ref": "제33항 다만", "text": "U-도서관", "brf": "0,u4-iu,s@v3" },
+  { "ref": "제35항", "text": "MP3 플레이어", "brf": "0,,mp#c`d!\"nos" },
+  { "ref": "제35항", "text": "A4용지", "brf": "0,a#d+7.o" },
+  { "ref": "제35항", "text": "LP 1장", "brf": "0,,lp`#a.7" },
+  { "ref": "제35항", "text": "요즘에는 KF94 마스크가 필수입니다.", "brf": "+.{5ncz`0,,kf#id`e,{f{$`do1,m`obcoi4" },
+  { "ref": "제35항", "text": "2023학년도 수능 D-100일 학습 전략", "brf": "#bjbc`jac*iu`,mc{7`0,d-#ajjo1`ja,{b`.)\">a" },
+  { "ref": "제35항", "text": "KBS 1 TV 좀 켜 주세요.", "brf": "0,,kbs`#a`,,tv4`.u5`f:`.m,n+4" },
+  { "ref": "제35항", "text": "CD 1장을 구하려 합니다.", "brf": "0;,,cd`#a.7!`@mj\":`jbcoi4" },
+  { "ref": "제36항", "text": "I", "brf": "0,i4" },
+  { "ref": "제36항", "text": "II", "brf": "0,,ii4" },
+  { "ref": "제36항", "text": "III", "brf": "0,,iii4" },
+  { "ref": "제36항", "text": "V", "brf": "0,v4" },
+  { "ref": "제36항", "text": "IX", "brf": "0,,ix4" },
+  { "ref": "제36항", "text": "X", "brf": "0,x4" },
+  { "ref": "제36항", "text": "XV", "brf": "0,,xv4" },
+  { "ref": "제36항", "text": "XX", "brf": "0,,xx4" },
+  { "ref": "제36항", "text": "가영이는 미적분학 II 과목을 수강하고 있다.", "brf": "$]ocz`eo.?^gja`0,,ii4`@vex!`,m$7j@u`o/i4" },
+  { "ref": "제45항 붙임(단위)", "text": "최근 USB 메모리 256GB는 5만 원대 가격이다.", "brf": ";y@z`0,,usb4`eneu\"o`#bef0,,gb4cz`#e`e3`p3ir`$@:aoi4" }
+ ],
+ "unsupported": ["그는 Canada로 여행을 떠났다.", "IoT", "iOS", "McDonald", "WELCOME TO KOREA", "Summary~연습 문제", "문 앞에 OPEN이라고 쓰여 있다.", "영국의 왕은 George V였다.", "be는 am, are, is의 원형 동사이다."]
+}

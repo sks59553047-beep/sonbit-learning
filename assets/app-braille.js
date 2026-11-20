@@ -32,7 +32,7 @@ const READINGS = (() => {
 })();
 const READ_ORDER = ['첫소리', '모음', '받침', '약자', '숫자(수표 뒤)', '수표', '문장부호'];
 // ---- 화면 전환(변환기·연습 패드·점자 표) ----
-const BPANELS = ['convert', 'pad', 'table', 'learn'];
+const BPANELS = ['convert', 'pad', 'table', 'learn', 'life'];
 function showBraillePanel(name, byUser) {
   if (!BPANELS.includes(name)) name = 'convert';
   BPANELS.forEach(n => { $('#bp-' + n).hidden = n !== name; });
@@ -40,8 +40,33 @@ function showBraillePanel(name, byUser) {
   store.set('bpanel', name);
   if (name === 'table') { renderTable(tableGroup); if (byUser) markDid('braille'); }
   if (name === 'learn') renderLearnPanel();
+  if (name === 'life') renderLifePanel();
 }
 $('#bpSeg').addEventListener('click', e => { const b = e.target.closest('[data-bpanel]'); if (b) showBraillePanel(b.dataset.bpanel, true); });
+// ---- 생활 속 점자(2026-11-21): 카드마다 어디에·무엇이(예시 글자의 점자)·설명·근거 ----
+function renderLifePanel() {
+  const host = $('#lifeList'); if (host.dataset.done) return;
+  const kindTag = k => `<span class="tag ${k === 'law' ? '' : k === 'guide' ? 'amber' : 'gray'}">${LIFE_KIND[k]}</span>`;
+  const wordBtn = w => {
+    const cells = KB.convert(w, { contract: true }).cells.filter(c => c.kind !== '줄바꿈' && !c.unsupported);
+    return `<button type="button" class="lifeword" data-lifeword="${esc(w)}" aria-label="${esc(w)}, 점자 ${cells.length}칸. 글자 바꾸기에서 보기"><span class="lw">${esc(w)}</span><span class="lcells">${cells.map(c => miniDots(c.dots, true)).join('')}</span></button>`;
+  };
+  host.innerHTML = LIFE_BRAILLE.map(it => `<article class="card lifecard">
+      <div class="lifehead"><h3>${esc(it.place)}</h3>${kindTag(it.kind)}</div>
+      ${it.words.length ? `<div class="lifewords">${it.words.map(wordBtn).join('')}</div>` : ''}
+      <p class="lifesay">${esc(it.say)}</p>
+      <p class="lifesrc">근거: ${it.src.map(s => `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.label)}</a>`).join(' · ')}</p>
+    </article>`).join('');
+  host.dataset.done = '1';
+}
+// 예시 글자를 누르면 「글자 바꾸기」에 넣어 점을 하나하나 보여 준다
+$('#lifeList').addEventListener('click', e => {
+  const b = e.target.closest('[data-lifeword]'); if (!b) return;
+  $('#bpInput').value = b.dataset.lifeword; $('#bpContract').checked = true; renderBraillePanel();
+  showBraillePanel('convert', true);
+  $('#bpResult').scrollIntoView({ block: 'start' }); window.scrollBy(0, -80);
+  markDid('braille');
+});
 // ---- 연습 패드(처음엔 한 칸, 「칸 추가」를 누르면 두 칸) ----
 let padDots = new Set(), padDots2 = new Set(), padTwo = false;
 const sortedDots = s => Array.from(s).sort((a, b) => a - b);
@@ -119,7 +144,14 @@ function renderBraillePanel() {
   // 칸 수에는 바꾸지 못한 글자 자리(점선 칸)를 넣지 않고, 띄어쓰기 칸은 따로 밝힌다
   const real = cells.filter(c => !c.unsupported), spaces = real.filter(c => c.kind === '띄어쓰기').length, bad = r.unsupported.length;
   $('#bpSummary').textContent = text ? `점자 ${real.length}칸${spaces ? `(띄어쓰기 ${spaces}칸 포함)` : ''}으로 바뀌었어요${bad ? ` · 바꾸지 못한 글자 ${bad}개` : ''}${full ? ` · 한 번에 ${BP_MAX}자까지만 바꿀 수 있어요` : ''}` : '글자를 입력하면 여기에 몇 칸인지 나와요';
-  const warn = r.warnings.slice(); if (r.unsupported.length) warn.unshift(`바꿔 주지 않는 글자가 있어요: ${[...new Set(r.unsupported)].join(' ')} (로마자·그리스 문자·수식 기호·옛 글자 등은 규정이 따로 있어 지원하지 않아요. 점선 칸으로 표시했어요.)`);
+  const warn = r.warnings.slice();
+  if (r.unsupported.length) {
+    // 영어: 대문자 약어(KTX·TV 등)만 바꾼다(2026-11-21). 소문자가 섞인 단어는 통일영어점자 약자 규칙이 많아 아직 바꾸지 않는다
+    const en = r.unsupported.some(c => /[A-Za-z]/.test(c)), other = r.unsupported.some(c => !/[A-Za-z]/.test(c));
+    const why = [en ? '영어는 KTX·TV 같은 대문자 약어만 바꿔요. 소문자가 섞인 영어 단어나 OPEN·STOP처럼 영어 약자가 들어갈 수 있는 낱말, 세 단어 넘게 이어진 대문자는 통일영어점자의 약자 규칙이 많아 아직 바꾸지 않아요.' : '',
+      other ? '그리스 문자·수식 기호·옛 글자 등은 규정이 따로 있어 지원하지 않아요.' : ''].filter(Boolean).join(' ');
+    warn.unshift(`바꿔 주지 않는 글자가 있어요: ${[...new Set(r.unsupported)].join(' ')} (${why} 점선 칸으로 표시했어요.)`);
+  }
   $('#bpWarn').hidden = !warn.length; $('#bpWarn').textContent = warn.join(' ');
   $('#bpCells').innerHTML = cells.map(c => {
     const label = c.kind === '띄어쓰기' ? '␣' : (c.text || '');
@@ -135,16 +167,16 @@ function renderBraillePanel() {
   if (text) markDid('braille');
 }
 // 점자 칸 아래 이름: 규정 용어(초성·중성) 대신 쉬운 말로. 칸에 마우스를 올리면(title) 규정 용어와 조항이 그대로 나온다
-const KIND_WORD = { '초성': '첫소리', '중성': '모음', '종성': '받침', '단독 자모': '낱자' };
+const KIND_WORD = { '초성': '첫소리', '중성': '모음', '종성': '받침', '단독 자모': '낱자', '로마자 종료표': '로마자 끝', '대문자 단어표': '대문자들', '1급 점자표': '그대로표' };
 function kindPlain(k) { const b = String(k).replace(/\(.*\)/, ''); return KIND_WORD[b] || b; }
 const KIND_HELP = {
   '첫소리': '글자 맨 앞 자음(초성)', '모음': 'ㅏ·ㅓ 같은 가운데 소리(중성)', '받침': '글자 아래 자음(종성)',
   '약자': '자주 쓰는 글자를 줄여 쓴 것(대부분 한 칸, 것·성·정·청은 두 칸)', '약어': '「그래서」 같은 낱말을 두 칸으로 줄여 쓴 것',
-  '된소리표': 'ㄲ·ㄸ처럼 된소리 앞에 붙이는 칸', '수표': '여기부터 숫자라는 표시', '자릿점': '숫자 사이 쉼표', '소수점': '숫자 사이 마침표', '낱자': '글자 없이 따로 쓴 자음·모음'
+  '된소리표': 'ㄲ·ㄸ처럼 된소리 앞에 붙이는 칸', '로마자표': '여기부터 영어(로마자)', '로마자 끝': '영어가 끝났다는 표시', '로마자': '영어 알파벳(통일영어점자)', '대문자표': '다음 한 글자가 대문자', '대문자들': '이어지는 글자가 모두 대문자', '그대로표': '영어 줄임말이 아니라 글자 그대로 읽으라는 표시(1급 점자표)', '붙임표': '영어와 숫자를 잇는 -', '수표': '여기부터 숫자라는 표시', '자릿점': '숫자 사이 쉼표', '소수점': '숫자 사이 마침표', '낱자': '글자 없이 따로 쓴 자음·모음'
 };
 $('#bpInput').addEventListener('input', renderBraillePanel);
 $('#bpContract').addEventListener('change', renderBraillePanel);
-const BP_EXAMPLES = ['그래서 가나다', '성정청 억울한 것', '2025년 3월 1일', '안녕하세요.'];
+const BP_EXAMPLES = ['그래서 가나다', '성정청 억울한 것', '2025년 3월 1일', '안녕하세요.', 'KTX, 새마을호'];   // 마지막은 규정 제33항 예시(영어 대문자 약어)
 $('#bpExamples').innerHTML = BP_EXAMPLES.map(t => `<button class="chip" type="button" data-ex="${esc(t)}">${esc(t)}</button>`).join('');
 $('#bpExamples').addEventListener('click', e => { const b = e.target.closest('[data-ex]'); if (!b) return; $('#bpInput').value = b.dataset.ex; renderBraillePanel(); });
 // 복사 단추는 둘: 결과 맨 아래(점자 문자 옆)와 칸 수 안내 옆(2026-11-21 실사용 평가: 긴 글은 아래 단추가 화면 몇 쪽 아래에 있음)

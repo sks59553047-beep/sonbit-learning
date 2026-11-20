@@ -1,7 +1,7 @@
 // 한글 점자 변환 엔진 v2 — 「한국 점자 규정」(문화체육관광부고시 제2024-0005호, 2024.3.1. 시행)을 조항 순서대로 구현.
 // 모든 표는 규정 본문의 점자 표기(ASCII 점자)를 그대로 옮겨 적었고, 규정에 실린 예시 전체를 시험 문제로 검증한다(braille-tests/).
-// 지원 범위: 제1장 자모(제1~12항), 제2장 약자·약어(제13~18항), 제5장 숫자(제40~44항), 제6장 문장 부호 일부(제49항).
-// 지원하지 않는 글자(로마자·그리스 문자·옛 글자·수식 기호 등)는 점자를 추측해서 만들지 않고 '지원 안 함'으로 표시한다.
+// 지원 범위: 제1장 자모(제1~12항), 제2장 약자·약어(제13~18항), 제4장 로마자 중 대문자 약어(제28~36항, 2026-11-21), 제5장 숫자(제40~44항), 제6장 문장 부호 일부(제49항).
+// 지원하지 않는 글자(소문자가 섞인 영어 단어·그리스 문자·옛 글자·수식 기호 등)는 점자를 추측해서 만들지 않고 '지원 안 함'으로 표시한다.
 (function (root) {
   'use strict';
   // ---- ASCII 점자(규정 본문 표기) ↔ 점 번호. 소문자 기호 { | } ~ 는 [ \ ] ^ 와 같은 점이다. ----
@@ -94,6 +94,59 @@
   }
   function pushJong(out, jong) { out.push({ cells: brfCells(JONG[jong]), kind: '받침', rule: jong.length && SPLIT_JONG[jong] ? (jong === 'ㄲ' ? '제4항' : '제5항') : (jong === 'ㅆ' ? '제4항' : '제3항') }); }
 
+  // ---- 제4장 로마자(제28~35항): 대문자 약어만(2026-11-21) ----
+  // 국어 문장 속 로마자는 「통일영어점자」로 적는데(제28·32항), 소문자 단어는 영어 약자(2급) 규칙이 많아 아직 바꾸지 않는다(지원 안 함).
+  // 대문자로만 쓴 약어(KTX, TV, USB, CD, MP3, KF94, A4, D-100, 로마 숫자 II·V 등)만 규정 예시대로 바꾼다:
+  //   로마자표(356) … 로마자 종료표(256) (제29항), 대문자 한 글자 = 대문자표(6), 두 글자 이상 = 대문자 단어표(6,6) (제28항 붙임),
+  //   영어 줄임말(shortform)과 같은 글자 조합(CD = could 등)이나 홀로 쓴 한 글자 앞에는 1급 점자표(56) (통일영어점자, 규정 예시 「CD 1장」·「George V」),
+  //   종료표를 적지 않는 경우: 뒤에 숫자(제35항), , : ; ― (제33항), . ? ! (제33항 다만), 닫는 따옴표·괄호(제34항). / - ~ 앞에는 적는다(제33항 다만).
+  const RO_SIGN = '0', RO_END = '4', RO_CAP = ',', RO_CAPW = ',,', RO_G1 = ';';
+  // 글자만으로 된 통일영어점자 줄임말(shortform) — 같은 글자 조합의 약어는 1급 점자표가 필요하다
+  const LETTER_SHORTFORMS = new Set('ab abv ac acr af afn afw ag al alm alr alt alw bl brl cd dcl dclg dcv dcvg ei fr gd grt hm hmf imm lr ll myf nec nei pd qk rcv rcvg rjc rjcg sd td tgr tm tn wd xf xs yr yrf yrvs'.split(' '));
+  const RO_WORD_OK = new Set(['WHO']);   // 규정 예시(제33항)에서 약자 없이 그대로 쓴 대문자 약어
+  // 세 글자 이상 대문자 단어에 영어 약자(묶음 약자)가 들어갈 수 있는 글자 조합이 있으면(OPEN·STOP 같은 낱말일 수 있음) 바꾸지 않는다
+  const roRisky = w => /TH|SH|CH|WH|GH|ED|ER|OU|OW|ST|AR|ING|EN|IN|THE|AND|FOR|OF|WITH/.test(w) || /.(EA|BB|CC|FF|GG)./.test(w) || /^(BE|CON|DIS|COM)/.test(w);
+  const isRoL = c => /[A-Za-z]/.test(c || ''), isDg = c => /[0-9]/.test(c || '');
+  // chars[i]부터 로마자 덩어리(대문자 단어·숫자·단어 사이 빈칸, KBS 1 TV / LP 1장 / D-100)를 읽는다
+  function romanRun(chars, i, closingNext) {
+    const toks = []; let j = i;
+    for (;;) {
+      if (!isRoL(chars[j])) break;
+      let k = j; while (isRoL(chars[k])) k++;
+      toks.push({ t: 'w', s: chars.slice(j, k).join('') }); j = k;
+      if (chars[j] === '-' && isDg(chars[j + 1])) { toks.push({ t: 'h' }); j++; }
+      if (isDg(chars[j])) { let m = j; while (isDg(chars[m])) m++; toks.push({ t: 'n', s: chars.slice(j, m).join('') }); j = m; }
+      if (chars[j] === ' ' && isRoL(chars[j + 1])) { toks.push({ t: 's' }); j++; continue; }
+      if (chars[j] === ' ' && isDg(chars[j + 1]) && toks[toks.length - 1].t === 'w') {
+        let m = j + 1; while (isDg(chars[m])) m++;
+        if (chars[m] === ' ' && isRoL(chars[m + 1])) { toks.push({ t: 's' }, { t: 'n', s: chars.slice(j + 1, m).join('') }, { t: 's' }); j = m + 1; continue; }   // KBS 1 TV
+        if (!isRoL(chars[m])) { toks.push({ t: 's' }, { t: 'n', s: chars.slice(j + 1, m).join('') }); j = m; }   // LP 1장(제35항)
+      }
+      break;
+    }
+    const words = toks.filter(t => t.t === 'w');
+    const ok = words.length <= 2 && words.every(w => /^[A-Z]+$/.test(w.s) && w.s.length <= 5 && (w.s.length < 3 || RO_WORD_OK.has(w.s) || !roRisky(w.s)));
+    if (!ok) return { ok: false, end: j };
+    const out = [], P = (brf, text, kind, rule) => brfCells(brf).forEach(d => out.push({ dots: d, text, kind, rule }));
+    P(RO_SIGN, '로마자표', '로마자표', '제29항');
+    toks.forEach((t, n) => {
+      if (t.t === 's') out.push({ dots: [], text: ' ', kind: '띄어쓰기', rule: '' });
+      else if (t.t === 'h') P('-', '-', '붙임표', '제32항');
+      else if (t.t === 'n') { P(NUM_SIGN, '수표', '수표', '제35항'); for (const d of t.s) P(DIGIT[d], d, '숫자', '제35항'); }
+      else {
+        const nx = toks[n + 1], alone = !nx || nx.t === 's';   // 뒤에 숫자·붙임표가 붙지 않고 홀로
+        const one = t.s.length === 1;
+        if (alone && ((one && !'AIO'.includes(t.s) && n > 0) || LETTER_SHORTFORMS.has(t.s.toLowerCase()))) P(RO_G1, '1급표', '1급 점자표', '제32항');
+        P(one ? RO_CAP : RO_CAPW, '대문자', one ? '대문자표' : '대문자 단어표', '제28항');
+        for (const c of t.s) P(c.toLowerCase(), c, '로마자', '제28항');
+      }
+    });
+    const endsNum = toks[toks.length - 1].t === 'n', nc = chars[j];
+    const noEnd = endsNum || (nc !== undefined && (',:;―.?!'.includes(nc) || closingNext(nc)));
+    if (!noEnd) P(RO_END, '종료표', '로마자 종료표', '제29항');
+    return { ok: true, end: j, cells: out, endsNum };
+  }
+
   const WORDS = Object.keys(ABBR_WORDS);
   // 텍스트 → { cells:[{dots, text, kind, rule}], unsupported:[...], rules:Set }
   function convert(text, opts) {
@@ -101,10 +154,21 @@
     const cells = [], unsupported = [], warnings = [];
     const push = (arr, text0, kind, rule) => { for (const c of arr) cells.push({ dots: c, text: text0, kind, rule }); };
     const chars = [...String(text)];
-    let i = 0, inNumber = false, quoteOpen = false, squoteOpen = false;
+    let i = 0, inNumber = false, quoteOpen = false, squoteOpen = false, roBadUntil = -1;
     const sylAt = k => (chars[k] !== undefined ? decompose(chars[k]) : null);
+    // 로마자 덩어리 바로 뒤가 닫는 따옴표·괄호인지(제34항: 그때는 로마자 종료표를 적지 않는다)
+    const closingNext = c => '”’)]}』」》〉'.includes(c) || (c === '"' && quoteOpen) || (c === "'" && squoteOpen);
     while (i < chars.length) {
       const ch = chars[i];
+      // 제4장 로마자: 대문자 약어는 바꾸고, 그 밖의 영어(소문자가 섞인 단어 등)는 덩어리째 「지원 안 함」
+      if (isRoL(ch)) {
+        if (i >= roBadUntil) {
+          const r = romanRun(chars, i, closingNext);
+          if (r.ok) { cells.push(...r.cells); i = r.end; inNumber = r.endsNum; continue; }
+          roBadUntil = r.end;
+        }
+        unsupported.push(ch); cells.push({ dots: [], text: ch, kind: '지원 안 함', rule: '', unsupported: true }); i++; inNumber = false; continue;
+      }
       // 제18항 약어: 앞에 한글이 붙어 있지 않을 때, 뒤에는 무엇이 붙어도 된다
       if (contract && !isSyl(chars[i - 1])) {
         const w = WORDS.find(x => chars.slice(i, i + x.length).join('') === x);

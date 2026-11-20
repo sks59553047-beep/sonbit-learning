@@ -50,7 +50,8 @@ function renderLearnPanel() {
   // 작업자님이 정한 문구(2026-11-20): 「돼요.」에서 줄을 바꿔 두 줄로
   const span = fmtSpan(totalDur(vs)), last = span.charCodeAt(span.length - 1) - 0xAC00;
   const ieyo = last >= 0 && last % 28 ? '이에요' : '예요';   // 「13분 9초예요」「13분이에요」
-  $('#learnSub').textContent = `한글 점자를 차례로 익히는 영상이에요. 위에서부터 보면 돼요.\n${vs.length}편을 모두 보면 ${span}${ieyo}.${intro.length ? ` 처음이라면 학습 페이지 「기초 영상」의 「${shortName(intro[0])}」부터 보세요.` : ''}`;
+  const life = vs.some(v => v.id === 'v12-braille-life');   // 2026-11-21: 맨 끝 「생활 속 점자」는 ①~⑥과 달리 주변의 점자를 찾아보는 영상
+  $('#learnSub').textContent = `한글 점자를 차례로 익히는 영상이에요. 위에서부터 보면 돼요.\n${vs.length}편을 모두 보면 ${span}${ieyo}.${life ? ' 마지막 「생활 속 점자」는 주변에서 점자를 찾아보는 영상이에요.' : ''}${intro.length ? ` 처음이라면 학습 페이지 「기초 영상」의 「${shortName(intro[0])}」부터 보세요.` : ''}`;
   $('#learnList').innerHTML = vs.map(v => vrowHtml(v, next)).join('');
 }
 function bindVideoLinks(root) {
@@ -79,7 +80,7 @@ function roadmapFor(track) {
   } else {
     steps = [
       basic,
-      { title: '점자 교육 영상 보기', sub: `한글 점자 ①~⑥ ${lv.length}편 · ${prog(lv)}`, vids: lv, act: 'braillelearn' },
+      { title: '점자 교육 영상 보기', sub: `점자 영상 ${lv.length}편 · ${prog(lv)}`, vids: lv, act: 'braillelearn' },
       { title: '점자 연습 패드·변환기 써 보기', sub: '내 이름을 점자로 바꿔 보기', nav: 'braille', did: 'braille' },
       { title: '점자 퀴즈로 복습', sub: '읽기와 쓰기 문제', nav: 'quiz', did: 'quiz-braille', review: wrongOf(['br', 'bu']) }
     ];

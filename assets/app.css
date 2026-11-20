@@ -656,3 +656,26 @@ body.quizback-on main{padding-bottom:calc(160px + env(safe-area-inset-bottom,0px
 .vpick video{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;background:#000;border:2px solid var(--teal);border-radius:14px}
 /* 퀴즈 위 단추 줄: 「잠시 나가기·끝내기」는 한 묶음으로(좁은 화면에서 「끝내기」만 아랫줄로 떨어지지 않게, 2026-11-20) */
 .qtools .qexit{display:flex;gap:8px;margin-left:auto}
+
+/* ---------- 생활 속 점자(2026-11-21) ---------- */
+/* 점자 탭 버튼 다섯 개: 휴대폰은 두 줄(3개 + 2개), 넓은 화면은 한 줄 */
+#bpSeg{display:grid;grid-template-columns:repeat(6,1fr)}
+#bpSeg button{grid-column:span 2}
+#bpSeg button:nth-child(n+4){grid-column:span 3}
+@media (min-width:600px){ #bpSeg{display:flex} }
+.lifelist{display:grid;gap:12px;margin-top:14px}
+@media (min-width:760px){ .lifelist{grid-template-columns:repeat(2,minmax(0,1fr))} }
+.lifecard{display:flex;flex-direction:column;gap:10px;margin:0}
+.lifehead{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.lifehead h3{margin:0;font-size:1.125rem;font-weight:800;color:var(--ink)}
+.lifewords{display:flex;flex-wrap:wrap;gap:8px}
+.lifeword{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:8px 10px;border:1px solid var(--line);border-radius:12px;background:var(--surface2);color:var(--ink);font:inherit;cursor:pointer;text-align:left}
+.lifeword:hover{border-color:var(--teal)}
+.lifeword:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+.lifeword .lw{font-size:1rem;font-weight:800}
+.lifeword .lcells{display:flex;flex-wrap:wrap;gap:4px}
+.lifeword .mini{padding:4px;gap:2px;border-radius:6px}
+.lifeword .mini i{width:8px;height:8px;border-width:1px}
+.lifesay{margin:0;font-size:1rem;line-height:1.65;color:var(--ink)}
+.lifesrc{margin:0;font-size:0.875rem;line-height:1.6;color:var(--muted)}
+.lifesrc a{color:var(--teal);font-weight:700}

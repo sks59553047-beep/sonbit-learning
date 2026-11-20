@@ -9,8 +9,8 @@ const home = async () => { await c.fresh(BASE + '?hl=' + Date.now(), 2600); };
 
 await home();
 const hero = await ev(`(() => { const h = document.querySelector('#view-home .hero'); const subs = [...h.querySelectorAll('.hsub')].map(p => p.textContent.replace(/\\s+/g, ' ').trim()); return { t: h.querySelector('h2').textContent, subs, head: h.querySelector('.hcanh')?.textContent || '', rows: [...h.querySelectorAll('.hcan .hrow')].map(b => ({ n: b.querySelector('b').textContent, d: b.querySelector(':scope > span:not(.hi)').textContent.replace(/\\s+/g, ' ') })), boxes: h.querySelectorAll('.hfeat').length, start: h.querySelector('.hstart')?.textContent || '', inputs: h.querySelectorAll('input').length } })()`);
-check('L1 맨 위 카드(2026-11-21): 제목 「수어와 점자를 처음 배우는 곳」, 누구를 위한 무료 사이트인지, 「여기서 할 수 있는 것」 = 아래 탭 네 줄(학습 기초 영상 4편·수어 1,190개·점자 영상 6편·퀴즈), 시작 단추(상자 목록·검색칸 없음)',
-  /수어와 점자를처음 배우는 곳/.test(hero.t) && hero.subs.length === 1 && /농인·시각장애인/.test(hero.subs[0]) && /무료/.test(hero.subs[0]) && /할 수 있는 것/.test(hero.head) && hero.rows.map(r => r.n).join() === '학습,수어,점자,퀴즈' && /4편/.test(hero.rows[0].d) && /1,190개/.test(hero.rows[1].d) && /6편/.test(hero.rows[2].d) && hero.boxes === 0 && /기초 영상부터/.test(hero.start) && hero.inputs === 0, JSON.stringify(hero));
+check('L1 맨 위 카드(2026-11-21): 제목 「수어와 점자를 처음 배우는 곳」, 누구를 위한 무료 사이트인지, 「여기서 할 수 있는 것」 = 아래 탭 네 줄(학습 기초 영상 4편·수어 1,190개·점자 영상 7편·퀴즈), 시작 단추(상자 목록·검색칸 없음)',
+  /수어와 점자를처음 배우는 곳/.test(hero.t) && hero.subs.length === 1 && /농인·시각장애인/.test(hero.subs[0]) && /무료/.test(hero.subs[0]) && /할 수 있는 것/.test(hero.head) && hero.rows.map(r => r.n).join() === '학습,수어,점자,퀴즈' && /4편/.test(hero.rows[0].d) && /1,190개/.test(hero.rows[1].d) && /7편/.test(hero.rows[2].d) && hero.boxes === 0 && /기초 영상부터/.test(hero.start) && hero.inputs === 0, JSON.stringify(hero));
 const order = await ev(`(() => { const v = document.querySelector('#view-home'); const ids = ['.hero', '#homeVideos', '#roadList', '#recordCard', '#sourceCard']; const els = ids.map(s => v.querySelector(s)); return els.every(Boolean) && els.every((e, i) => i === 0 || (els[i - 1].compareDocumentPosition(e) & 4)) })()`);
 check('L2 순서: 소개 카드 → 기초 영상 → 학습 로드맵 → 내 학습 기록 → 자료 출처', order === true);
 check('L3 찾기 칸·바로 가기 줄은 없음(찾기는 아래 수어·점자 탭)', (await ev(`document.querySelectorAll('#view-home form, #view-home .homequick').length`)) === 0);
@@ -19,7 +19,7 @@ check('L4 첫 화면 글이 예전보다 짧음(900자 이하, 예전 약 1,400�
 check('L5 기초 영상 4편, 설명은 한 줄로', (await ev(`document.querySelectorAll('#homeVideoList .vrow').length`)) === 4 && (await ev(`getComputedStyle(document.querySelector('#homeVideoList .vdesc')).webkitLineClamp`)) === '1');
 check('L6 「자료 출처」는 처음엔 접혀 있음', (await ev(`!document.querySelector('#sourceCard').open`)) && (await ev(`!document.querySelector('#sourceCard .sourcelist').checkVisibility()`)));
 await ev(`document.querySelector('#sourceCard summary').click()`); await sleep(200);
-check('L7 누르면 펼쳐져 출처 4줄(국립국어원·서울복지포털·점자 규정·교육 영상)', (await ev(`document.querySelector('#sourceCard').open`)) && (await ev(`document.querySelectorAll('#sourceCard .sourcelist li').length`)) === 4 && /서울복지포털 「수어 표준사전」/.test(await ev(`document.querySelector('#sourceCard').textContent`)));
+check('L7 누르면 펼쳐져 출처 5줄(국립국어원·서울복지포털·점자 규정·생활 속 점자·교육 영상)', (await ev(`document.querySelector('#sourceCard').open`)) && (await ev(`document.querySelectorAll('#sourceCard .sourcelist li').length`)) === 5 && /서울복지포털 「수어 표준사전」/.test(await ev(`document.querySelector('#sourceCard').textContent`)));
 // 소개 세 줄은 누르면 그 화면으로(2026-11-20 사람처럼 써 보기에서 「버튼처럼 보이는데 반응 없음」)
 const goes = [];
 for (const [i, want] of [[0, 'view-home'], [1, 'view-sign'], [2, 'view-braille'], [3, 'view-quiz']]) {

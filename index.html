@@ -187,7 +187,7 @@
           <p class="note amber" style="margin-top:8px">규정에 나온 예시 227개로 맞는지 확인했지만, 전문가 검수는 아직 받지 않았어요. 인쇄나 점역에 쓸 때는 점자도서관 같은 곳에서 한 번 더 확인해 주세요. 로마자와 수식은 바꾸지 않아요.</p>
         </div>
         <div class="card" id="bpResult">
-          <div id="bpSummary" class="note">글자를 입력하면 여기에 몇 칸인지 나와요</div>
+          <div class="bpsumrow"><div id="bpSummary" class="note">글자를 입력하면 여기에 몇 칸인지 나와요</div><button class="btn ghost small" id="bpCopyTop" type="button" hidden>점자 복사</button></div>
           <div id="bpWarn" class="note amber" style="margin-top:8px" hidden></div>
           <p class="bplegend" id="bpLegend" hidden></p>
           <div class="cellsrow" id="bpCells" style="margin-top:14px"></div>
@@ -277,6 +277,9 @@
     </section>
 
   </main>
+
+  <!-- 퀴즈 해설에서 점자 연습·바꾸기·수어 사전으로 갔을 때만 보인다(2026-11-21) -->
+  <button class="btn primary quizback" id="quizBack" type="button" hidden>‹ 퀴즈로 돌아가기</button>
 
   <nav class="navbar" aria-label="주요 화면 이동">
     <div class="navinner">

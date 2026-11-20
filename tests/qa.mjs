@@ -74,7 +74,7 @@ async function runQuiz(kind, level = 2, scope = 'all', n = 10) {
     else {
       const opts = await num(`document.querySelectorAll('#quizOpts [data-opt]').length`);
       if (opts !== 4) return 'q' + i + ' 보기 ' + opts + '개';
-      await ev(`document.querySelector('#quizOpts [data-opt]:not([disabled])').click()`);
+      await ev(`document.querySelector('#quizOpts [data-opt]:not([disabled])').click();document.querySelector('#pickGo')?.click()`);
     }
     if ((await ev(`!!document.querySelector('#quizNext')`)) !== true) return 'q' + i + ' 다음 버튼 없음';
     await ev(`document.querySelector('#quizNext').click()`); await sleep(120);

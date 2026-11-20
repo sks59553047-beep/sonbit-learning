@@ -33,17 +33,25 @@ let pickDone = false, videoDone = false;
 for (let i = 0; i < 10 && !(pickDone && videoDone); i++) {
   const kind = await ev(`document.querySelector('.vgrid')?'영상 고르기':'영상 보고 뜻'`);
   if ((kind === '영상 고르기' && pickDone) || (kind === '영상 보고 뜻' && videoDone)) {
-    await ev(`document.querySelector('#quizOpts [data-opt]').click()`); await sleep(150); await ev(`document.querySelector('#quizNext').click()`); await sleep(300); continue;
+    await ev(`document.querySelector('#quizOpts [data-opt]').click();document.querySelector('#pickGo')?.click()`); await sleep(150); await ev(`document.querySelector('#quizNext').click()`); await sleep(300); continue;
   }
   await ev(`document.querySelector('#quizQ').focus()`);
   const toOpt = await tabTo(isOpt);
   const optName = await active();
   await press('Enter'); await sleep(400);
+  let pickNote = '';
+  if (kind === '영상 고르기') {   // 2026-11-21: Enter 는 고르기(크게 보기) → Tab 으로 「이 영상으로 답하기」 → Enter 로 답
+    const sel = await ev(`document.activeElement.getAttribute('aria-pressed') === 'true' && !document.querySelector('#vPick').hidden && !document.querySelector('#quizFeedback .qfeedback')`);
+    const toGo = await tabTo(`a => a.id === 'pickGo'`);
+    pickNote = ` · Enter 로 고름=${sel}, 「이 영상으로 답하기」까지 Tab ${toGo}번`;
+    if (!sel || toGo < 0) { check('K2 영상 고르기: Enter 로 고르고 「이 영상으로 답하기」로 답', false, pickNote); }
+    await press('Enter'); await sleep(400);
+  }
   const fb = await active(), fbShown = await ev(`!!document.querySelector('#quizFeedback .qfeedback')`);
   const toNext = await tabTo(isNext);
   await press('Enter'); await sleep(500);
   const after = await active(), num = await ev(`document.querySelector('#quizQ')?.textContent`);
-  log.push(`${kind}: 문제 제목→첫 보기 Tab ${toOpt}번(${optName}) · Enter 후 포커스 ${fb} · 해설→「다음 문제로」 Tab ${toNext}번 · 다음 문제 포커스 ${after} (${num})`);
+  log.push(`${kind}: 문제 제목→첫 보기 Tab ${toOpt}번(${optName})${pickNote} · Enter 후 포커스 ${fb} · 해설→「다음 문제로」 Tab ${toNext}번 · 다음 문제 포커스 ${after} (${num})`);
   const ok = toOpt > 0 && fbShown && fb === 'div#quizFeedback' && toNext > 0 && after === 'span#quizQ';
   check(`K2 ${kind}: Tab 으로 보기 → Enter 로 답 → 해설 → Enter 로 다음 문제`, ok, log[log.length - 1]);
   if (kind === '영상 고르기') pickDone = true; else videoDone = true;
@@ -65,7 +73,7 @@ await ev(`document.querySelector('[data-quiz="braille"]').focus()`); await press
 const bOpt = await tabTo(isOpt); await press('Enter'); await sleep(300);
 check('K4 점자 읽기: Tab 으로 보기 → Enter 로 답 → 해설로 포커스', bOpt > 0 && (await active()) === 'div#quizFeedback', `제목→첫 보기 Tab ${bOpt}번`);
 // 결과 화면: 결과 점수에 포커스
-for (let i = 0; i < 12; i++) { const nx = await ev(`!!document.querySelector('#quizNext')`); if (!nx) { const o = await ev(`!!document.querySelector('#quizOpts [data-opt]:not([disabled])')`); if (!o) break; await ev(`document.querySelector('#quizOpts [data-opt]:not([disabled])').click()`); await sleep(120); } await ev(`document.querySelector('#quizNext')?.click()`); await sleep(200); }
+for (let i = 0; i < 12; i++) { const nx = await ev(`!!document.querySelector('#quizNext')`); if (!nx) { const o = await ev(`!!document.querySelector('#quizOpts [data-opt]:not([disabled])')`); if (!o) break; await ev(`document.querySelector('#quizOpts [data-opt]:not([disabled])').click();document.querySelector('#pickGo')?.click()`); await sleep(120); } await ev(`document.querySelector('#quizNext')?.click()`); await sleep(200); }
 check('K5 결과 화면이 뜨면 포커스가 점수로', (await active()).startsWith('div') && (await ev(`document.activeElement.classList.contains('score')`)) === true, await active());
 console.log(log.join('\n'));
 check('K6 JS 오류 없음', c.errs.length === 0, c.errs.join(' | '));

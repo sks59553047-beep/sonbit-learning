@@ -175,7 +175,7 @@ function renderQuiz() {
   saveRun();
   const hints = chal ? '' : `${build ? '' : '<button class="btn ghost small" type="button" id="hintCut">보기 하나 지우기</button>'}<button class="btn ghost small" type="button" id="hintText">힌트 보기</button>`;
   const opts = build ? `<div style="margin-top:16px">${buildCellsHtml(q)}</div><button class="btn primary block" type="button" id="buildCheck" style="margin-top:16px">확인하기</button>`
-    : pick ? `<div class="vgrid" id="quizOpts" role="group" aria-label="영상 4개 중에서 고르세요" style="margin-top:16px">${q.clips.map(clipHtml).join('')}</div>`
+    : pick ? `<p class="note vpickhow" style="margin-top:14px">영상을 누르면 아래에 크게 보여요. 고른 뒤 「이 영상으로 답하기」를 누르세요.</p><div class="vgrid" id="quizOpts" role="group" aria-label="영상 4개 중에서 고르세요" style="margin-top:10px">${q.clips.map(clipHtml).join('')}</div>${pickBoxHtml()}`
       : `<div style="display:flex;flex-direction:column;gap:10px;margin-top:16px" id="quizOpts">${q._opts.map(quizOptHtml).join('')}</div>`;
   $('#quizArea').innerHTML = `
     <div class="quizhead">
@@ -195,7 +195,8 @@ function renderQuiz() {
 $('#quizArea').addEventListener('click', e => {
   const s = quizState; if (!s.active) return;
   const t = e.target, q = s.qs[s.i];
-  const opt = t.closest('[data-opt]'); if (opt && !opt.disabled) { answerChoice(opt, q); return; }
+  const opt = t.closest('[data-opt]'); if (opt && !opt.disabled) { if (q.clueType === 'pickvideo') pickClip(opt, q); else answerChoice(opt, q); return; }
+  if (t.closest('#pickGo')) { const b = $('#quizOpts .vopt.sel'); if (b && !b.disabled) answerChoice(b, q); return; }
   const bd = t.closest('[data-bdot]');
   if (bd && !s.answered) { const on = !bd.classList.contains('on'); bd.classList.toggle('on', on); bd.setAttribute('aria-pressed', String(on)); return; }
   if (t.closest('#buildCheck')) { if (!s.answered) answerBuild(q); return; }
@@ -206,10 +207,17 @@ $('#quizArea').addEventListener('click', e => {
   if (t.closest('#quizEndNo')) { $('#quizEndConfirm').hidden = true; return; }
   if (t.closest('#quizEndYes')) { s.ended = true; renderQuizResult(); return; }
   if (t.closest('#quizNext')) { s.i++; renderQuiz(); window.scrollTo(0, 0); return; }
+  if (t.closest('#quizConv') || t.closest('#quizPad') || t.closest('#quizRelearn')) quizReturn = true;   // 나간 화면에 「퀴즈로 돌아가기」
   if (t.closest('#quizConv')) { $('#bpInput').value = convTextOf(q); $('#bpContract').checked = true; renderBraillePanel(); store.set('track', 'braille'); go('braille'); showBraillePanel('convert'); return; }
   if (t.closest('#quizPad')) { const two = q.clue.length === 2; setPadTwo(two); padDots = new Set(q.clue[0]); padDots2 = new Set(two ? q.clue[1] : []); syncPadCell(); renderPadResult(); store.set('track', 'braille'); go('braille'); showBraillePanel('pad'); return; }
   if (t.closest('#quizRelearn')) { const w = WORD_BY_ID.get(String(q.id)); if (w) openWordInDictionary(w); return; }
   if (t.closest('#quizReplay')) { const v = $('#quizClueVideo'); if (v) { v.currentTime = 0; v.play(); } return; }
+});
+// 「퀴즈로 돌아가기」: 보던 해설과 「다음 문제로」가 보이게 돌아간다
+$('#quizBack').addEventListener('click', () => {
+  go('quiz');
+  const f = $('#quizFeedback');
+  if (f && f.innerHTML.trim()) { f.scrollIntoView({ block: 'center' }); f.focus({ preventScroll: true }); }
 });
 // ---- 힌트(연습 방식에서만) ----
 const isRightOpt = (q, v) => (q.clueType === 'pickvideo' ? String(v) === String(q.id) : v === q.answer);
@@ -220,6 +228,7 @@ function cutOption(q) {
   const b = wrong[Math.floor(Math.random() * wrong.length)];
   b.disabled = true; b.classList.add('gone'); b.setAttribute('aria-label', (b.classList.contains('vopt') ? b.getAttribute('aria-label') : b.dataset.opt) + ' (지운 보기)');
   const v = b.querySelector('video'); if (v) v.pause();
+  if (b.classList.contains('sel')) clearClipPick();   // 골라 둔 영상이 지워지면 고른 것도 없앤다
   if (left.length - 1 <= 2) $('#hintCut').disabled = true;
 }
 function hintTextFor(q) {
@@ -280,9 +289,32 @@ function revealClips(q, chosenBtn) {
     b.setAttribute('aria-label', `영상 ${i + 1}번: ${c.name}${right ? ' (정답)' : mine ? ' (내 선택)' : ''}`);
   });
 }
+// 영상 고르기(2026-11-21 실사용 평가: 작은 화면에서 자세히 보려고 영상을 누르면 그 순간 채점됐음):
+// 영상을 누르면 「고름」 표시 + 아래에 크게 보여 주고, 「이 영상으로 답하기」를 눌러야 답이 된다. 다른 영상을 누르면 바꿔 고른다
+function pickBoxHtml() {
+  return `<p class="vpickt" id="vPickT" aria-live="polite"></p><div class="vpick" id="vPick" hidden><video id="vPickVid" autoplay loop muted playsinline preload="auto" tabindex="-1" aria-hidden="true"></video><button class="btn primary block" id="pickGo" type="button">이 영상으로 답하기</button></div>`;
+}
+function pickClip(btn, q) {
+  if (quizState.answered) return;
+  const tiles = $$('.vopt', $('#quizOpts')), i = tiles.indexOf(btn), c = q.clips[i]; if (!c) return;
+  tiles.forEach(b => { const on = b === btn; b.classList.toggle('sel', on); b.setAttribute('aria-pressed', String(on)); });
+  $('#vPickT').textContent = `${i + 1}번 영상을 골랐어요. 크게 보고 맞으면 「이 영상으로 답하기」를 누르세요. 다른 영상을 누르면 바꿀 수 있어요.`;
+  const box = $('#vPick'), v = $('#vPickVid');
+  box.hidden = false;
+  if (v.dataset.clip !== String(c.id)) { v.dataset.clip = String(c.id); v.src = kslUrl(c.src); }
+  v.play().catch(() => {});
+  box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+function clearClipPick() {
+  $$('.vopt', $('#quizOpts')).forEach(b => { b.classList.remove('sel'); b.removeAttribute('aria-pressed'); });
+  const box = $('#vPick'); if (!box) return;
+  box.hidden = true; $('#vPickT').textContent = '';
+  const v = $('#vPickVid'); v.pause(); v.removeAttribute('src'); delete v.dataset.clip; v.load();
+}
 function answerChoice(btn, q) {
   if (quizState.answered) return;
   const chosen = btn.dataset.opt, correct = isRightOpt(q, chosen);
+  if (q.clueType === 'pickvideo') { clearClipPick(); const h = $('.vpickhow'); if (h) h.hidden = true; }
   $$('[data-opt]', $('#quizOpts')).forEach(b => { b.disabled = true; if (isRightOpt(q, b.dataset.opt)) b.classList.add('correct'); else if (b === btn) b.classList.add('wrong'); });
   if (q.clueType === 'pickvideo') revealClips(q, btn);
   recordAnswer(q, correct);

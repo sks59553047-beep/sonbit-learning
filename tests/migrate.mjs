@@ -35,7 +35,7 @@ check('M7 틀린 문제 복습 4문제 시작', /틀린 문제 복습 · 1 \/ 4/
 for (let i = 0; i < 4; i++) {
   const build = await ev(`!!document.querySelector('#buildCells')`);
   if (build) { await ev(`document.querySelector('#buildCells .dot').click()`); await ev(`document.querySelector('#buildCheck').click()`); }
-  else await ev(`document.querySelector('#quizOpts [data-opt]').click()`);
+  else await ev(`document.querySelector('#quizOpts [data-opt]').click();document.querySelector('#pickGo')?.click()`);
   await sleep(150); await ev(`document.querySelector('#quizNext').click()`); await sleep(200);
 }
 check('M8 복습 끝까지 풀고 결과 화면', (await ev(`!!document.querySelector('.qresult .score')`)) === true, await ev(`document.querySelector('.qresult .score')?.textContent`));

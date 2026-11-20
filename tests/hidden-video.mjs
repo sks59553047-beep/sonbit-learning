@@ -7,14 +7,15 @@ const playing = sel => ev(`JSON.stringify([...document.querySelectorAll(${JSON.s
 await c.fresh(BASE + '?f2=' + Date.now(), 2500);
 await ev(`document.querySelector('[data-nav="quiz"]').click()`); await sleep(300);
 await ev(`document.querySelector('[data-qlevel="3"]').click()`); await ev(`document.querySelector('[data-quiz="sign"]').click()`); await sleep(800);
-for (let i = 0; i < 10 && !(await ev(`!!document.querySelector('.vgrid')`)); i++) { await ev(`document.querySelector('#quizOpts [data-opt]').click()`); await sleep(150); await ev(`document.querySelector('#quizNext').click()`); await sleep(400); }
+for (let i = 0; i < 10 && !(await ev(`!!document.querySelector('.vgrid')`)); i++) { await ev(`document.querySelector('#quizOpts [data-opt]').click();document.querySelector('#pickGo')?.click()`); await sleep(150); await ev(`document.querySelector('#quizNext').click()`); await sleep(400); }
 await sleep(1500);
-const p0 = await playing('#quizArea video');
+const p0 = await playing('#quizOpts video');
 await ev(`document.querySelector('[data-nav="home"]').click()`); await sleep(1200);
-const p1 = await playing('#quizArea video');
+const p1 = await playing('#quizOpts video');
 check('1-1 퀴즈에서 학습 탭으로 가면 퀴즈 영상 4개가 멈춤', p0 === '[true,true,true,true]' && p1 === '[false,false,false,false]', `전 ${p0} → 후 ${p1}`);
 await ev(`document.querySelector('[data-nav="quiz"]').click()`); await sleep(1200);
-check('1-2 퀴즈로 돌아오면 영상 4개가 다시 재생', (await playing('#quizArea video')) === '[true,true,true,true]', await playing('#quizArea video'));
+check('1-2 퀴즈로 돌아오면 영상 4개가 다시 재생', (await playing('#quizOpts video')) === '[true,true,true,true]', await playing('#quizOpts video'));
+check('1-3 고르기 전의 「크게 보기」 영상(숨김)은 돌아와도 재생하지 않음', (await ev(`document.querySelector('#vPickVid').paused`)) === true);
 await ev(`document.querySelector('[data-nav="sign"]').click()`); await sleep(300);
 await ev(`document.querySelector('[data-topic="인사·예절"]').click()`); await sleep(300);
 await ev(`(()=>{const d=document.querySelector('#signList .wordrow');d.open=true})()`); await sleep(800);

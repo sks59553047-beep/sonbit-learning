@@ -131,6 +131,7 @@ function renderBraillePanel() {
   $('#bpLegend').hidden = !used.length; $('#bpLegend').textContent = used.map(k => `${k}: ${KIND_HELP[k]}`).join(' · ');
   const uni = cells.map(c => (c.kind === '띄어쓰기' ? ' ' : (c.unsupported ? '?' : dotsToUnicode(c.dots)))).join('');
   $('#bpOutWrap').hidden = !text; $('#bpOut').textContent = uni; $('#bpOutNote').hidden = !bad;
+  $('#bpCopyTop').hidden = !text;
   if (text) markDid('braille');
 }
 // 점자 칸 아래 이름: 규정 용어(초성·중성) 대신 쉬운 말로. 칸에 마우스를 올리면(title) 규정 용어와 조항이 그대로 나온다
@@ -138,7 +139,7 @@ const KIND_WORD = { '초성': '첫소리', '중성': '모음', '종성': '받침
 function kindPlain(k) { const b = String(k).replace(/\(.*\)/, ''); return KIND_WORD[b] || b; }
 const KIND_HELP = {
   '첫소리': '글자 맨 앞 자음(초성)', '모음': 'ㅏ·ㅓ 같은 가운데 소리(중성)', '받침': '글자 아래 자음(종성)',
-  '약자': '자주 쓰는 글자를 한 칸으로 줄여 쓴 것', '약어': '「그래서」 같은 낱말을 두 칸으로 줄여 쓴 것',
+  '약자': '자주 쓰는 글자를 줄여 쓴 것(대부분 한 칸, 것·성·정·청은 두 칸)', '약어': '「그래서」 같은 낱말을 두 칸으로 줄여 쓴 것',
   '된소리표': 'ㄲ·ㄸ처럼 된소리 앞에 붙이는 칸', '수표': '여기부터 숫자라는 표시', '자릿점': '숫자 사이 쉼표', '소수점': '숫자 사이 마침표', '낱자': '글자 없이 따로 쓴 자음·모음'
 };
 $('#bpInput').addEventListener('input', renderBraillePanel);
@@ -146,11 +147,18 @@ $('#bpContract').addEventListener('change', renderBraillePanel);
 const BP_EXAMPLES = ['그래서 가나다', '성정청 억울한 것', '2025년 3월 1일', '안녕하세요.'];
 $('#bpExamples').innerHTML = BP_EXAMPLES.map(t => `<button class="chip" type="button" data-ex="${esc(t)}">${esc(t)}</button>`).join('');
 $('#bpExamples').addEventListener('click', e => { const b = e.target.closest('[data-ex]'); if (!b) return; $('#bpInput').value = b.dataset.ex; renderBraillePanel(); });
-$('#bpCopy').addEventListener('click', () => {
+// 복사 단추는 둘: 결과 맨 아래(점자 문자 옆)와 칸 수 안내 옆(2026-11-21 실사용 평가: 긴 글은 아래 단추가 화면 몇 쪽 아래에 있음)
+function copyBraille(btn, label) {
   const t = $('#bpOut').textContent;
-  (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => { $('#bpCopy').textContent = '복사했어요'; setTimeout(() => { $('#bpCopy').textContent = '복사'; }, 1500); })
-    .catch(() => { const r = document.createRange(); r.selectNodeContents($('#bpOut')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); $('#bpCopy').textContent = '선택됐어요 — 직접 복사하세요'; });
-});
+  (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => { btn.textContent = '복사했어요'; setTimeout(() => { btn.textContent = label; }, 1500); })
+    .catch(() => {
+      const r = document.createRange(); r.selectNodeContents($('#bpOut')); const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+      btn.textContent = '선택됐어요 — 직접 복사하세요';
+      if (btn.id === 'bpCopyTop') $('#bpOut').scrollIntoView({ block: 'center' });   // 골라 둔 점자 글이 보이게
+    });
+}
+$('#bpCopy').addEventListener('click', () => copyBraille($('#bpCopy'), '복사'));
+$('#bpCopyTop').addEventListener('click', () => copyBraille($('#bpCopyTop'), '점자 복사'));
 // ---- 점자 표(규정 표를 엔진과 같은 표에서 만든다) ----
 const TABLE_GROUPS = ['첫소리', '모음', '받침', '숫자', '약자·약어', '문장부호'];
 let tableGroup = store.get('tgroup', '첫소리'); if (!TABLE_GROUPS.includes(tableGroup)) tableGroup = '첫소리';

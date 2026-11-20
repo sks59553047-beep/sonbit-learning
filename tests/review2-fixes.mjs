@@ -53,7 +53,7 @@ check('3-2 틀린 문제 150개 → 100개만 보관, 50개는 못 넣었다고 
 await c.fresh(BASE + '?f6d=' + Date.now(), 2500);
 await ev(`document.querySelector('[data-nav="quiz"]').click()`); await sleep(300);
 await ev(`document.querySelector('[data-quiz="braille"]').click()`); await sleep(500);
-for (let k = 0; k < 2; k++) { await ev(`document.querySelector('#quizOpts [data-opt]').click()`); await sleep(150); await ev(`document.querySelector('#quizNext').click()`); await sleep(300); }
+for (let k = 0; k < 2; k++) { await ev(`document.querySelector('#quizOpts [data-opt]').click();document.querySelector('#pickGo')?.click()`); await sleep(150); await ev(`document.querySelector('#quizNext').click()`); await sleep(300); }
 const optsBefore = await ev(`JSON.stringify([...document.querySelectorAll('#quizOpts [data-opt]')].map(b=>b.dataset.opt))`);
 await ev(`document.querySelector('#quizPause').click()`); await sleep(300);
 await ev(`document.querySelector('[data-nav="home"]').click()`); await sleep(400);

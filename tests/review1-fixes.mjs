@@ -15,7 +15,7 @@ await c.fresh(BASE + '?fx=' + Date.now(), 2500);
 await c.click('[data-nav="quiz"]'); await sleep(300);
 await c.click('[data-qlevel="1"]'); await sleep(100);
 await c.click('[data-quiz="sign"]'); await sleep(500);
-await ev(`document.querySelector('#quizOpts [data-opt]').click()`); await sleep(300);
+await ev(`document.querySelector('#quizOpts [data-opt]').click();document.querySelector('#pickGo')?.click()`); await sleep(300);
 await c.click('#quizPause'); await sleep(300);
 check('F1-1 풀던 퀴즈가 있으면 퀴즈 첫 화면에 이어서 풀기가 보임', (await cnt('#qResume')) === 1 && (await vis('#qSwitch')) === false);
 await c.click('[data-quiz="braille"]'); await sleep(300);

@@ -54,7 +54,7 @@ const answerNow = () => ev(`(()=>{const r=JSON.parse(localStorage.getItem('sonbi
   if(q.t==='br'||q.t==='bu') return q.a;
   if(q.t==='pv') return String(q.i);
   const id=String(q.i); const w=KSL_WORDS.find(x=>String(x.id)===id)||(KSL_EXTRA.find(x=>'N'+x.i===id)&&{w:KSL_EXTRA.find(x=>'N'+x.i===id).w}); return w.w})()`);
-const clickOpt = async (ans, correct) => ev(`(()=>{const bs=[...document.querySelectorAll('#quizOpts [data-opt]')];const b=bs.find(x=>(x.dataset.opt===${JSON.stringify(ans)})===${correct});b.click();return b.dataset.opt})()`);
+const clickOpt = async (ans, correct) => ev(`(()=>{const bs=[...document.querySelectorAll('#quizOpts [data-opt]')];const b=bs.find(x=>(x.dataset.opt===${JSON.stringify(ans)})===${correct});b.click();document.querySelector('#pickGo')?.click();return b.dataset.opt})()`);
 await c.click('[data-nav="quiz"]'); await sleep(400);
 check('C1 퀴즈 홈: 기본은 연습', (await ev(`document.querySelector('[data-qmode="practice"]').getAttribute('aria-pressed')`)) === 'true');
 await c.click('[data-quiz="sign"]'); await sleep(500);
@@ -192,7 +192,7 @@ for (let i = 0; i < 10; i++) {
       await c.click('#hintCut'); await sleep(100);
       if ((await cnt('#quizOpts .vopt:disabled')) !== 1) pickProblems.push('보기 지우기 후 비활성 1개 아님');
       // 일부러 오답(지워지지 않은 오답 하나)
-      await ev(`(()=>{const b=[...document.querySelectorAll('#quizOpts .vopt:not([disabled])')].find(x=>x.dataset.opt!==${JSON.stringify(String(id))});b.click()})()`); await sleep(300);
+      await ev(`(()=>{const b=[...document.querySelectorAll('#quizOpts .vopt:not([disabled])')].find(x=>x.dataset.opt!==${JSON.stringify(String(id))});b.click();document.querySelector('#pickGo').click()})()`); await sleep(300);
       const tags = await ev(`[...document.querySelectorAll('#quizOpts .vtag')].map(x=>x.textContent).sort().join(',')`);
       const names = await cnt('#quizOpts .vname');
       const rightName = await ev(`document.querySelector('#quizOpts .vopt.correct .vname')?.textContent`);
@@ -201,15 +201,15 @@ for (let i = 0; i < 10; i++) {
       check('P6 오답 설명: 보기 영상 이름표·사전 버튼', /보기 영상: 1번/.test(await txt('#quizFeedback .qexplain')) && (await cnt('#quizRelearn')) === 1, (await txt('#quizFeedback .qexplain')).replace(/\s+/g, ' ').slice(0, 90));
       pickWrongChecked = true;
     } else if (!pickRightChecked) {
-      await ev(`document.querySelector('#quizOpts .vopt[data-opt="${id}"]').click()`); await sleep(300);
+      await ev(`document.querySelector('#quizOpts .vopt[data-opt="${id}"]').click();document.querySelector('#pickGo').click()`); await sleep(300);
       const tags = await ev(`[...document.querySelectorAll('#quizOpts .vtag')].map(x=>x.textContent).join(',')`);
       check('P7 영상 고르기 정답: 「정답」 글자만 표시', tags === '정답' && (await cnt('#quizFeedback .qfeedback.ok')) === 1, '태그 ' + tags);
       pickRightChecked = true;
     } else {
-      await ev(`document.querySelector('#quizOpts .vopt').click()`); await sleep(120);
+      await ev(`document.querySelector('#quizOpts .vopt').click();document.querySelector('#pickGo').click()`); await sleep(120);
     }
   } else {
-    await ev(`document.querySelector('#quizOpts [data-opt]').click()`); await sleep(120);
+    await ev(`document.querySelector('#quizOpts [data-opt]').click();document.querySelector('#pickGo')?.click()`); await sleep(120);
   }
   await c.click('#quizNext'); await sleep(250);
 }

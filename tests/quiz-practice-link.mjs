@@ -21,7 +21,7 @@ for (const it of pick) for (const t of ['bu', 'br']) {
   await ev(`localStorage.setItem('sonbit:quizrun', JSON.stringify({v:2,kind:${JSON.stringify(t === 'bu' ? 'build' : 'braille')},mode:'practice',lv:2,scope:'all',i:0,score:0,lives:3,done:0,qs:[{t:'${t}',k:'${it.k}',a:${JSON.stringify(it.a)},l:2}],wrong:[]}))`);
   await c.goto(BASE + '?ql2=' + Date.now(), 1800);
   await ev(`document.querySelector('#homeNext [data-act="resume"]').click()`); await sleep(500);
-  if (t === 'bu') await ev(`document.querySelector('#buildCheck').click()`); else await ev(`document.querySelector('#quizOpts [data-opt]').click()`);
+  if (t === 'bu') await ev(`document.querySelector('#buildCheck').click()`); else await ev(`document.querySelector('#quizOpts [data-opt]').click();document.querySelector('#pickGo')?.click()`);
   await sleep(300);
   const cells = await ev(`QZ.restore({t:'${t}',k:'${it.k}',a:${JSON.stringify(it.a)},l:2}).clue.length`);
   const label = `${t === 'bu' ? '쓰기' : '읽기'} 「${it.a}」(${cells}칸)`;

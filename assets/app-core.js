@@ -73,6 +73,10 @@ function toast(msg) {
 
 // ---------------- 라우팅 ----------------
 const VIEWS = ['home', 'sign', 'braille', 'quiz', 'player', 'board'];
+// 수어 사전에서 단어를 직접 펼치면 기록을 한 칸만 남긴다(2026-11-21 실사용 평가: 뒤로 가기 한 번 = 펼친 단어 닫기, 목록·스크롤은 그대로).
+// 'open' = 지금 기록이 펼친 단어 기록, 'stale' = 그 단어를 이미 닫았거나 목록이 바뀜(뒤로 가기를 헛누르지 않게 한 칸 더 간다), null = 없음
+let signEntry = null;
+let quizReturn = false;   // 퀴즈 해설의 「연습 패드에서 보기」·「점자로 바꿔 보기」·「사전에서 다시 보기」로 나왔는지
 const TITLES = { home: '손빛 배움터', sign: '수어 사전', braille: '점자', quiz: '퀴즈', player: '영상 보기', board: '의견 게시판' };
 function go(view, opts) {
   opts = opts || {};
@@ -80,14 +84,19 @@ function go(view, opts) {
   // 다른 화면으로 가면 안 보이는 영상(퀴즈 영상·수어 사전 영상)은 멈춘다(배터리·데이터 절약).
   // 퀴즈로 돌아오면 퀴즈의 자동 재생 영상만 다시 튼다(보기 지우기로 지운 영상은 빼고).
   $$('.view:not(.active) video').forEach(v => { if (!v.paused) v.pause(); });
-  if (view === 'quiz') $$('#quizArea video[autoplay]').forEach(v => { if (v.paused && !v.closest('.gone')) v.play().catch(() => {}); });
+  if (view === 'quiz') $$('#quizArea video[autoplay]').forEach(v => { if (v.paused && !v.closest('.gone') && !v.closest('[hidden]') && v.getAttribute('src')) v.play().catch(() => {}); });
   $$('.navbtn').forEach(b => { const on = b.dataset.nav === view; b.classList.toggle('active', on); if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
   $('#pageTitle').textContent = TITLES[view] || '손빛 배움터';
+  // 퀴즈 해설에서 점자 연습·바꾸기·수어 사전으로 왔으면 「퀴즈로 돌아가기」를 띄운다(2026-11-21 실사용 평가). 다른 화면으로 가면 지운다
+  if (view !== 'sign' && view !== 'braille') quizReturn = false;
+  const qb = quizReturn && typeof quizState !== 'undefined' && quizState.active;
+  $('#quizBack').hidden = !qb; document.body.classList.toggle('quizback-on', qb);
   if (view !== 'player') { window.scrollTo(0, 0); setPlayerSrc(''); }
   const wid = view === 'sign' && opts.arg && opts.arg.wid;   // 수어 사전의 특정 단어(#sign/번호)
   const pid = view === 'player' && opts.arg && opts.arg.id;  // 교육 영상(#player/영상번호) — 새로 고침해도 같은 영상이 열리게
   const sub = wid || pid;
-  if (opts.push !== false) history.pushState({ view, arg: opts.arg }, '', '#' + view + (sub ? '/' + encodeURIComponent(sub) : ''));
+  if (opts.push !== false) { history.pushState({ view, arg: opts.arg }, '', '#' + view + (sub ? '/' + encodeURIComponent(sub) : '')); signEntry = null; }
+  else if (view !== 'sign') signEntry = null;
   if (wid) showSignWord(wid);
   if (view === 'player' && opts.arg) openPlayer(opts.arg.id);
   if (view === 'home') renderHome();
@@ -102,7 +111,15 @@ $$('[data-nav]').forEach(el => el.addEventListener('click', () => {
   go(v);
 }));
 window.addEventListener('popstate', e => {
-  if (e.state && e.state.view) { go(e.state.view, { push: false, arg: e.state.arg }); return; }
+  const st = e.state, signOn = $('#view-sign').classList.contains('active');
+  if (signOn && st && st.view === 'sign') {
+    // 단어를 펼쳐 만든 기록에서 뒤로: 펼친 단어만 닫는다. 이미 닫혀 있으면 한 칸 더 뒤로(헛누름 없게)
+    if (signEntry && !st.wordOpen && !st.wordStale) { const had = signEntry; signEntry = null; if (had === 'open' && closeOpenWords()) return; history.back(); return; }
+    // 앞으로 가기로 그 기록에 다시 오면 그 단어를 다시 펼친다
+    if (st.wordOpen || st.wordStale) { signEntry = st.wordOpen ? 'open' : 'stale'; if (st.wordOpen) reopenWord(st.wordOpen); return; }
+  }
+  if (st && st.view) { go(st.view, { push: false, arg: st.arg }); if (st.view === 'sign' && (st.wordOpen || st.wordStale)) signEntry = st.wordOpen ? 'open' : 'stale'; return; }
+  signEntry = null;
   // 기록에 화면 정보가 없을 때(주소창에 #board/12 처럼 직접 넣었거나 처음 연 화면으로 돌아옴): 주소를 읽어 그 화면으로. 영상 화면은 영상 정보가 없어 학습으로
   const h = location.hash.slice(1).split('/')[0];
   let v = VIEWS.includes(h) ? h : 'home';

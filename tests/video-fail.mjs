@@ -41,7 +41,7 @@ check('V3 퀴즈(영상 보고 뜻): 안내 + 「끝내기」 안내 + 「다시
 await ev(`document.querySelector('#quizEnd').click()`); await sleep(100); await ev(`document.querySelector('#quizEndYes').click()`); await sleep(300);
 await ev(`document.querySelector('#quizToHub').click()`); await sleep(300);
 await ev(`document.querySelector('[data-qlevel="3"]').click()`); await ev(`document.querySelector('[data-quiz="sign"]').click()`); await sleep(800);
-for (let i = 0; i < 10 && !(await ev(`!!document.querySelector('.vgrid')`)); i++) { await ev(`document.querySelector('#quizOpts [data-opt]').click()`); await sleep(150); await ev(`document.querySelector('#quizNext').click()`); await sleep(400); }
+for (let i = 0; i < 10 && !(await ev(`!!document.querySelector('.vgrid')`)); i++) { await ev(`document.querySelector('#quizOpts [data-opt]').click();document.querySelector('#pickGo')?.click()`); await sleep(150); await ev(`document.querySelector('#quizNext').click()`); await sleep(400); }
 await sleep(2500);
 check('V4 퀴즈(영상 4개 고르기): 4칸이 모두 안 나와도 안내는 묶음 아래 한 번만', (await cnt('#quizArea .vfail')) === 1 && (await ev(`document.querySelector('.vgrid').nextElementSibling.classList.contains('vfail')`)) === true, (await cnt('#quizArea .vfail')) + '개');
 // 4) 다시 불러오기: 막은 것을 풀고 누르면 영상이 다시 나오고 안내가 사라진다

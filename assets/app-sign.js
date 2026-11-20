@@ -123,6 +123,7 @@ function searchWords(q) {
   return ALL_WORDS.filter(w => matchWord(w, q)).map((w, i) => ({ w, r: rankWord(w, q), i })).sort((a, b) => a.r - b.r || a.i - b.i).map(o => o.w);
 }
 function renderSign() {
+  markWordEntryStale();   // 목록을 새로 그리면 펼친 단어가 닫히므로, 그 기록은 「이미 닫힘」으로
   const q = signQuery.toLowerCase();
   const searching = !!normQ(q);
   const inTopic = !searching && !!signTopic;
@@ -152,7 +153,7 @@ function renderSign() {
   else list = ALL_WORDS.filter(w => w.t === signTopic).sort(byName);
   if (inTopic) {
     $('#signTopicName').textContent = (signTopic === FAV_TOPIC ? '★ ' : TOPIC_ICON[signTopic] ? TOPIC_ICON[signTopic] + ' ' : '') + signTopic;
-    if (signTopic === FAV_TOPIC && list.length) { $('#signActions').hidden = false; $('#signActions').innerHTML = `<button class="btn primary small" type="button" data-act="quizkind" data-arg="fav">단어장 퀴즈 풀기 (${list.length}개)</button>`; }
+    if (signTopic === FAV_TOPIC && list.length) { $('#signActions').hidden = false; $('#signActions').innerHTML = favQuizBtnHtml(list.length); }
     if (list.length > 40 && signTopic !== FAV_TOPIC && signTopic !== NUM_TOPIC) {
       $('#signCho').hidden = false; $('#signCho').innerHTML = choChipsHtml(list);
       if (signCho === '기타') list = list.filter(w => !CHO_MAIN.includes(firstCho(w)));
@@ -169,6 +170,18 @@ function renderSign() {
   }
   signShown = { list, searching, n: Math.min(SIGN_PAGE, list.length) };
   $('#signList').innerHTML = list.slice(0, signShown.n).map(w => wordRowHtml(w, searching)).join('') + moreBtnHtml();
+}
+function favQuizBtnHtml(n) { return `<button class="btn primary small" type="button" data-act="quizkind" data-arg="fav">단어장 퀴즈 풀기 (${n}개)</button>`; }
+// 「내 단어장」 목록에서 단어를 빼면(2026-11-21 실사용 평가: 뺀 뒤에도 단어·「퀴즈 풀기(3개)」가 그대로) 퀴즈 개수·단어 수는 바로 바꾸고,
+// 줄은 바로 지우지 않고 흐리게 「단어장에서 뺌」으로 남긴다 — 실수로 눌렀으면 그 자리에서 다시 담을 수 있게. 목록을 다시 열면 빠져 있다
+function markUnfav(row, off) {
+  row.classList.toggle('unfav', off);
+  const tag = row.querySelector('summary .unfavtag');
+  if (off && !tag) row.querySelector('summary .wname').insertAdjacentHTML('afterend', '<span class="unfavtag">단어장에서 뺌</span>');
+  if (!off && tag) tag.remove();
+  const n = favWords().length;
+  $('#signActions').hidden = !n; $('#signActions').innerHTML = n ? favQuizBtnHtml(n) : '';
+  $('#signCount').textContent = `${n}개 단어 · 눌러서 뜻과 영상 보기`;
 }
 // 목록은 150개씩 보여 주고, 끝에 「더 보기」(2026-11-20 외부 평가: 「일반 단어」 342개 중 150개만 보이던 것)
 const SIGN_PAGE = 150;
@@ -195,7 +208,7 @@ $('#signHome').addEventListener('click', e => {
 $('#signTopicBack').addEventListener('click', () => { signTopic = ''; signCho = ''; renderSign(); window.scrollTo(0, 0); });
 $('#signSearch').addEventListener('input', e => {
   signQuery = e.target.value.trim(); signPinId = ''; renderSign();
-  if (/^#sign\//.test(location.hash)) history.replaceState({ view: 'sign' }, '', '#sign');   // 다른 단어를 찾기 시작하면 주소에서 단어 번호를 뗀다
+  if (/^#sign\//.test(location.hash)) history.replaceState(signEntry ? { view: 'sign', wordStale: true } : { view: 'sign' }, '', '#sign');   // 다른 단어를 찾기 시작하면 주소에서 단어 번호를 뗀다
 });
 $('#signCho').addEventListener('click', e => { const b = e.target.closest('[data-cho]'); if (!b) return; signCho = b.dataset.cho === '전체' ? '' : b.dataset.cho; renderSign(); });
 $('#signActions').addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (b) dispatchAct(b.dataset.act, b.dataset.arg); });
@@ -241,6 +254,30 @@ async function shareWord(w, btn) {
     toast('링크를 복사하지 못했어요. 아래 칸의 주소를 길게 눌러 복사해 주세요.');
   }
 }
+// ---------- 뒤로 가기 = 펼친 단어 닫기(2026-11-21 실사용 평가) ----------
+// 단어를 직접 펼치면(줄 누르기·이전/다음 단추) 기록을 한 칸 남긴다. 여러 단어를 펼쳐도 한 칸만(뒤로 가기를 여러 번 누르지 않게).
+// 뒤로 가기·앞으로 가기 처리는 app-core.js 의 popstate 에 있다.
+function noteWordOpen(wid) {
+  const st = { view: 'sign', wordOpen: String(wid) };
+  if (signEntry) history.replaceState(st, '', location.hash);
+  else history.pushState(st, '', location.hash);
+  signEntry = 'open';
+}
+function markWordEntryStale() {
+  if (signEntry !== 'open') return;
+  history.replaceState({ view: 'sign', wordStale: true }, '', location.hash);
+  signEntry = 'stale';
+}
+function closeOpenWords() {
+  const rows = $$('#signList .wordrow[open]'); if (!rows.length) return false;
+  rows.forEach(r => { $$('video', r).forEach(v => v.pause()); r.open = false; });
+  const s = rows[rows.length - 1].querySelector('summary'); if (s) s.focus({ preventScroll: true });
+  return true;
+}
+function reopenWord(wid) {
+  const row = $(`#signList .wordrow[data-wid="${CSS.escape(String(wid))}"]`);
+  if (row) row.open = true;
+}
 $('#signList').addEventListener('toggle', e => { if (e.target.open) { fillWordBody(e.target); updateWordNav(e.target); markDid('sign'); } }, true);
 // ---------- 이전/다음 단어(2026-11-20): 펼친 단어 맨 아래에서 목록의 앞뒤 단어로 바로 넘어간다 ----------
 // 앞뒤는 지금 보이는 목록(주제·검색 결과) 순서. 마지막 단어 뒤에 「더 보기」가 남아 있으면 다음 150개를 붙이고 넘어간다.
@@ -264,10 +301,18 @@ function goWordNeighbor(det, dir) {
   $$('video', det).forEach(v => v.pause());
   det.open = false;
   nb.row.open = true;
+  noteWordOpen(nb.row.dataset.wid);
   nb.row.scrollIntoView({ block: 'start' });
   const s = nb.row.querySelector('summary'); if (s) s.focus({ preventScroll: true });
 }
 $('#signList').addEventListener('click', e => {
+  const sm = e.target.closest('summary');
+  if (sm && sm.parentElement.classList.contains('wordrow')) {
+    const row = sm.parentElement;
+    if (!row.open) noteWordOpen(row.dataset.wid);
+    else if (signEntry === 'open' && $$('#signList .wordrow[open]').length === 1) markWordEntryStale();   // 마지막 펼친 단어를 직접 닫음
+    return;
+  }
   if (e.target.closest('[data-signmore]')) { showMoreWords(); return; }
   const wn = e.target.closest('[data-wnav]');
   if (wn) { goWordNeighbor(wn.closest('.wordrow'), wn.dataset.wnav === 'prev' ? -1 : 1); return; }
@@ -279,6 +324,7 @@ $('#signList').addEventListener('click', e => {
     if (on === null) { toast('단어장에 저장하지 못했어요. ' + STORE_FAIL_WHY); return; }
     fb.setAttribute('aria-pressed', String(on)); fb.querySelector('.fl').textContent = on ? '단어장에 담김' : '단어장에 담기';
     const row = fb.closest('.wordrow'); if (row) { const m = row.querySelector('.favmark'); if (m) m.hidden = !on; }
+    if (row && signTopic === FAV_TOPIC && !normQ(signQuery.toLowerCase())) markUnfav(row, !on);
     const w = WORD_BY_ID.get(String(id)); toast(on ? `「${w ? w.w : ''}」을(를) 단어장에 담았어요` : `「${w ? w.w : ''}」을(를) 단어장에서 뺐어요`);
     return;
   }

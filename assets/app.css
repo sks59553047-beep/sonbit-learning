@@ -599,5 +599,21 @@ label.lbl2{display:block}
 .samenote{margin:0;padding:8px 12px;border-radius:10px;background:var(--surface2);font-size:0.875rem;line-height:1.6;color:var(--ink)}
 .samenote .linkbtn{margin:0 0 0 2px;padding:0;min-height:24px;font-size:0.875rem}
 .bplegend{margin:10px 0 0;font-size:0.8125rem;line-height:1.6;color:var(--muted)}
+/* 2026-11-21 실사용 평가 반영: 단어장에서 뺀 줄 · 점자 칸 수 옆 복사 · 퀴즈로 돌아가기 · 영상 고르기(고른 뒤 「이 영상으로 답하기」) */
+.wordrow.unfav>summary .wname,.wordrow.unfav>summary .wsub{opacity:.55}
+.wordrow .unfavtag{flex:none;padding:2px 8px;border-radius:999px;border:1px solid var(--line);background:var(--surface2);color:var(--muted);font-size:0.75rem;font-weight:800}
+.bpsumrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px}
+.bpsumrow>.note{flex:1 1 180px;min-width:0}
+.bpsumrow>.btn{flex:none}
+/* 좁은 휴대폰 + 큰 글씨: 제목(「손빛 배움터」·「의견 게시판」)이 「손빛 배…」로 잘려서 장식 로고를 뺀다 */
+@media (max-width:430px){ html.big-text .brand .logo{display:none} }
+.quizback{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:31;border-radius:999px;white-space:nowrap;box-shadow:0 6px 20px rgba(17,24,72,.28)}
+body.quizback-on main{padding-bottom:calc(160px + env(safe-area-inset-bottom,0px))}
+.vopt.sel{border-color:var(--teal);box-shadow:0 0 0 3px color-mix(in srgb,var(--teal) 35%,transparent)}
+.vopt.sel .vn{background:var(--teal)}
+.vpickt{max-width:560px;margin:12px auto 0;font-size:0.9375rem;font-weight:700;line-height:1.55;color:var(--ink)}
+.vpickt:empty{margin:0}
+.vpick{max-width:560px;margin:10px auto 0;display:flex;flex-direction:column;gap:10px}
+.vpick video{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;background:#000;border:2px solid var(--teal);border-radius:14px}
 /* 퀴즈 위 단추 줄: 「잠시 나가기·끝내기」는 한 묶음으로(좁은 화면에서 「끝내기」만 아랫줄로 떨어지지 않게, 2026-11-20) */
 .qtools .qexit{display:flex;gap:8px;margin-left:auto}

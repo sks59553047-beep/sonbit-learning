@@ -85,7 +85,7 @@ function go(view, opts) {
   // 다른 화면으로 가면 안 보이는 영상(퀴즈 영상·수어 사전 영상)은 멈춘다(배터리·데이터 절약).
   // 퀴즈로 돌아오면 퀴즈의 자동 재생 영상만 다시 튼다(보기 지우기로 지운 영상은 빼고).
   $$('.view:not(.active) video').forEach(v => { if (!v.paused) v.pause(); });
-  if (view === 'quiz') $$('#quizArea video[autoplay]').forEach(v => { if (v.paused && !v.closest('.gone') && !v.closest('[hidden]') && v.getAttribute('src')) v.play().catch(() => {}); });
+  if (view === 'quiz') $$('#quizArea video[autoplay]').forEach(v => { if (v.paused && !v.closest('.gone') && !v.closest('[hidden]') && v.getAttribute('src') && !(v.closest('.vopt') && $('#quizOpts .vopt.sel'))) v.play().catch(() => {}); });
   $$('.navbtn').forEach(b => { const on = b.dataset.nav === view; b.classList.toggle('active', on); if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
   $('#pageTitle').textContent = TITLES[view] || '손빛 배움터';
   // 퀴즈 해설에서 점자 연습·바꾸기·수어 사전으로 왔으면 「퀴즈로 돌아가기」를 띄운다(2026-11-21 실사용 평가). 다른 화면으로 가면 지운다
@@ -118,6 +118,12 @@ window.addEventListener('popstate', e => {
     if (signEntry && !st.wordOpen && !st.wordStale) { const had = signEntry; signEntry = null; if (had === 'open' && closeOpenWords()) return; history.back(); return; }
     // 앞으로 가기로 그 기록에 다시 오면 그 단어를 다시 펼친다
     if (st.wordOpen || st.wordStale) { signEntry = st.wordOpen ? 'open' : 'stale'; if (st.wordOpen) reopenWord(st.wordOpen); return; }
+  }
+  if (st && st.view === 'braille' && st.panel) {   // 생활 속 점자 ↔ 글자 바꾸기(뒤로·앞으로 가기)
+    go('braille', { push: false }); showBraillePanel(st.panel);
+    if (st.fromLife) $('#lifeBack').hidden = false;
+    if (st.y != null) setTimeout(() => window.scrollTo(0, st.y), 0);
+    return;
   }
   if (st && st.view) { go(st.view, { push: false, arg: st.arg }); if (st.view === 'sign' && (st.wordOpen || st.wordStale)) signEntry = st.wordOpen ? 'open' : 'stale'; return; }
   signEntry = null;
@@ -161,6 +167,17 @@ const TOPIC_ICON = { '몸·건강·긴급': '🚑', '인사·예절': '👋', '�
 const TOPICS = TOPIC_ORDER.filter(t => ALL_WORDS.some(w => w.t === t)).concat([...new Set(ALL_WORDS.map(w => w.t))].filter(t => !TOPIC_ORDER.includes(t)));
 const NUM_TOPIC = '기본 숫자';
 const FAV_TOPIC = '내 단어장';
+// 「이에요/예요」: 마지막 소리에 받침이 있으면 「이에요」, 없으면 「예요」(수 0~9는 읽는 소리 기준: 영·일·삼·육·칠·팔 = 받침). 괄호 설명은 뗀다
+const DIGIT_JONG = { 0: 1, 1: 1, 2: 0, 3: 1, 4: 0, 5: 0, 6: 1, 7: 1, 8: 1, 9: 0 };
+function eyo(s) {
+  const t = String(s).replace(/\s*[(（].*$/, '').trim(), ch = t.slice(-1);
+  if (!ch) return '예요';
+  const k = ch.charCodeAt(0) - 0xAC00;
+  if (k >= 0 && k <= 11171) return k % 28 ? '이에요' : '예요';
+  if (/[0-9]/.test(ch)) return DIGIT_JONG[ch] ? '이에요' : '예요';
+  if (/[ㄱ-ㅎ]/.test(ch)) return '이에요';   // 자음 이름(기역·니은…)은 모두 받침으로 끝난다
+  return '예요';
+}
 const CHO_LIST = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
 const CHO_MAIN = ['ㄱ', 'ㄴ', 'ㄷ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅅ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
 const CHO_FOLD = { 'ㄲ': 'ㄱ', 'ㄸ': 'ㄷ', 'ㅃ': 'ㅂ', 'ㅆ': 'ㅅ', 'ㅉ': 'ㅈ' };

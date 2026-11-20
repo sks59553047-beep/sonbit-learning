@@ -113,7 +113,7 @@ function noResultHtml(raw) {
 // 한 글자 낱말은 이름·기본형이 똑같은 것만. 낱말마다 많아야 3개(「잘 가」가 「잘하다」로 가득 차지 않게)
 const JOSA_END = /(이랑|에서|으로|한테|에게|께서|은|는|이|가|을|를|에|로|도|만|의|과|와|랑)$/;
 function partWords(p) {
-  const near = x => x.length > 1 ? searchWords(x).filter(w => rankWord(w, x) <= 2) : ALL_WORDS.filter(w => w.w === x || w.w === x + '다');   // 한 글자: 「가」·「가다」만
+  const near = x => { if (x.length > 1) return searchWords(x).filter(w => rankWord(w, x) <= 2); const ex = ALL_WORDS.filter(w => w.w === x); return ex.length ? ex : ALL_WORDS.filter(w => w.w === x + '다'); };   // 한 글자: 「가」·「가다」만
   let r = near(p);
   if (!r.length && p.length > 1 && JOSA_END.test(p)) { const s = p.replace(JOSA_END, ''); if (s) r = near(s); }
   if (!r.length && p.length > 1) r = searchWords(p);

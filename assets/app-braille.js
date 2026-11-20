@@ -35,6 +35,7 @@ const READ_ORDER = ['첫소리', '모음', '받침', '약자', '숫자(수표 �
 const BPANELS = ['convert', 'pad', 'table', 'learn', 'life'];
 function showBraillePanel(name, byUser) {
   if (!BPANELS.includes(name)) name = 'convert';
+  $('#lifeBack').hidden = true;   // 「생활 속 점자로 돌아가기」는 생활 속 점자에서 글자를 눌러 온 때만(그 뒤에 켠다)
   BPANELS.forEach(n => { $('#bp-' + n).hidden = n !== name; });
   $$('[data-bpanel]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.bpanel === name)));
   store.set('bpanel', name);
@@ -66,9 +67,18 @@ function renderLifePanel() {
 $('#lifeList').addEventListener('click', e => {
   const b = e.target.closest('[data-lifeword]'); if (!b) return;
   $('#bpInput').value = b.dataset.lifeword; $('#bpContract').checked = true; renderBraillePanel();
+  lifeY = Math.round(window.scrollY);
+  history.replaceState({ view: 'braille', panel: 'life', y: lifeY }, '', '#braille');   // 지금 자리(생활 속 점자의 이 카드)를 기록에 남기고
+  history.pushState({ view: 'braille', panel: 'convert', fromLife: true }, '', '#braille');   // 글자 바꾸기는 한 칸 더 — 뒤로 가기가 수어 사전으로 새지 않는다
   showBraillePanel('convert', true);
+  $('#lifeBack').hidden = false;
   $('#bpResult').scrollIntoView({ block: 'start' }); window.scrollBy(0, -80);
   markDid('braille');
+});
+let lifeY = 0;
+$('#lifeBack').addEventListener('click', () => {
+  if (history.state && history.state.fromLife) { history.back(); return; }
+  showBraillePanel('life', true); window.scrollTo(0, lifeY);
 });
 // ---- 연습 패드(처음엔 한 칸, 「칸 추가」를 누르면 두 칸) ----
 let padDots = new Set(), padDots2 = new Set(), padTwo = false;
@@ -166,8 +176,10 @@ function renderBraillePanel() {
   $('#bpLegend').hidden = !used.length;   // 접어 두고(열림 상태는 그대로), 펼치면 한 줄에 하나씩(2026-11-21: 한 덩어리 7줄은 읽기 힘듦)
   $('#bpLegend').innerHTML = `<summary>칸 아래 이름 뜻 (${used.length}개)</summary><ul>${used.map(k => `<li><b>${esc(k)}</b>: ${esc(KIND_HELP[k])}</li>`).join('')}</ul>`;
   const uni = cells.map(c => (c.kind === '띄어쓰기' ? ' ' : (c.unsupported ? '?' : dotsToUnicode(c.dots)))).join('');
-  $('#bpOutWrap').hidden = !text; $('#bpOut').textContent = uni; $('#bpOutNote').hidden = !bad;
-  $('#bpCopyTop').hidden = !text;
+  const none = !real.length;   // 바꾼 점자가 하나도 없으면(예: 소문자 영어만 넣음) 복사할 것이 없다 — 「???」가 복사되지 않게(2026-11-21)
+  $('#bpOutWrap').hidden = !text || none; $('#bpOut').textContent = uni; $('#bpOutNote').hidden = !bad;
+  $('#bpCopyTop').hidden = !text; $('#bpCopyTop').disabled = none; $('#bpCopyTop').textContent = none ? '복사할 점자가 없어요' : '점자 복사';
+  $('#bpCopy').textContent = '복사';
   if (text) markDid('braille');
 }
 // 점자 칸 아래 이름: 규정 용어(초성·중성) 대신 쉬운 말로. 칸에 마우스를 올리면(title) 규정 용어와 조항이 그대로 나온다
@@ -185,6 +197,7 @@ $('#bpExamples').innerHTML = BP_EXAMPLES.map(t => `<button class="chip" type="bu
 $('#bpExamples').addEventListener('click', e => { const b = e.target.closest('[data-ex]'); if (!b) return; $('#bpInput').value = b.dataset.ex; renderBraillePanel(); });
 // 복사 단추는 둘: 결과 맨 아래(점자 문자 옆)와 칸 수 안내 옆(2026-11-21 실사용 평가: 긴 글은 아래 단추가 화면 몇 쪽 아래에 있음)
 function copyBraille(btn, label) {
+  if (btn.disabled) return;
   const t = $('#bpOut').textContent;
   (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => { btn.textContent = '복사했어요'; setTimeout(() => { btn.textContent = label; }, 1500); })
     .catch(() => {

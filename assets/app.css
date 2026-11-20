@@ -691,3 +691,18 @@ details.bplegend>summary{cursor:pointer;font-size:0.875rem;font-weight:700;color
 details.bplegend ul{margin:8px 0 0;padding-left:18px;font-size:0.875rem;line-height:1.7;color:var(--ink)}
 details.bplegend li b{font-weight:800}
 .qfoot{margin:-4px 2px 0;font-size:0.8125rem;line-height:1.55;color:var(--muted)}
+
+/* 2026-11-21 사람처럼 써 보기 5차·지피티 평가 반영 */
+/* 크게 보기 영상이 너무 커서 「이 영상으로 답하기」가 화면 밖으로 밀리지 않게(높이 제한) */
+.vpick{scroll-margin-bottom:96px}
+.vpick video{width:min(100%,calc(min(46vh,380px) * 4 / 3));aspect-ratio:4/3;margin:0 auto}
+#lifeBack{margin:0 0 12px}
+/* 오늘의 수어: 휴대폰·좁은 화면(900px 미만)에서는 「여기서 할 수 있는 것」 아래에 둔다 */
+@media (max-width:899px){
+  .hero{display:flex;flex-direction:column}
+  .hintro{display:contents}
+  .hero .hintro>*{position:relative;z-index:1}
+  .hero .kick,.hero .hstart{align-self:flex-start}
+  .hcanbox{order:1}
+  .htoday{order:2;margin-top:16px}
+}

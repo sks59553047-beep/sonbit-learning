@@ -256,7 +256,7 @@ function hintTextFor(q) {
     return '점 개수: ' + q.clue.map((c, i) => `${q.clue.length > 1 ? ORD[i] + ' 칸 ' : ''}${c.length}개`).join(', ') + '예요.';
   }
   const cho = choOf(q.answer).replace(/\s+/g, '').charAt(0);
-  return `정답은 ${q.answer.replace(/\s+/g, '').length}글자예요. 첫 글자는 ${/[ㄱ-ㅎ]/.test(cho) ? '자음 「' + cho + '」으로 시작해요.' : '「' + cho + '」이에요.'}`;
+  return `정답은 ${q.answer.replace(/\s+/g, '').length}글자예요. 첫 글자는 ${/[ㄱ-ㅎ]/.test(cho) ? '자음 「' + cho + '」으로 시작해요.' : '「' + cho + '」' + eyo(cho) + '.'}`;
 }
 function showHint(q) { const h = $('#quizHint'); h.hidden = false; h.textContent = '힌트: ' + hintTextFor(q); }
 // ---- 답하기 ----
@@ -270,7 +270,7 @@ function feedbackMsgHtml(correct, q) {
   if (correct) return '정답이에요!';
   if (q.clueType === 'build') return `아쉬워요. 「${esc(q.answer)}」의 점 모양은 아래를 보세요.`;
   if (q.clueType === 'pickvideo') return `아쉬워요. 「${esc(q.answer)}」 수어는 「정답」 표시가 붙은 영상이에요.`;
-  return `아쉬워요. 정답은 「${esc(q.answer)}」예요.`;
+  return `아쉬워요. 정답은 「${esc(q.answer)}」${eyo(q.answer)}.`;
 }
 function showFeedback(q, correct, explainHtml) {
   const s = quizState;
@@ -293,12 +293,12 @@ function revealClips(q, chosenBtn) {
 // 영상 고르기(2026-11-21 실사용 평가: 작은 화면에서 자세히 보려고 영상을 누르면 그 순간 채점됐음):
 // 영상을 누르면 「고름」 표시 + 아래에 크게 보여 주고, 「이 영상으로 답하기」를 눌러야 답이 된다. 다른 영상을 누르면 바꿔 고른다
 function pickBoxHtml() {
-  return `<p class="vpickt" id="vPickT" aria-live="polite"></p><div class="vpick" id="vPick" hidden><video id="vPickVid" autoplay loop muted playsinline preload="auto" tabindex="-1" aria-hidden="true"></video><button class="btn primary block" id="pickGo" type="button">이 영상으로 답하기</button></div>`;
+  return `<p class="vpickt" id="vPickT" aria-live="polite"></p><div class="vpick" id="vPick" hidden><video id="vPickVid" autoplay loop muted playsinline controls preload="auto" aria-label="고른 영상 크게 보기"></video><button class="btn primary block" id="pickGo" type="button">이 영상으로 답하기</button></div>`;
 }
 function pickClip(btn, q) {
   if (quizState.answered) return;
   const tiles = $$('.vopt', $('#quizOpts')), i = tiles.indexOf(btn), c = q.clips[i]; if (!c) return;
-  tiles.forEach(b => { const on = b === btn; b.classList.toggle('sel', on); b.setAttribute('aria-pressed', String(on)); });
+  tiles.forEach(b => { const on = b === btn; b.classList.toggle('sel', on); b.setAttribute('aria-pressed', String(on)); const tv = b.querySelector('video'); if (tv) tv.pause(); });   // 크게 보는 동안 작은 영상 4개는 멈춘다(5개가 동시에 반복되지 않게)
   $('#vPickT').textContent = `${i + 1}번 영상을 골랐어요. 크게 보고 맞으면 「이 영상으로 답하기」를 누르세요. 다른 영상을 누르면 바꿀 수 있어요.`;
   const box = $('#vPick'), v = $('#vPickVid');
   box.hidden = false;
@@ -311,6 +311,7 @@ function clearClipPick() {
   const box = $('#vPick'); if (!box) return;
   box.hidden = true; $('#vPickT').textContent = '';
   const v = $('#vPickVid'); v.pause(); v.removeAttribute('src'); delete v.dataset.clip; v.load();
+  $$('.vopt:not(.gone) video', $('#quizOpts')).forEach(tv => tv.play().catch(() => {}));   // 고름을 풀면 작은 영상이 다시 돈다
 }
 function answerChoice(btn, q) {
   if (quizState.answered) return;

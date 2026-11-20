@@ -213,7 +213,7 @@
       else if (ch === "'") { key2 = squoteOpen ? '’' : '‘'; squoteOpen = !squoteOpen; }
       if (PUNCT[key2] !== undefined) {
         let brf = PUNCT[key2];
-        if (key2 === '-' && /[0-9]/.test(chars[i - 1] || '') && /[0-9]/.test(chars[i + 1] || '')) warnings.push('숫자 사이의 -는 붙임표(36)로 바꿨어요. 빼기 기호로 쓴 것이라면 규정(제45항)을 직접 확인하세요.');
+        if (key2 === '-' && /[0-9]/.test(chars[i - 1] || '') && /[0-9]/.test(chars[i + 1] || '')) warnings.push('숫자 사이의 -는 붙임표(3·6번 점)로 바꿨어요(전화번호처럼 쓸 때). 빼기(−) 기호는 아직 바꾸지 않아요.');
         push(brfCells(brf), ch, '문장부호', '제49항'); i++; continue;
       }
       unsupported.push(ch); cells.push({ dots: [], text: ch, kind: '지원 안 함', rule: '', unsupported: true }); i++;

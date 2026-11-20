@@ -37,6 +37,7 @@ const TESTS = [
   ['대본 따라가기·이전/다음 단어·시청 완료', 'transcript-nav.mjs', [BASE], true],
   ['실사용 평가 반영(같은 이름 수어·말끝 검색·점자 용어·힌트·처음 난이도)', 'real-use-fixes.mjs', [BASE], true],
   ['실사용 평가 반영 2(영상 고르기·약자 설명·점자 복사·단어장·퀴즈로 돌아가기·큰 글씨 제목·뒤로 가기)', 'real-use-fixes2.mjs', [BASE], true],
+  ['실사용 평가 반영 3(크게 보기 영상 조절·0칸 복사·생활 속 점자 뒤로 가기·말끝·전화번호·물다)', 'real-use-fixes3.mjs', [BASE], true],
   ['생활 속 점자(카드 12개·근거 링크·예시 점자·글자 바꾸기 연결·좁은 화면 버튼)', 'life-braille.mjs', [BASE], true],
   ['키보드만으로 퀴즈 풀기', 'keyboard.mjs', [BASE, 'desktop'], true],
   ['영상을 못 불러올 때 안내', 'video-fail.mjs', [BASE], true],

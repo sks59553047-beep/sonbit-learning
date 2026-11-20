@@ -59,7 +59,11 @@ await c.send('Emulation.setDeviceMetricsOverride', { width: 320, height: 700, de
 await home();
 check('L8 320px 좁은 화면에서도 옆으로 넘치지 않음', await ev(`document.documentElement.scrollWidth <= window.innerWidth`));
 // 「오늘의 수어」(2026-11-21): 휴대폰에서는 숨기고 영상도 안 불러옴, 컴퓨터 화면에서는 두 칸 소개 왼쪽 아래에 영상·점자, 누르면 사전의 그 단어
-check('L12 휴대폰: 「오늘의 수어」 숨김 + 영상 안 불러옴(데이터 아끼기)', await ev(`document.querySelector('#htoday').hidden && !document.querySelector('#htoday video').getAttribute('src')`));
+// 2026-11-21: 휴대폰에서도 보이되(「할 수 있는 것」 아래), 화면에 들어오기 전에는 영상을 불러오지 않고 들어오면 불러와 재생
+const m1 = await ev(`(() => { const b = document.querySelector('#htoday'), r = b.getBoundingClientRect(), last = document.querySelector('.hcan').getBoundingClientRect(); return { shown: !b.hidden && r.height > 0, below: r.top > last.bottom - 2, src: !!b.querySelector('video').getAttribute('src'), over: document.documentElement.scrollWidth > innerWidth } })()`);
+await ev(`document.querySelector('#htoday').scrollIntoView({ block: 'center' }); 1`); await sleep(1500);
+const m2 = await ev(`({ src: !!document.querySelector('#htoday video').getAttribute('src'), playing: !document.querySelector('#htoday video').paused, poster: !!document.querySelector('#htoday video').poster })`);
+check('L12 휴대폰: 「오늘의 수어」가 「할 수 있는 것」 아래에 보이고, 화면에 들어오기 전엔 영상 안 불러옴 → 들어오면 불러와 재생', m1.shown && m1.below && !m1.src && !m1.over && m2.src && m2.playing && m2.poster, JSON.stringify({ m1, m2 }));
 await c.send('Emulation.setDeviceMetricsOverride', { width: 1100, height: 800, deviceScaleFactor: 1, mobile: false });
 await home(); await sleep(2500);
 const td = await ev(`(() => { const b = document.querySelector('#htoday'), v = b.querySelector('video'), h = document.querySelector('.hero'), r = b.getBoundingClientRect(), last = [...document.querySelectorAll('.hcan .hrow')].pop().getBoundingClientRect(), kick = document.querySelector('.hero .kick').getBoundingClientRect(), head = document.querySelector('.hcanh').getBoundingClientRect();

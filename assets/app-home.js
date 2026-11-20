@@ -135,7 +135,7 @@ function renderHomeReview() {
     + (f ? `<button class="revchip" type="button" data-act="quizkind" data-arg="fav"><span class="rn">${f}</span><span class="rl">내 단어장 퀴즈<span class="rs">담아 둔 수어로 연습</span></span></button>` : '');
 }
 // 첫 화면 「오늘의 수어」(2026-11-21): 비슷한 수어 학습 사이트(국립국어원 한국수어사전 「오늘의 수어」, Signing Savvy 「Sign of the Day」)처럼
-// 첫 화면에 실제 수어 모습을. 날짜마다 하나, 같은 낱말의 점자·뜻도 함께. 컴퓨터 화면(900px 이상)에서만 영상을 불러온다.
+// 첫 화면에 실제 수어 모습을. 날짜마다 하나, 같은 낱말의 점자·뜻도 함께. 휴대폰에서도 보이되 화면에 들어올 때만 영상을 불러온다(데이터 아끼기).
 // 낱말(작업자님 요청 2026-11-21: 「오늘의 수어」에 어울리는 것만 간추려, 날마다 무작위로, 같은 낱말은 한참 뒤에야 다시):
 //   퀴즈 「쉬움·보통」 생활 낱말(어려운 주제 나라·지명·법·사건·사회·제도는 이미 빠짐)에서 숫자·돈 단위와 일반 단어(뜻이 어렵거나 흔하지 않은 말이 많음)를 빼고,
 //   첫 화면에 나오면 어색한 낱말(욕·몸·술·범죄·무기 등)을 뺀다. 이 목록을 정해진 씨앗으로 한 번 섞어 하루에 하나씩 차례로 → 한 바퀴(약 480일) 돌기 전엔 겹치지 않고,
@@ -166,7 +166,7 @@ function todayMeaning(w) {
 }
 function renderToday() {
   const box = $('#htoday'), w = todayWord(), v = box.querySelector('video');
-  if (!w || !matchMedia('(min-width: 900px)').matches) { box.hidden = true; v.pause(); return; }
+  if (!w) { box.hidden = true; v.pause(); return; }
   const id = String(w.id), local = typeof MEDIA_VIDEO !== 'undefined' && MEDIA_VIDEO.has(id), isNuri = !/^https?:/.test(w.k);
   const src = local ? `assets/media/${id}.mp4` : kslUrl(w.k);
   const poster = local ? `assets/posters/${id}.jpg` : (isNuri ? kslUrl(w.k.replace(/\.mp4$/, '.jpg')) : `assets/posters/${id}.jpg`);
@@ -177,12 +177,19 @@ function renderToday() {
     $('#htodayMean').textContent = mean ? '뜻: ' + mean : ''; $('#htodayMean').hidden = !mean;
     $('#htodayBr').innerHTML = KB.convert(w.w, { contract: true }).cells.filter(c => c.kind !== '줄바꿈' && !c.unsupported).map(c => miniDots(c.dots, true)).join('');
     box.setAttribute('aria-label', `오늘의 수어 「${w.w}」, 수어 사전에서 영상과 뜻 보기`);
-    v.poster = poster; v.src = src;
+    v.removeAttribute('src'); v.removeAttribute('poster'); box._src = src; box._poster = poster;   // 영상·그림은 화면에 들어올 때 불러온다
   }
   box.hidden = false;
-  if ($('#view-home').classList.contains('active')) v.play().catch(() => {});
+  if (!todayIO) { todayIO = new IntersectionObserver(es => es.forEach(e => { const vid = e.target.querySelector('video'); if (e.isIntersecting) loadToday(e.target); else vid.pause(); }), { threshold: 0.3 }); todayIO.observe(box); }
+  const r = box.getBoundingClientRect();
+  if ($('#view-home').classList.contains('active') && r.top < innerHeight && r.bottom > 0) loadToday(box);
 }
-matchMedia('(min-width: 900px)').addEventListener('change', () => renderToday());
+let todayIO = null;
+function loadToday(box) {
+  const v = box.querySelector('video'); if (!box._src) return;
+  if (!v.getAttribute('src')) { v.poster = box._poster; v.src = box._src; }
+  v.play().catch(() => {});
+}
 function renderHome() {
   renderToday();
   $('#statWords').textContent = ALL_WORDS.length.toLocaleString('ko-KR');

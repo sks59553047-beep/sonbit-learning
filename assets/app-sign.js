@@ -33,15 +33,23 @@ function wordRowHtml(w, showTopic) {
 function senseShown(w, searching) {
   const senses = (w.g || '').split(' / ').filter(Boolean); let s = senses[0] || '';
   const raw = searching ? signQuery.trim().toLowerCase() : '', q = normQ(raw);
-  if (q && !normQ(w.w.toLowerCase()).includes(q)) { const hit = senses.find(x => normQ(x.toLowerCase()).includes(q)); if (hit) s = hit; }
+  let key = raw;
+  if (q && !normQ(w.w.toLowerCase()).includes(q)) {
+    let hit = senses.find(x => normQ(x.toLowerCase()).includes(q));
+    if (!hit) {   // 말끝을 바꾼 꼴로 찾은 단어(괜찮아요 → 「같다」의 「괜찮다」)는 그 꼴이 든 뜻을
+      const fs = [...baseForms(q).all].filter(f => f.length >= 2 && f !== q);
+      for (const f of fs) { hit = senses.find(x => normQ(x.toLowerCase()).includes(f)); if (hit) { key = f; break; } }
+    }
+    if (hit) s = hit;
+  }
   if (s.length <= 24) return s;
-  const i = raw ? s.toLowerCase().indexOf(raw) : -1;
+  const i = key ? s.toLowerCase().indexOf(key) : -1;
   return i > 14 ? '…' + s.slice(i - 6, i + 17) : s.slice(0, 24);
 }
 // 이름이 같은 수어가 여럿이면 펼친 단어 맨 위에 알려 준다
 function sameNameNoteHtml(w) {
   const s = SAME_NAME.get(String(w.id)); if (!s) return '';
-  return `<p class="samenote">「${esc(w.w)}」은(는) 사전에 수어가 ${s[1]}가지 있어요(이 수어는 ${sameMark(w)}). ${w.x ? '아래 뜻과 예문으로' : '설명과 영상으로'} 어떤 때 쓰는지 비교해 보세요. <button type="button" class="linkbtn" data-suggest="${esc(w.w)}">${s[1]}가지 모두 보기</button></p>`;
+  return `<p class="samenote">「${esc(w.w)}」 수어는 사전에 ${s[1]}가지가 있어요(지금 보는 것은 ${sameMark(w)}). ${w.x ? '아래 뜻과 예문으로' : '설명과 영상으로'} 어떤 때 쓰는지 비교해 보세요. <button type="button" class="linkbtn" data-suggest="${esc(w.w)}">${s[1]}가지 모두 보기</button></p>`;
 }
 // 누리사전 공식 정보(한 손/두 손, 손모양, 손 위치) — 국립국어원 자료 그대로
 function signInfoHtml(w) {
@@ -101,6 +109,16 @@ function noResultHtml(raw) {
     <ul><li>띄어쓰기 없이 더 짧게 써 보세요. (예: 「학교 가다」 → 「학교」)</li><li>자음만 써도 찾을 수 있어요. (예: ㅎㄱ)</li><li>비슷한 뜻의 다른 말로도 찾아보세요.</li><li>이 사전에는 국립국어원 사전에서 영상을 확인한 ${ALL_WORDS.length.toLocaleString('ko-KR')}개 표현만 있어요. 없는 단어는 국립국어원 한국수어사전에서 직접 찾아볼 수 있어요.</li></ul>
     ${chips}<button type="button" class="btn line" data-act="signtopics">주제로 찾아보기</button></div>`;
 }
+// 띄어 쓴 말을 나눠 찾을 때 낱말 하나: 이름이 맞는 것(순위 2 이내)을 먼저, 없으면 조사를 떼고(「이름이」 → 「이름」), 그래도 없으면 뜻풀이까지.
+// 한 글자 낱말은 이름·기본형이 똑같은 것만. 낱말마다 많아야 3개(「잘 가」가 「잘하다」로 가득 차지 않게)
+const JOSA_END = /(이랑|에서|으로|한테|에게|께서|은|는|이|가|을|를|에|로|도|만|의|과|와|랑)$/;
+function partWords(p) {
+  const near = x => x.length > 1 ? searchWords(x).filter(w => rankWord(w, x) <= 2) : ALL_WORDS.filter(w => w.w === x || w.w === x + '다');   // 한 글자: 「가」·「가다」만
+  let r = near(p);
+  if (!r.length && p.length > 1 && JOSA_END.test(p)) { const s = p.replace(JOSA_END, ''); if (s) r = near(s); }
+  if (!r.length && p.length > 1) r = searchWords(p);
+  return r.slice(0, 3);
+}
 function searchWords(q) {
   return ALL_WORDS.filter(w => matchWord(w, q)).map((w, i) => ({ w, r: rankWord(w, q), i })).sort((a, b) => a.r - b.r || a.i - b.i).map(o => o.w);
 }
@@ -125,7 +143,7 @@ function renderSign() {
     if (!list.length && /\S\s+\S/.test(q.trim())) {
       const parts = q.trim().split(/\s+/), seen = new Set();
       list = [];
-      parts.forEach(p => searchWords(p).filter(w => p.length > 1 || rankWord(w, p) <= 1.5).slice(0, 20).forEach(w => { if (!seen.has(w.id)) { seen.add(w.id); list.push(w); } }));
+      parts.forEach(p => partWords(p).forEach(w => { if (!seen.has(w.id)) { seen.add(w.id); list.push(w); } }));
       if (list.length) splitNote = ` · 「${parts.join('」·「')}」로 나눠 찾았어요`;
     }
     if (signPinId) { const k = list.findIndex(x => String(x.id) === String(signPinId)); if (k > 0) list.unshift(list.splice(k, 1)[0]); }

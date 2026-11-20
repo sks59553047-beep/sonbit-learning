@@ -223,6 +223,7 @@ function cutOption(q) {
   if (left.length - 1 <= 2) $('#hintCut').disabled = true;
 }
 function hintTextFor(q) {
+  const dn = c => (c && c.length ? c.join('·') + '번 점' : '빈칸');   // 점 칸 → 「1·2·4번 점」
   if (q.clueType === 'pickvideo') {
     const w = WORD_BY_ID.get(String(q.id)), inf = w && typeof KSL_INFO !== 'undefined' && String(w.id).charAt(0) === 'N' ? KSL_INFO[String(w.id).slice(1)] : null;
     if (inf) { const pos = KSL_POS_NAME[inf[2]] || ''; return `정답 영상은 ${inf[0] === 1 ? '한 손' : '두 손'}으로 하는 수어예요${pos ? ', 손 위치는 ' + pos + ' 쪽이에요' : ''}.`; }
@@ -230,7 +231,6 @@ function hintTextFor(q) {
   }
   if (q.clueType === 'dots') {
     // 2026-11-20 실사용 평가: 「점이 3개」처럼 이미 보이는 것 대신, 점 번호로 읽어 주고 점자 표의 어느 줄에서 찾으면 되는지 알려 준다
-    const dn = c => (c && c.length ? c.join('·') + '번 점' : '빈칸');
     if (q.bk === 'n') return `첫 칸은 수표(3·4·5·6번 점)라 숫자가 시작돼요. 첫 숫자 칸은 ${dn(q.clue[1])}이에요. 점자 표 「숫자」에서 찾아보세요.`;
     if (q.bk === 'w' || q.bk === 'c') return `${q.answer.length}글자 낱말이에요. 첫 칸은 ${dn(q.clue[0])}이에요.`;
     // 퀴즈 묶음 이름 → 점자 탭 「점자 표」의 칸 이름(첫소리·모음·받침·숫자·약자·약어·문장부호)
@@ -240,8 +240,9 @@ function hintTextFor(q) {
     return q.clue.length > 1 ? `첫 칸은 ${dn(q.clue[0])}, 둘째 칸은 ${dn(q.clue[1])}이에요. ${where} 찾아보세요.` : `점 번호로 읽으면 ${dn(q.clue[0])}이에요. ${where} 이 번호를 찾아보세요.`;
   }
   if (q.clueType === 'build') {
-    if (q.bk === 'n') return `수표(3·4·5·6번 점)로 시작하고, 그다음 숫자 ${q.answer.length}개를 이어 써요.`;
-    if (q.bk === 'w' || q.bk === 'c') return `${q.answer.length}글자 낱말이고, 모두 ${q.clue.length}칸이에요.`;
+    // 2026-11-20: 칸 수·글자 수는 문제에 이미 보여서, 첫 칸의 점 번호를 알려 준다
+    if (q.bk === 'n') return `수표(3·4·5·6번 점)로 시작해요. 첫 숫자 「${String(q.answer).charAt(0)}」의 칸은 ${dn(q.clue[1])}이에요.`;
+    if (q.bk === 'w' || q.bk === 'c') return `「${String(q.answer).charAt(0)}」의 첫 칸은 ${dn(q.clue[0])}이에요.`;
     return '점 개수: ' + q.clue.map((c, i) => `${q.clue.length > 1 ? ORD[i] + ' 칸 ' : ''}${c.length}개`).join(', ') + '예요.';
   }
   const cho = choOf(q.answer).replace(/\s+/g, '').charAt(0);

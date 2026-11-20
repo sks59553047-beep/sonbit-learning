@@ -177,6 +177,7 @@ function baseForms(s) {
       if (last === '해') add(stem + '하다');                                                           // 사랑해 → 사랑하다
       else if ((last === '워' || last === '와') && hp && hp[2] === 0) add(stem.slice(0, -1) + hJoin(hp[0], hp[1], H_B) + '다');   // 고마워 → 고맙다
       else if ((last === '아' || last === '어') && hp && hp[2] !== 0) add(stem + '다');                // 괜찮아 → 괜찮다, 먹어 → 먹다(「수어」처럼 받침 없는 글자 뒤는 아님)
+      else if ((last === '라' || last === '러') && hp && hp[2] === 8) add(stem.slice(0, -1) + hJoin(hp[0], hp[1], 0) + '르다');   // 목말라 → 목마르다, 몰라 → 모르다, 불러 → 부르다
       else if (h[2] === 0) {                                                                            // 받침 없는 줄임 꼴(추측)
         guess(t + '다');                                                                                // 가 → 가다
         const to = { 'ㅏ': 'ㅡ', 'ㅓ': 'ㅡ', 'ㅘ': 'ㅗ', 'ㅝ': 'ㅜ', 'ㅙ': 'ㅚ', 'ㅕ': 'ㅣ' }[H_V[h[1]]];   // 아파 → 아프다, 봐 → 보다, 줘 → 주다, 돼 → 되다, 마셔 → 마시다
@@ -188,9 +189,10 @@ function baseForms(s) {
   formCache.set(s, r); return r;
 }
 // 두 말(검색어 꼴 a, 단어 쪽 꼴 b)이 같은 말로 볼 수 있는지
-function sameForm(a, b) {
-  for (const x of a.strong) if (b.strong.has(x)) return true;
-  return a.all.has(b.raw) || b.all.has(a.raw);
+function sameForm(a, b) {   // 한쪽이라도 확실한 꼴이면 맞춰 본다(추측끼리만 맞물리는 것은 뺌: 도와줘요 → 도와주세요는 되고, 사과·사고는 안 됨)
+  for (const x of a.strong) if (b.all.has(x)) return true;
+  for (const x of b.strong) if (a.all.has(x)) return true;
+  return false;
 }
 // 단어 쪽 꼴: 이름 / 다른 말·뜻풀이를 낱말로 나눈 것(괄호 안 설명은 뺌)
 function tokensOf(w) { return [w.al || '', w.x ? (w.g || '') : ''].join(',').split(/[,/·]/).map(s => s.replace(/\([^)]*\)|\{[^}]*\}/g, '').trim()).filter(Boolean); }

@@ -15,7 +15,7 @@ check('U1 기본 숫자 목록: 「십①·십②」「백①·백②」로 구�
 const i10 = rows.indexOf('십①');
 await ev(`document.querySelectorAll('#signList .wordrow summary')[${i10}].click(); 1`); await sleep(800);
 const n1 = await ev(`(() => { const r = document.querySelector('#signList .wordrow[open]'); return { nav: [...r.querySelectorAll('[data-wnav] b')].map(b => b.textContent), note: r.querySelector('.samenote')?.textContent || '' } })()`);
-check('U2 「십①」 펼침: 다음 단어 단추가 「십 ②」, 맨 위에 「2가지 있어요」 안내', n1.nav.includes('십 ②') && /2가지 있어요\(이 수어는 ①\)/.test(n1.note), JSON.stringify(n1));
+check('U2 「십①」 펼침: 다음 단어 단추가 「십 ②」, 맨 위에 「2가지가 있어요」 안내', n1.nav.includes('십 ②') && /「십」 수어는 사전에 2가지가 있어요\(지금 보는 것은 ①\)/.test(n1.note), JSON.stringify(n1));
 await ev(`document.querySelector('#signList .wordrow[open] .samenote [data-suggest]').click(); 1`); await sleep(600);
 const all10 = await ev(`[...document.querySelectorAll('#signList .wordrow')].filter(r => r.querySelector('.wname').textContent === '십').length`);
 check('U3 「2가지 모두 보기」 → 검색으로 「십」 두 가지가 함께 나옴', all10 === 2, String(all10));
@@ -37,6 +37,12 @@ r = await search('수어'); check('U12 「수어」 → 수화가 센터보다 �
 r = await search('밥'); check('U13 「밥」 → 뜻풀이로 찾은 단어는 줄에 「밥」이 든 뜻이 보임', r.subs.length > 0 && r.subs[0].includes('밥'), JSON.stringify(r));
 r = await search('학교에다녀오겠습니다'); check('U14 맞는 게 없는 긴 말은 그대로 「찾지 못했어요」 안내', r.none, JSON.stringify(r));
 r = await search('ㄱㅅ'); check('U15 자음 검색 그대로', r.names.length > 0 && r.names.includes('감사합니다'), JSON.stringify(r.names));
+r = await search('도와줘요'); check('U25 「도와줘요」 → 도와주세요', r.names.includes('도와주세요'), JSON.stringify(r.names));
+r = await search('목말라요'); check('U26 「목말라요」 → 목마르다(르 불규칙)', r.names.includes('목마르다'), JSON.stringify(r.names));
+r = await search('이름이 뭐예요'); check('U27 「이름이 뭐예요」 → 조사를 떼고 이름이 먼저', r.names[0] === '이름' && r.names.includes('뭐예요'), JSON.stringify(r));
+r = await search('괜찮아요'); { const k = r.names.indexOf('같다'); check('U28 「괜찮아요」로 찾은 「같다」 줄에는 「괜찮다」가 든 뜻', k > 0 && (r.subs[k] || '').includes('괜찮'), JSON.stringify(r)); }
+r = await search('잘 가'); check('U29 「잘 가」는 낱말마다 3개까지만(잘하다로 가득 차지 않음)', r.names.filter(n => n === '잘하다').length <= 3, JSON.stringify(r));
+r = await search('사과'); check('U30 추측끼리 맞물리지 않음: 「사과」에 「사고」가 섞이지 않음', !r.names.includes('사고'), JSON.stringify(r.names));
 r = await search('가방'); check('U16 보통 낱말은 그대로 첫 결과', r.names[0] === '가방' || r.none, JSON.stringify(r.names));
 await search('');
 
@@ -63,6 +69,16 @@ check('U22 점자 읽기 힌트: 「점이 N개」 대신 점 번호와 점자 �
 const tools = await ev(`(() => { const p = document.querySelector('#quizPause').getBoundingClientRect(), e = document.querySelector('#quizEnd').getBoundingClientRect(); return { same: Math.abs(p.top - e.top) < 2, pr: Math.round(p.right), er: Math.round(e.right), w: innerWidth } })()`);
 check('U23 휴대폰 퀴즈 단추 줄: 「잠시 나가기·끝내기」가 같은 줄(끝내기만 떨어지지 않음)', tools.same, JSON.stringify(tools));
 await ev(`document.querySelector('#quizEnd').click(); 1`); await sleep(300); await ev(`document.querySelector('#quizEndYes')?.click(); 1`); await sleep(500);
+// 점자 쓰기 힌트: 문제에 보이는 칸 수 대신 첫 칸의 점 번호
+const bh = [];
+for (let k = 0; k < 8 && bh.length < 2; k++) {
+  await ev(`go('quiz'); document.querySelector('[data-quiz="build"]').click(); 1`); await sleep(900);
+  const kind = await ev(`quizState.qs[quizState.i].bk`);
+  await ev(`document.querySelector('#hintText').click(); 1`); await sleep(200);
+  if (kind === 'w' || kind === 'c' || kind === 'n') bh.push(await ev(`document.querySelector('#quizHint').textContent`));
+  await ev(`document.querySelector('#quizEnd').click(); 1`); await sleep(200); await ev(`document.querySelector('#quizEndYes')?.click(); 1`); await sleep(300);
+}
+check('U31 점자 쓰기 낱말·숫자 힌트는 첫 칸 점 번호(칸 수를 되풀이하지 않음)', bh.length > 0 && bh.every(h => /번 점이에요/.test(h) && !/모두 \d+칸/.test(h)), JSON.stringify(bh));
 
 // ---------- ⑦ 영상 기준 안내 ----------
 await ev(`go('sign', { arg: { wid: 'N117' } }); 1`); await sleep(1500);

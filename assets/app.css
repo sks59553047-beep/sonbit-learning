@@ -681,4 +681,13 @@ body.quizback-on main{padding-bottom:calc(160px + env(safe-area-inset-bottom,0px
 .lifesrc a{color:var(--teal);font-weight:700}
 /* 생활 속 점자: 실물 사진에서 점을 읽어 같다고 확인한 글자(2026-11-21) */
 .lifeword.real{border-color:var(--teal)}
-.lifeword .lreal{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:var(--mint);color:var(--mint-ink);font-size:0.75rem;font-weight:800;vertical-align:2px}
+.lifeword .lreal,.lifekey .lreal{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:var(--mint);color:var(--mint-ink);font-size:0.75rem;font-weight:800;vertical-align:2px}
+
+/* 사람처럼 써 보기 4차(2026-11-21): 생활 속 점자 표시 풀이 한 줄, 칸 이름 풀이 접기, 퀴즈 카드 아래 작은 설명 */
+.lifekey{margin:8px 0 0;font-size:0.875rem;line-height:1.6;color:var(--muted)}
+.lifekey .lreal{margin-left:0;margin-right:4px}
+details.bplegend{margin:10px 0 0}
+details.bplegend>summary{cursor:pointer;font-size:0.875rem;font-weight:700;color:var(--teal);list-style-position:inside}
+details.bplegend ul{margin:8px 0 0;padding-left:18px;font-size:0.875rem;line-height:1.7;color:var(--ink)}
+details.bplegend li b{font-weight:800}
+.qfoot{margin:-4px 2px 0;font-size:0.8125rem;line-height:1.55;color:var(--muted)}

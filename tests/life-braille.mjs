@@ -12,7 +12,7 @@ const st = await ev(`(() => { const cards = [...document.querySelectorAll('#life
     noTag: cards.filter(k => !k.querySelector('.lifehead .tag')).length, noSrc: cards.filter(k => !k.querySelector('.lifesrc a[href^="https://"]')).length,
     law: cards.filter(k => /법으로 정해짐/.test(k.querySelector('.tag').textContent)).length, lawLink: cards.filter(k => /법으로 정해짐/.test(k.querySelector('.tag').textContent) && k.querySelector('.lifesrc a').href.startsWith('https://www.law.go.kr/')).length,
     newTab: [...document.querySelectorAll('#lifeList .lifesrc a')].every(a => a.target === '_blank' && /noopener/.test(a.rel)),
-    note: /실제 시설·제품 사진에서 점을 하나하나 읽어/.test(document.querySelector('#bp-life').textContent) && /규정」대로 만든 예시예요/.test(document.querySelector('#bp-life').textContent) } })()`);
+    note: /글자를 누르면 점을 하나하나 볼 수 있어요/.test(document.querySelector('#bp-life').textContent) && /실제 사진의 점과 같은 것을 확인한 글자예요/.test(document.querySelector('#bp-life .lifekey').textContent) && /규정대로 만든 예시예요/.test(document.querySelector('#bp-life .lifekey').textContent) } })()`);
 check('L1 「생활 속 점자」 칸: 카드 12개, 모두 꼬리표(법으로 정해짐 등)와 근거 링크, 새 창으로 열림, 「실물 확인」·「규정대로 만든 예시」 안내', st.shown && st.pressed === 'true' && st.n === 12 && !st.noTag && !st.noSrc && st.newTab && st.note, JSON.stringify(st));
 check('L2 「법으로 정해짐」 카드 7개는 모두 국가법령정보센터 원문으로 연결', st.law === 7 && st.lawLink === 7, JSON.stringify({ law: st.law, link: st.lawLink }));
 // 예시 글자의 점자 = 점자 엔진 결과(약자 사용)와 점 하나까지 같음
@@ -51,7 +51,7 @@ await ev(`(() => { const i = document.querySelector('#bpInput'); i.value = '그�
 const w = await ev(`document.querySelector('#bpWarn').hidden ? '' : document.querySelector('#bpWarn').textContent`);
 check('L9 소문자가 섞인 영어(Canada)는 바꾸지 않고, 「영어는 대문자 약어만」 안내', /영어는 KTX·TV 같은 대문자 약어만 바꿔요/.test(w) && !/그리스/.test(w), w);
 const note = await ev(`document.querySelector('#bp-convert').textContent`);
-check('L10 점자 바꾸기 안내: 「예시 248개」와 「영어는 대문자 약어만」', /예시 248개/.test(note) && /대문자 약어만 바꾸고/.test(note), '');
+check('L10 점자 바꾸기 안내: 「예시 248개」와 「영어는 대문자 약어만」', /예시 248개/.test(note) && /대문자 약어만 바꿔요/.test(note), '');
 check('JS 오류 없음', !c.errs.length, c.errs.join(' | '));
 await ev(`localStorage.clear(); 1`);
 await c.close(); process.exit(0);

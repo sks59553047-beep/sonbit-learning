@@ -56,15 +56,17 @@ check('U19 칸에 마우스를 올리면 규정 용어·조항은 그대로', /�
 
 // ---------- ⑤ 퀴즈 안내·처음 난이도 ----------
 await ev(`go('quiz'); 1`); await sleep(500);
-const qc = await ev(`({ lv: document.querySelector('[data-qlevel][aria-pressed="true"]')?.textContent, card: document.querySelector('[data-quiz="sign"] .qcs').textContent })`);
+const qc = await ev(`({ lv: document.querySelector('[data-qlevel][aria-pressed="true"]')?.textContent, card: document.querySelector('[data-quiz="sign"] .qcs').textContent, foot: document.querySelector('#view-quiz .qfoot')?.textContent || '' })`);
 check('U20 처음 온 사람의 퀴즈 난이도는 「하」', qc.lv === '하', qc.lv);
-check('U21 수어 퀴즈 카드에 1,162개와 1,190개가 다른 까닭', /1,162개 중 10문제/.test(qc.card) && /사전 1,190개 중 .*28개는 뺐어요/.test(qc.card), qc.card);
+check('U21 수어 퀴즈 카드는 짧게(1,162개에서 10문제), 1,190개와 다른 까닭은 카드 아래 작은 글로(2026-11-21)', /1,162개에서 10문제/.test(qc.card) && !/뺐어요/.test(qc.card) && /사전 1,190개 가운데 .*28개는 퀴즈에서 뺐어요/.test(qc.foot), JSON.stringify(qc));
 
 // ---------- ④ 점자 퀴즈 힌트 ----------
 await ev(`document.querySelector('[data-quiz="braille"]').click(); 1`); await sleep(1200);
 await ev(`document.querySelector('#hintText').click(); 1`); await sleep(300);
 const hint = await ev(`document.querySelector('#quizHint').textContent`);
-check('U22 점자 읽기 힌트: 「점이 N개」 대신 점 번호와 점자 표에서 찾을 곳', /번 점/.test(hint) && /점자 표/.test(hint) && !/점이 \d+개/.test(hint), hint);
+// 첫 문제는 무작위: 글자·부호 문제면 「점자 표에서 찾을 곳」까지, 낱말·숫자 문제면 첫 칸 점 번호(점자 표 안내 없음)
+const qbk = await ev(`String(quizState.qs[quizState.i].bk || '')`), wordQ = ['w', 'c', 'n'].includes(qbk);
+check('U22 점자 읽기 힌트: 「점이 N개」 대신 점 번호(글자 문제는 점자 표에서 찾을 곳도)', /번 점/.test(hint) && (wordQ || /점자 표/.test(hint)) && !/점이 \d+개/.test(hint), `[${qbk || '글자'}] ${hint}`);
 // ⑥ 단추 줄
 const tools = await ev(`(() => { const p = document.querySelector('#quizPause').getBoundingClientRect(), e = document.querySelector('#quizEnd').getBoundingClientRect(); return { same: Math.abs(p.top - e.top) < 2, pr: Math.round(p.right), er: Math.round(e.right), w: innerWidth } })()`);
 check('U23 휴대폰 퀴즈 단추 줄: 「잠시 나가기·끝내기」가 같은 줄(끝내기만 떨어지지 않음)', tools.same, JSON.stringify(tools));

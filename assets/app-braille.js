@@ -163,7 +163,8 @@ function renderBraillePanel() {
   }).join('');
   // 칸 아래 이름(첫소리·모음·약자…)이 무슨 뜻인지, 이번 결과에 나온 것만 한 줄로 풀어 준다(2026-11-20 실사용 평가: 「초성·중성」이 어렵다)
   const used = [...new Set(cells.filter(c => !c.unsupported).map(c => kindPlain(c.kind)))].filter(k => KIND_HELP[k]);
-  $('#bpLegend').hidden = !used.length; $('#bpLegend').textContent = used.map(k => `${k}: ${KIND_HELP[k]}`).join(' · ');
+  $('#bpLegend').hidden = !used.length;   // 접어 두고(열림 상태는 그대로), 펼치면 한 줄에 하나씩(2026-11-21: 한 덩어리 7줄은 읽기 힘듦)
+  $('#bpLegend').innerHTML = `<summary>칸 아래 이름 뜻 (${used.length}개)</summary><ul>${used.map(k => `<li><b>${esc(k)}</b>: ${esc(KIND_HELP[k])}</li>`).join('')}</ul>`;
   const uni = cells.map(c => (c.kind === '띄어쓰기' ? ' ' : (c.unsupported ? '?' : dotsToUnicode(c.dots)))).join('');
   $('#bpOutWrap').hidden = !text; $('#bpOut').textContent = uni; $('#bpOutNote').hidden = !bad;
   $('#bpCopyTop').hidden = !text;

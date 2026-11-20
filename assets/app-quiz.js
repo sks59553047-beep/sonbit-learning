@@ -123,8 +123,9 @@ function renderQuizHub() {
       </div>
       <p class="note" id="qlevelNote" style="margin-top:8px">${esc(QZ.LEVEL_NOTES[lv])}</p></div>
     <div class="qcards c1">
-      <button class="qcard" type="button" data-quiz="sign"><span class="qci">${icon('hand', 24)}</span><span class="qct">수어 퀴즈</span><span class="qcs">영상 보고 뜻 맞히기, 뜻 보고 영상 고르기 (수어 ${QZ.eligible.length.toLocaleString('ko-KR')}개 중 10문제 · 사전 ${ALL_WORDS.length.toLocaleString('ko-KR')}개 중 영상이 다른 단어와 겹치거나 이름이 긴 ${ALL_WORDS.length - QZ.eligible.length}개는 뺐어요)</span><span class="qcg" aria-hidden="true">›</span></button>
+      <button class="qcard" type="button" data-quiz="sign"><span class="qci">${icon('hand', 24)}</span><span class="qct">수어 퀴즈</span><span class="qcs">영상 보고 뜻 맞히기, 뜻 보고 영상 고르기 · 수어 ${QZ.eligible.length.toLocaleString('ko-KR')}개에서 10문제</span><span class="qcg" aria-hidden="true">›</span></button>
     </div>
+    <p class="qfoot">사전 ${ALL_WORDS.length.toLocaleString('ko-KR')}개 가운데 영상이 다른 단어와 겹치거나 이름이 긴 ${ALL_WORDS.length - QZ.eligible.length}개는 퀴즈에서 뺐어요.</p>
     <div class="card"><div class="section-h"><h2>점자 범위</h2></div>
       <div class="chiprow wrap" role="group" aria-label="점자 범위" style="margin-top:10px">${QZ.SCOPES.map(s => `<button type="button" class="chip${s.key === scope ? ' active' : ''}" data-qscope="${s.key}" aria-pressed="${s.key === scope}">${esc(s.label)}</button>`).join('')}</div>
       <p class="note" id="qscopeNote" style="margin-top:10px">${esc(SCOPE_NOTE[scope])}</p></div>

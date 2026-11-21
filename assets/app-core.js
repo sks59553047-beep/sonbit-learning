@@ -122,7 +122,7 @@ window.addEventListener('popstate', e => {
   if (st && st.view === 'braille' && st.panel) {   // 생활 속 점자 ↔ 글자 바꾸기(뒤로·앞으로 가기)
     go('braille', { push: false }); showBraillePanel(st.panel);
     if (st.fromLife) $('#lifeBack').hidden = false;
-    if (st.y != null) setTimeout(() => window.scrollTo(0, st.y), 0);
+    if (st.y != null) setTimeout(() => { window.scrollTo(0, st.y); if (st.panel === 'life') focusLifeWord(st.i != null ? st.i : -1); }, 0);
     return;
   }
   if (st && st.view) { go(st.view, { push: false, arg: st.arg }); if (st.view === 'sign' && (st.wordOpen || st.wordStale)) signEntry = st.wordOpen ? 'open' : 'stale'; return; }

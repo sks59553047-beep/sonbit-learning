@@ -67,18 +67,20 @@ function renderLifePanel() {
 $('#lifeList').addEventListener('click', e => {
   const b = e.target.closest('[data-lifeword]'); if (!b) return;
   $('#bpInput').value = b.dataset.lifeword; $('#bpContract').checked = true; renderBraillePanel();
-  lifeY = Math.round(window.scrollY);
-  history.replaceState({ view: 'braille', panel: 'life', y: lifeY }, '', '#braille');   // 지금 자리(생활 속 점자의 이 카드)를 기록에 남기고
+  lifeY = Math.round(window.scrollY); lifeI = [...document.querySelectorAll('#lifeList [data-lifeword]')].indexOf(b);
+  history.replaceState({ view: 'braille', panel: 'life', y: lifeY, i: lifeI }, '', '#braille');   // 지금 자리(생활 속 점자의 이 카드)를 기록에 남기고
   history.pushState({ view: 'braille', panel: 'convert', fromLife: true }, '', '#braille');   // 글자 바꾸기는 한 칸 더 — 뒤로 가기가 수어 사전으로 새지 않는다
   showBraillePanel('convert', true);
   $('#lifeBack').hidden = false;
   $('#bpResult').scrollIntoView({ block: 'start' }); window.scrollBy(0, -80);
   markDid('braille');
 });
-let lifeY = 0;
+let lifeY = 0, lifeI = -1;
+// 생활 속 점자로 돌아오면 방금 누른 낱말 단추에 키보드 초점을 돌려준다(2026-11-21 지피티 평가: 그다음 Tab 이 목록 맨 위로 튐). 화면은 이미 그 자리라 스크롤은 건드리지 않는다
+function focusLifeWord(i) { const b = i >= 0 ? document.querySelectorAll('#lifeList [data-lifeword]')[i] : null; if (b) b.focus({ preventScroll: true }); }
 $('#lifeBack').addEventListener('click', () => {
   if (history.state && history.state.fromLife) { history.back(); return; }
-  showBraillePanel('life', true); window.scrollTo(0, lifeY);
+  showBraillePanel('life', true); window.scrollTo(0, lifeY); focusLifeWord(lifeI);
 });
 // ---- 연습 패드(처음엔 한 칸, 「칸 추가」를 누르면 두 칸) ----
 let padDots = new Set(), padDots2 = new Set(), padTwo = false;
@@ -156,7 +158,8 @@ function renderBraillePanel() {
   const cells = r.cells.filter(c => c.kind !== '줄바꿈');
   // 칸 수에는 바꾸지 못한 글자 자리(점선 칸)를 넣지 않고, 띄어쓰기 칸은 따로 밝힌다
   const real = cells.filter(c => !c.unsupported), spaces = real.filter(c => c.kind === '띄어쓰기').length, bad = r.unsupported.length;
-  $('#bpSummary').textContent = text ? `점자 ${real.length}칸${spaces ? `(띄어쓰기 ${spaces}칸 포함)` : ''}으로 바뀌었어요${bad ? ` · 바꾸지 못한 글자 ${bad}개` : ''}${full ? ` · 한 번에 ${BP_MAX}자까지만 바꿀 수 있어요` : ''}` : '글자를 입력하면 여기에 몇 칸인지 나와요';
+  const blank = !text.trim(), made = real.length - spaces;   // made: 띄어쓰기를 뺀, 실제로 점자로 바뀐 칸(공백만 남은 것은 바뀐 것이 아니다 — 2026-11-21 지피티 평가: ktx tv 가 ??? ?? 로 복사됨)
+  $('#bpSummary').textContent = text.trim() && !made ? `바뀐 점자가 없어요${bad ? ` · 바꾸지 못한 글자 ${bad}개` : ''}` : text.trim() ? `점자 ${real.length}칸${spaces ? `(띄어쓰기 ${spaces}칸 포함)` : ''}으로 바뀌었어요${bad ? ` · 바꾸지 못한 글자 ${bad}개` : ''}${full ? ` · 한 번에 ${BP_MAX}자까지만 바꿀 수 있어요` : ''}` : '글자를 입력하면 여기에 몇 칸인지 나와요';
   const warn = r.warnings.slice();
   if (r.unsupported.length) {
     // 영어: 대문자 약어(KTX·TV 등)만 바꾼다(2026-11-21). 소문자가 섞인 단어는 통일영어점자 약자 규칙이 많아 아직 바꾸지 않는다
@@ -176,11 +179,11 @@ function renderBraillePanel() {
   $('#bpLegend').hidden = !used.length;   // 접어 두고(열림 상태는 그대로), 펼치면 한 줄에 하나씩(2026-11-21: 한 덩어리 7줄은 읽기 힘듦)
   $('#bpLegend').innerHTML = `<summary>칸 아래 이름 뜻 (${used.length}개)</summary><ul>${used.map(k => `<li><b>${esc(k)}</b>: ${esc(KIND_HELP[k])}</li>`).join('')}</ul>`;
   const uni = cells.map(c => (c.kind === '띄어쓰기' ? ' ' : (c.unsupported ? '?' : dotsToUnicode(c.dots)))).join('');
-  const none = !real.length;   // 바꾼 점자가 하나도 없으면(예: 소문자 영어만 넣음) 복사할 것이 없다 — 「???」가 복사되지 않게(2026-11-21)
-  $('#bpOutWrap').hidden = !text || none; $('#bpOut').textContent = uni; $('#bpOutNote').hidden = !bad;
-  $('#bpCopyTop').hidden = !text; $('#bpCopyTop').disabled = none; $('#bpCopyTop').textContent = none ? '복사할 점자가 없어요' : '점자 복사';
+  const none = !made;   // 바꾼 점자가 하나도 없으면(예: 소문자 영어만 넣음) 복사할 것이 없다 — 「???」가 복사되지 않게(2026-11-21)
+  $('#bpOutWrap').hidden = blank || none; $('#bpOut').textContent = uni; $('#bpOutNote').hidden = !bad;
+  $('#bpCopyTop').hidden = blank; $('#bpCopyTop').disabled = none; $('#bpCopyTop').textContent = none ? '복사할 점자가 없어요' : '점자 복사';
   $('#bpCopy').textContent = '복사';
-  if (text) markDid('braille');
+  if (!blank) markDid('braille');
 }
 // 점자 칸 아래 이름: 규정 용어(초성·중성) 대신 쉬운 말로. 칸에 마우스를 올리면(title) 규정 용어와 조항이 그대로 나온다
 const KIND_WORD = { '초성': '첫소리', '중성': '모음', '종성': '받침', '단독 자모': '낱자', '로마자 종료표': '로마자 끝', '대문자 단어표': '대문자들', '1급 점자표': '그대로표' };

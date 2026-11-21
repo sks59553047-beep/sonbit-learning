@@ -52,7 +52,7 @@ check('변환기 약자 안내문', (await ev(`document.querySelector('#bp-conve
 await ev(`document.querySelector('[data-tg="첫소리"]').click()`); await sleep(100);
 check('점자 표(첫소리)에는 영상 링크 없음(영상은 「교육 영상」 칸에만)', (await num(`document.querySelectorAll('#tableBody [data-open-video], #view-braille .vcard').length`)) === 0);
 await ev(`document.querySelector('[data-bpanel="learn"]').click()`); await sleep(300);
-check('점자 탭 「교육 영상」 칸 7편', (await num(`document.querySelectorAll('#learnList .vrow').length`)) === 7, (await num(`document.querySelectorAll('#learnList .vrow').length`)) + '편');
+check('점자 탭 「교육 영상」 칸 8편', (await num(`document.querySelectorAll('#learnList .vrow').length`)) === 8, (await num(`document.querySelectorAll('#learnList .vrow').length`)) + '편');
 await ev(`document.querySelector('#learnList [data-open-video]').click()`); await sleep(1800);
 check('교육 영상 칸에서 영상 열기(플레이어)', (await ev(`document.querySelector('#view-player').classList.contains('active')`)) === true && (await num(`document.querySelector('#playerVideo').readyState`)) >= 1, await ev(`document.querySelector('#playerTitle').textContent`));
 await ev(`document.querySelector('#playerBack').click()`); await sleep(600);

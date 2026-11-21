@@ -259,7 +259,7 @@ check('G2c 로드맵 「기초 영상 보기」 → 기초 영상 칸으로 이�
 await c.click('#roadTabBraille'); await sleep(300);
 check('G2d 점자 트랙: 1단계 기초 영상 보기(공통), 2단계 「점자 교육 영상 보기」', /기초 영상 보기/.test(await txt('#roadList .rstep:nth-child(1)')) && /점자 교육 영상 보기/.test(await txt('#roadList .rstep:nth-child(2)')) && /점자 영상 \d+편/.test(await txt('#roadList .rstep:nth-child(2)')), (await txt('#roadList .rstep:nth-child(2)')).replace(/\s+/g, ' ').slice(0, 80));
 await ev(`document.querySelector('#roadList .rstep:nth-child(2) .rbox').click()`); await sleep(600);
-check('G2e 눌러 보면 점자 탭의 「교육 영상」 칸이 열림(①~⑥ + 생활 속 점자 7편)', (await ev(`document.querySelector('#view-braille').classList.contains('active') && !document.querySelector('#bp-learn').hidden && document.querySelectorAll('#learnList .vrow').length`)) === 7);
+check('G2e 눌러 보면 점자 탭의 「교육 영상」 칸이 열림(①~⑥ + 생활 속 점자 · 영어 점자 8편)', (await ev(`document.querySelector('#view-braille').classList.contains('active') && !document.querySelector('#bp-learn').hidden && document.querySelectorAll('#learnList .vrow').length`)) === 8);
 await c.click('[data-nav="home"]'); await sleep(400);
 await c.click('#roadTabSign'); await sleep(200);
 await ev(`window.__blobs=[];const o=URL.createObjectURL.bind(URL);URL.createObjectURL=b=>{window.__blobs.push(b);return o(b)}`);

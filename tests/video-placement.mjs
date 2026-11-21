@@ -8,7 +8,7 @@ const { ev, sleep } = c;
 const J = async e => JSON.parse(await ev(`JSON.stringify(${e})`));
 const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const HOME = ['v8-ksl-intro', 'v1-braille-basics', 'v11-ksl-dictionary-guide', 'v5-etiquette'];
-const LEARN = ['v2-braille-initials', 'v3-braille-words', 'v6-braille-batchim2', 'v7-braille-numbers', 'v9-braille-double', 'v10-braille-contractions', 'v12-braille-life', 'v13-braille-english'];
+const LEARN = ['v12-braille-life', 'v2-braille-initials', 'v3-braille-words', 'v6-braille-batchim2', 'v7-braille-numbers', 'v9-braille-double', 'v10-braille-contractions', 'v13-braille-english'];
 await c.fresh(BASE + '?pl=' + Date.now(), 2500);
 
 check('P0 교육 영상 12편이 목록에 있음', eq(await J(`VIDEO_LIST.map(v => v.id).sort()`), HOME.concat(LEARN).sort()), await ev(`VIDEO_LIST.length + '편'`));
@@ -18,7 +18,7 @@ const learnIds = () => J(`[...document.querySelectorAll('#learnList [data-open-v
 check('P1 학습 페이지: 기초 영상 4편(수어의 시작 → 점자의 시작 → 사전 사용법 → 소통 예절)', eq(await homeIds(), HOME), JSON.stringify(await homeIds()));
 await c.click('[data-nav="braille"]'); await sleep(300);
 await c.click('[data-bpanel="learn"]'); await sleep(400);
-check('P2 점자 탭 교육 영상 칸: 8편(① → … → ⑥ → 생활 속 점자 → 영어 점자)', eq(await learnIds(), LEARN), JSON.stringify(await learnIds()));
+check('P2 점자 탭 교육 영상 칸: 8편(생활 속 점자 → ① → … → ⑥ → 영어 점자)', eq(await learnIds(), LEARN), JSON.stringify(await learnIds()));
 check('P3 두 자리가 겹치지 않고 합치면 12편 전부', new Set((await homeIds()).concat(await learnIds())).size === 12);
 // ── 다른 곳에는 영상 목록·링크가 없다(두 자리 바깥의 영상 열기 버튼 수) ──
 const outside = () => ev(`[...document.querySelectorAll('[data-open-video]')].filter(b => !b.closest('#homeVideoList') && !b.closest('#learnList')).length + document.querySelectorAll('.vcard, .relvid, .rvbtn, #homeVideoGrid, #brailleVideoGrid').length`);
@@ -26,7 +26,7 @@ const spots = [];
 spots.push(['점자 탭 · 교육 영상 칸 바깥', await outside()]);
 for (const p of ['convert', 'pad']) { await c.click(`[data-bpanel="${p}"]`); await sleep(250); spots.push(['점자 탭 · ' + p, await outside()]); }
 await c.click('[data-bpanel="table"]'); await sleep(250);
-for (const g of ['첫소리', '모음', '받침', '숫자', '약자·약어', '문장부호']) { await ev(`document.querySelector('[data-tg="${g}"]').click()`); await sleep(120); spots.push(['점자 표 · ' + g, await outside()]); }
+for (const g of ['첫소리', '모음', '받침', '숫자', '약자·약어', '문장부호', '영어 알파벳', '영어 약자']) { await ev(`document.querySelector('[data-tg="${g}"]').click()`); await sleep(120); spots.push(['점자 표 · ' + g, await outside()]); }
 await c.click('[data-nav="sign"]'); await sleep(350); spots.push(['수어 사전 첫 화면', await outside()]);
 await ev(`document.querySelector('[data-topic="인사·예절"]').click()`); await sleep(300); spots.push(['수어 주제 목록', await outside()]);
 await ev(`document.querySelector('#signList .wordrow').open = true`); await sleep(500); spots.push(['수어 단어 펼침', await outside()]);

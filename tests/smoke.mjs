@@ -39,7 +39,7 @@ check('점자: 패드 읽기(1·4번)', true, await ev(`document.querySelector('
 check('점자: 연습 패드·글자 바꾸기·점자 표·수어 사전에는 영상 링크가 없음(영상은 두 자리에만)', (await ev(`document.querySelectorAll('#bp-pad [data-open-video], #bp-convert [data-open-video], #bp-table [data-open-video], #view-sign [data-open-video], #view-quiz [data-open-video]').length`)) === 0);
 await c.shot('v3_pad.png');
 await c.click('[data-bpanel="table"]'); await c.sleep(400);
-for (const g of ['첫소리', '모음', '받침', '숫자', '약자·약어', '문장부호']) {
+for (const g of ['첫소리', '모음', '받침', '숫자', '약자·약어', '문장부호', '영어 알파벳', '영어 약자']) {
   await ev(`document.querySelector('[data-tg="${g}"]').click()`); await c.sleep(200);
   check('점자 표: ' + g, (await ev(`document.querySelectorAll('#tableBody .guide-card').length`)) > 5, (await ev(`document.querySelectorAll('#tableBody .guide-card').length`)) + '카드');
 }
@@ -47,7 +47,7 @@ await ev(`document.querySelector('[data-tg="약자·약어"]').click()`); await 
 await c.shot('v3_table.png');
 // 교육 영상 칸(점자 탭): 점자 영상 8편이 순서대로
 await c.click('[data-bpanel="learn"]'); await c.sleep(500);
-check('점자 탭 「교육 영상」 칸: 8편 순서대로(①~⑥, 생활 속 점자, 영어 점자)', (await ev(`document.querySelectorAll('#learnList .vrow').length`)) === 8 && (await ev(`!document.querySelector('#bp-learn').hidden && document.querySelector('#bp-table').hidden`)) === true, await ev(`[...document.querySelectorAll('#learnList .vtitle')].map(e=>e.textContent.slice(0,9)).join(' | ')`));
+check('점자 탭 「교육 영상」 칸: 8편 순서대로(생활 속 점자, ①~⑥, 영어 점자)', (await ev(`document.querySelectorAll('#learnList .vrow').length`)) === 8 && (await ev(`!document.querySelector('#bp-learn').hidden && document.querySelector('#bp-table').hidden`)) === true, await ev(`[...document.querySelectorAll('#learnList .vtitle')].map(e=>e.textContent.slice(0,9)).join(' | ')`));
 check('교육 영상 칸: 모두 점자 영상(수어·공통 영상은 학습 페이지에)', (await ev(`[...document.querySelectorAll('#learnList .vrow')].every(r=>r.querySelector('.tag').textContent==='점자')`)) === true);
 await c.shot('v3_learn.png');
 // 퀴즈

@@ -50,8 +50,8 @@ function renderLearnPanel() {
   // 작업자님이 정한 문구(2026-11-20): 「돼요.」에서 줄을 바꿔 두 줄로
   const span = fmtSpan(totalDur(vs)), last = span.charCodeAt(span.length - 1) - 0xAC00;
   const ieyo = last >= 0 && last % 28 ? '이에요' : '예요';   // 「13분 9초예요」「13분이에요」
-  const life = vs.some(v => v.id === 'v12-braille-life'), eng = vs.some(v => v.id === 'v13-braille-english');   // 2026-11-21: 맨 끝 「생활 속 점자」는 ①~⑥과 달리 주변의 점자를 찾아보는 영상
-  $('#learnSub').textContent = `한글 점자를 차례로 익히는 영상이에요. 위에서부터 보면 돼요.\n${vs.length}편을 모두 보면 ${span}${ieyo}.${life ? ` 「생활 속 점자」는 주변에서 점자를 찾아보는 영상${eng ? '이고, 「영어 점자」는 한글 문장 속 영어를 적는 법이에요.' : '이에요.'}` : ''}${intro.length ? ` 처음이라면 학습 페이지 「기초 영상」의 「${shortName(intro[0])}」부터 보세요.` : ''}`;
+  const life = vs.some(v => v.id === 'v12-braille-life'), eng = vs.some(v => v.id === 'v13-braille-english');   // 2026-11-21: 「생활 속 점자」는 입문이라 목록 맨 위(order 1), 맨 끝은 「영어 점자」
+  $('#learnSub').textContent = `${life ? '점자가 쓰이는 곳을 찾아보는 입문 영상부터 한글 점자를 차례로 익히는 영상까지, 위에서부터 보면 돼요.' : '한글 점자를 차례로 익히는 영상이에요. 위에서부터 보면 돼요.'}\n${vs.length}편을 모두 보면 ${span}${ieyo}.${eng ? ' 맨 끝 「영어 점자」는 한글 문장 속 영어를 적는 법이에요.' : ''}${intro.length ? ` 처음이라면 학습 페이지 「기초 영상」의 「${shortName(intro[0])}」부터 보세요.` : ''}`;
   $('#learnList').innerHTML = vs.map(v => vrowHtml(v, next)).join('');
 }
 function bindVideoLinks(root) {

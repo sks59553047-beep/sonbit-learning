@@ -36,6 +36,19 @@ check('E10 예시 단추에 영어 낱말 예시(apples, bananas, grapes)', chip
 await ev(`document.querySelector('#bpExamples [data-ex="apples, bananas, grapes"]').click(); 1`); await sleep(300);
 s = await st(); check('E11 예시 단추를 누르면 바로 바뀜', /⠁⠏⠏⠇⠑⠎/.test(s.out) && !s.copyOff, s.out);
 check('E12 안내 문구: 「영어 낱말(apples)을 바꿔요」', /영어 낱말\(apples\)을 바꿔요/.test(await ev(`document.querySelector('#bp-convert').textContent`)));
+// ⑤ 점자 표의 영어 칸(엔진 표에서 만든 카드)
+await ev(`document.querySelector('[data-bpanel="table"]').click(); 1`); await sleep(300);
+const chips2 = await ev(`[...document.querySelectorAll('#tableChips [data-tg]')].map(b => b.dataset.tg)`);
+check('E13 점자 표 칩에 「영어 알파벳」「영어 약자」', chips2.includes('영어 알파벳') && chips2.includes('영어 약자'), JSON.stringify(chips2));
+const grp = async g => { await ev(`document.querySelector('[data-tg="${g}"]').click(); 1`); await sleep(250); return ev(`({ n: document.querySelectorAll('#tableBody .guide-card').length, cards: Object.fromEntries([...document.querySelectorAll('#tableBody .guide-card')].map(e => [e.querySelector('.ch').textContent, e.querySelector('.dn').textContent])), over: document.documentElement.scrollWidth > innerWidth })`); };
+let g = await grp('영어 알파벳');
+check('E14 영어 알파벳: 26자 + 앞뒤 표 5개 = 31장, a=1번·t=2·3·4·5번, 로마자표 3·5·6번·종료표 2·5·6번·대문자 단어표 6 + 6번', g.n === 31 && g.cards.a === '1번' && g.cards.t === '2·3·4·5번' && g.cards['로마자표'].startsWith('3·5·6번') && g.cards['로마자 종료표'].startsWith('2·5·6번') && g.cards['대문자 단어표'].startsWith('6 + 6번'), JSON.stringify([g.n, g.cards.a, g.cards.t, g.cards['대문자 단어표']]));
+check('E15 영어 알파벳: 옆으로 안 넘침', !g.over);
+const want = await ev(`(() => { const E = UEB.tables; const k = o => Object.keys(o).length; return 11 + (k(E.STRONG) - 5) + k(E.LOWER_ANY) + k(E.LOWER_MID) + k(E.FINAL) + k(E.INIT) + k(E.SHORT) })()`);
+g = await grp('영어 약자');
+check('E16 영어 약자: 카드 수가 엔진 표와 같음(낱말 11 + 묶음 14 + 가운데 5 + 끝글자 12 + 첫글자 + 짧은 형태)', g.n === want, g.n + ' / ' + want);
+check('E17 영어 약자 점 모양: the 2·3·4·6번, ing 3·4·6번, ea 2번, tion 5·6 + 1·3·4·5번, day 5 + 1·4·5번, about 1 + 1·2번', g.cards.the === '2·3·4·6번' && g.cards.ing === '3·4·6번' && g.cards.ea === '2번' && g.cards.tion === '5·6 + 1·3·4·5번' && g.cards.day === '5 + 1·4·5번' && g.cards.about === '1 + 1·2번', JSON.stringify([g.cards.the, g.cards.ing, g.cards.ea, g.cards.tion, g.cards.day, g.cards.about]));
+check('E18 영어 약자: 옆으로 안 넘침(휴대폰)', !g.over);
 check('JS 오류 없음', !c.errs.length, c.errs.join(' | '));
 await ev(`localStorage.clear(); 1`);
 await c.close(); process.exit(0);

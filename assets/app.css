@@ -710,3 +710,10 @@ details.bplegend li b{font-weight:800}
 /* 누르는 곳은 24px 이상(실사용자 점검 6차): 근거 링크·「글로 붙여 넣어 가져오기」 */
 .lifesrc a{display:inline-block;padding:8px 2px}
 #recPasteOpen{min-height:44px}
+
+/* 점자 표(영어): 영어 낱말 이름이 길어서 두 줄로 */
+.guide-grid.en{grid-template-columns:repeat(2,1fr)}
+@media (min-width:520px){ .guide-grid.en{grid-template-columns:repeat(3,1fr)} }
+@media (min-width:760px){ .guide-grid.en{grid-template-columns:repeat(5,1fr)} }
+@media (min-width:1000px){ .guide-grid.en{grid-template-columns:repeat(7,1fr)} }
+.guide-grid.en .guide-card .ch{font-size:1.0625rem;overflow-wrap:anywhere}

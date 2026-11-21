@@ -213,15 +213,43 @@ function copyBraille(btn, label) {
 $('#bpCopy').addEventListener('click', () => copyBraille($('#bpCopy'), '복사'));
 $('#bpCopyTop').addEventListener('click', () => copyBraille($('#bpCopyTop'), '점자 복사'));
 // ---- 점자 표(규정 표를 엔진과 같은 표에서 만든다) ----
-const TABLE_GROUPS = ['첫소리', '모음', '받침', '숫자', '약자·약어', '문장부호'];
+const TABLE_GROUPS = ['첫소리', '모음', '받침', '숫자', '약자·약어', '문장부호', '영어 알파벳', '영어 약자'];
 let tableGroup = store.get('tgroup', '첫소리'); if (!TABLE_GROUPS.includes(tableGroup)) tableGroup = '첫소리';
 function guideCardHtml(label, cells, sub) {
   const nums = cells.map(c => (c.length ? c.join('·') : '빈칸')).join(' + ');
   return `<div class="guide-card${cells.length > 1 ? ' wide' : ''}"><div class="ch">${esc(label)}</div><div class="cc">${cells.map(c => miniDots(c, true)).join('')}</div><div class="dn">${esc(nums)}번${sub ? ' · ' + esc(sub) : ''}</div></div>`;
 }
-function guideGrid(items, multi) { return `<div class="guide-grid${multi ? ' multi' : ''}">${items.join('')}</div>`; }
+function guideGrid(items, multi, extra) { return `<div class="guide-grid${multi ? ' multi' : ''}${extra ? ' ' + extra : ''}">${items.join('')}</div>`; }
 function subHead(title, tag, note) { return `<div class="sub-h"><h2>${esc(title)}</h2>${tag ? `<span class="tag">${esc(tag)}</span>` : ''}</div>${note ? `<p class="note" style="margin:8px 0">${note}</p>` : ''}`; }
 function convCells(text) { return KB.convert(text, { contract: true }).cells.filter(c => c.kind !== '띄어쓰기' && c.kind !== '줄바꿈').map(c => c.dots); }
+// 영어(통일영어점자): 표는 영어 엔진(assets/ueb-g2.js)과 같은 표에서 만든다 — 손으로 옮겨 적지 않는다
+const uniCells = u => [...u].map(ch => { const v = ch.codePointAt(0) - 0x2800, d = []; for (let n = 1; n <= 8; n++) if (v & (1 << (n - 1))) d.push(n); return d; });
+function englishTableHtml(g) {
+  const E = UEB.tables, brf = b => KB.brfCells(b), card = (label, u, sub) => guideCardHtml(label, typeof u === 'string' ? uniCells(u) : u, sub);
+  const WORD5 = ['and', 'for', 'of', 'the', 'with'], WORD6 = ['child', 'shall', 'this', 'which', 'out', 'still'];
+  const foot = '<p class="note" style="margin-top:12px">영어는 「한국 점자 규정」 제28~37항과 「통일영어점자 규정」을 따랐어요. 낱말마다 어떤 약자를 쓸지는 「글자 바꾸기」가 알아서 맞춰 줘요. 전문가 검수는 받지 않았어요.</p>';
+  if (g === '영어 알파벳') {
+    const letters = Object.keys(E.LETTER).map(ch => card(ch, E.LETTER[ch]));
+    const marks = [card('로마자표', brf('0'), '영어 시작'), card('로마자 종료표', brf('4'), '영어 끝'), card('대문자표', brf(','), '다음 한 글자'), card('대문자 단어표', brf(',,'), '뒤 글자 모두'), card('1급 점자표', brf(';'), '약자로 읽지 않게')];
+    return subHead('영어 알파벳', '26개', '소문자예요. 대문자는 앞에 대문자표(6번 점)를 한 칸 더 써요. 예: A → 대문자표 + a')
+      + guideGrid(letters)
+      + subHead('영어 앞뒤에 붙는 표', '5개', '한글 문장 속 영어는 로마자표로 시작해 로마자 종료표로 끝내요. 쉼표·마침표 등 바로 앞에서는 종료표를 생략해요(제33항).')
+      + guideGrid(marks, true, 'en') + foot;
+  }
+  const strong = Object.keys(E.STRONG).filter(k => !WORD5.includes(k)), lowerAny = Object.keys(E.LOWER_ANY), mid = Object.keys(E.LOWER_MID), fin = Object.keys(E.FINAL), ini = Object.keys(E.INIT), sf = Object.keys(E.SHORT).sort();
+  return subHead('낱말 하나를 한 칸으로', (WORD5.length + WORD6.length) + '개', '한글 문장 속 영어에서는 but·can·that·you처럼 알파벳 한 글자로 줄이는 낱말(로마자표 바로 뒤)과 be·enough·his·in·was·were는 약자를 쓰지 않고 풀어서 적어요(제32·37항).')
+    + guideGrid(WORD5.concat(WORD6).map(w => card(w, E.WHOLE[w])), false, 'en')
+    + subHead('낱말 속 묶음 약자', (strong.length + lowerAny.length) + '개', '낱말 어디에서나 쓰는 글자 묶음이에요. ing는 낱말 맨 앞에는 못 써요.')
+    + guideGrid(strong.map(k => card(k, E.STRONG[k])).concat(lowerAny.map(k => card(k, E.LOWER_ANY[k]))), false, 'en')
+    + subHead('낱말 가운데만 쓰는 약자', mid.length + '개', '낱말 맨 앞이나 끝에는 쓰지 않아요.')
+    + guideGrid(mid.map(k => card(k, E.LOWER_MID[k])), false, 'en')
+    + subHead('끝글자 약자 — 두 칸', fin.length + '개', '낱말 맨 앞에는 쓰지 않아요. 예: nation → n a + tion')
+    + guideGrid(fin.map(k => card(k, E.FINAL[k])), true, 'en')
+    + subHead('첫글자 약자 — 두 칸', ini.length + '개', '5번·4·5번·4·5·6번 점을 먼저 쓰고 글자를 이어 써요. 낱말 안에서도 써요.')
+    + guideGrid(ini.map(k => card(k, E.INIT[k])), true, 'en')
+    + subHead('짧은 형태 — 낱말 전체를 줄인 것', sf.length + '개', '낱말 전체일 때만 써요. 뒤에 s·d·ly 등이 붙기도 해요.')
+    + guideGrid(sf.map(k => card(k, E.SHORT[k])), true, 'en') + foot;
+}
 function tableHtml(g) {
   const brf = b => KB.brfCells(b);
   if (g === '첫소리') {
@@ -254,6 +282,7 @@ function tableHtml(g) {
       + subHead('약자 — 두 칸으로 쓰는 것', '4개') + guideGrid(['것', '성', '정', '청'].map(ch => guideCardHtml(ch, convCells(ch))), true)
       + subHead('약어 — 낱말 전체를 줄인 것', '7개', '낱말 앞에 한글이 붙어 있지 않을 때만 써요.') + guideGrid(Object.keys(T.ABBR_WORDS).map(w => guideCardHtml(w, convCells(w))), true);
   }
+  if (g === '영어 알파벳' || g === '영어 약자') return englishTableHtml(g);
   const keys = Object.keys(PUNCT_NAME).filter(ch => T.PUNCT[ch] !== undefined);
   return subHead('문장 부호', keys.length + '개', '「한국 점자 규정」 제49항의 부호예요. 쉼표(5번)는 첫소리 ㄹ과 점 모양이 같아서 앞뒤 글자를 보고 구분해요.')
     + guideGrid(keys.map(ch => guideCardHtml(ch, brf(T.PUNCT[ch]), PUNCT_NAME[ch])));

@@ -71,6 +71,12 @@ const td = await ev(`(() => { const b = document.querySelector('#htoday'), v = b
 check('L13 컴퓨터 화면: 소개 두 칸, 위(「오늘도 손빛과 함께」·「여기서 할 수 있는 것」)·아래(「오늘의 수어」·마지막 줄) 끝이 맞음, 「오늘의 수어」 영상 재생·점자 칸', td.shown && td.word && td.cells > 0 && td.src && td.playing && td.cols === 2 && td.bottomGap <= 2 && td.topGap <= 4, JSON.stringify(td));
 await ev(`document.querySelector('#htoday').click()`); await sleep(1200);
 const tg = await ev(`({ view: document.querySelector('.view.active').id, open: document.querySelector('#signList .wordrow[open]')?.dataset.wid || '' })`);
+// 「움직임 줄이기」를 켠 사람에게는 영상을 자동으로 틀거나 내려받지 않고 그림만
+await c.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
+await c.fresh(BASE + '?hl=' + Date.now(), 2600); await sleep(1800);
+const calm = await ev(`({ poster: !!document.querySelector('#htoday video').poster, src: !!document.querySelector('#htoday video').getAttribute('src'), paused: document.querySelector('#htoday video').paused })`);
+check('L16 움직임 줄이기: 「오늘의 수어」는 그림만 보이고 영상은 내려받지 않고 재생하지 않음', calm.poster && !calm.src && calm.paused, JSON.stringify(calm));
+await c.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'no-preference' }] });
 check('L14 「오늘의 수어」를 누르면 수어 사전에서 그 단어가 펼쳐짐', tg.view === 'view-sign' && tg.open === td.id, JSON.stringify(tg));
 // 날마다 무작위 + 한 바퀴 돌기 전엔 같은 낱말이 다시 안 나옴 + 간추린 목록(뺀 주제·낱말 없음)
 const rot = await ev(`(() => { const l = todayList(), n = l.length, base = new Date(2026, 10, 21), ids = [];

@@ -187,8 +187,10 @@ function renderToday() {
 let todayIO = null;
 function loadToday(box) {
   const v = box.querySelector('video'); if (!box._src) return;
-  if (!v.getAttribute('src')) { v.poster = box._poster; v.src = box._src; }
-  v.play().catch(() => {});
+  // 「움직임 줄이기」·「데이터 절약」을 켠 사람에게는 영상을 자동으로 틀거나 내려받지 않고 그림만 보여 준다(누르면 사전에서 영상으로 봄)
+  const calm = matchMedia('(prefers-reduced-motion: reduce)').matches || !!(navigator.connection && navigator.connection.saveData);
+  if (!v.getAttribute('src')) { v.poster = box._poster; if (!calm) v.src = box._src; }
+  if (!calm) v.play().catch(() => {});
 }
 function renderHome() {
   renderToday();

@@ -85,8 +85,8 @@ main{flex:1;padding:16px 16px calc(100px + env(safe-area-inset-bottom,0px));disp
 .chiprow{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch}
 .chiprow::-webkit-scrollbar{display:none}
 .chiprow .chip{flex:none}
-.search{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;box-shadow:var(--shadow)}
-.search input{border:0;outline:0;background:none;flex:1;font-size:1rem;color:var(--ink);min-width:0}
+.search{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:0 14px;box-shadow:var(--shadow);cursor:text}
+.search input{border:0;outline:0;background:none;flex:1;font-size:1rem;color:var(--ink);min-width:0;min-height:48px;padding:12px 0}   /* 입력칸이 상자 높이를 다 차지해서 어디를 눌러도 입력이 시작된다(2026-11-22) */
 .search:focus-within{border-color:var(--teal)}
 .progress{height:8px;border-radius:99px;background:var(--surface2);overflow:hidden}
 .progress b{display:block;height:100%;background:var(--teal);border-radius:99px;transition:width .3s}
@@ -717,3 +717,6 @@ details.bplegend li b{font-weight:800}
 @media (min-width:760px){ .guide-grid.en{grid-template-columns:repeat(5,1fr)} }
 @media (min-width:1000px){ .guide-grid.en{grid-template-columns:repeat(7,1fr)} }
 .guide-grid.en .guide-card .ch{font-size:1.0625rem;overflow-wrap:anywhere}
+
+/* 칸 아래 이름 뜻 줄: 누르는 곳 44px(2026-11-22) */
+#bpLegend summary{min-height:44px;display:flex;align-items:center}

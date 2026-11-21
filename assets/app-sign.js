@@ -206,6 +206,8 @@ $('#signHome').addEventListener('click', e => {
   signTopic = b.dataset.topic; signCho = ''; renderSign(); window.scrollTo(0, 0);
 });
 $('#signTopicBack').addEventListener('click', () => { signTopic = ''; signCho = ''; renderSign(); window.scrollTo(0, 0); });
+// 검색 상자의 돋보기·여백을 눌러도 입력칸에 초점(2026-11-22 실사용 점검)
+$$('.search').forEach(b => b.addEventListener('click', e => { const i = b.querySelector('input'); if (i && e.target !== i) i.focus(); }));
 $('#signSearch').addEventListener('input', e => {
   signQuery = e.target.value.trim(); signPinId = ''; renderSign();
   if (/^#sign\//.test(location.hash)) history.replaceState(signEntry ? { view: 'sign', wordStale: true } : { view: 'sign' }, '', '#sign');   // 다른 단어를 찾기 시작하면 주소에서 단어 번호를 뗀다

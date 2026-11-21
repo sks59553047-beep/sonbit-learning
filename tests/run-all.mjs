@@ -40,6 +40,7 @@ const TESTS = [
   ['실사용 평가 반영 3(크게 보기 영상 조절·0칸 복사·생활 속 점자 뒤로 가기·말끝·전화번호·물다)', 'real-use-fixes3.mjs', [BASE], true],
   ['지피티 평가 반영(공백만 남은 변환 복사 막기·생활 속 점자 돌아올 때 키보드 초점)', 'real-use-fixes4.mjs', [BASE], true],
   ['영어 낱말 점자(약자·규정 예시·못 바꾸는 영어 안내·예시 단추)', 'english-braille.mjs', [BASE], true],
+  ['전체 점검 반영(검색 상자 전체 누르기·이름 뜻 줄 44px·붙여넣은 글 정리)', 'real-use-fixes5.mjs', [BASE], true],
   ['생활 속 점자(카드 12개·근거 링크·예시 점자·글자 바꾸기 연결·좁은 화면 버튼)', 'life-braille.mjs', [BASE], true],
   ['키보드만으로 퀴즈 풀기', 'keyboard.mjs', [BASE, 'desktop'], true],
   ['영상을 못 불러올 때 안내', 'video-fail.mjs', [BASE], true],

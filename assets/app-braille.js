@@ -152,7 +152,9 @@ $('#padReset').addEventListener('click', () => { padDots.clear(); padDots2.clear
 // ---- 글자 → 점자 변환기 ----
 function renderBraillePanel() {
   const BP_MAX = 200;   // 한 번에 바꾸는 글자 수(입력 칸도 이만큼만 받는다)
-  const text = $('#bpInput').value.slice(0, BP_MAX), full = $('#bpInput').value.length >= BP_MAX;
+  // 붙여넣은 글의 눈에 안 보이는 글자·전각 문자·탭을 보통 글자로(한글 자모는 건드리지 않는다 — NFKC 는 쓰지 않음)
+  const norm = v => v.replace(/[\u200B-\u200D\u2060\uFEFF\u00AD]/g, '').replace(/[\uFF01-\uFF5E]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)).replace(/[\u3000\u00A0\t]/g, ' ');
+  const text = norm($('#bpInput').value).slice(0, BP_MAX), full = $('#bpInput').value.length >= BP_MAX;
   const contract = $('#bpContract').checked;
   const r = KB.convert(text, { contract });
   const cells = r.cells.filter(c => c.kind !== '줄바꿈');

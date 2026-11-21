@@ -538,9 +538,9 @@ label.lbl2{display:block}
 /* ---------- 학습 화면: 기초 영상 설명 한 줄·접힌 자료 출처(2026-11-20) ---------- */
 #homeVideoList .vdesc{-webkit-line-clamp:1}
 .srcfold{padding:12px 16px}
-.srcfold summary{display:flex;align-items:center;justify-content:space-between;cursor:pointer;list-style:none;min-height:28px}
+.srcfold summary{display:flex;align-items:center;justify-content:space-between;cursor:pointer;list-style:none;min-height:44px}
 .srcfold summary::-webkit-details-marker{display:none}
-.srcfold summary h2{font-size:1rem;font-weight:800;color:var(--muted)}
+.srcfold summary h2{font-size:1.0625rem;font-weight:800;color:var(--ink)}   /* 자료 출처는 또렷하게(2026-11-21) */
 .srcfold summary::after{content:"▾";color:var(--muted);font-size:0.9375rem}
 .srcfold[open] summary::after{content:"▴"}
 .srcfold .sourcelist{font-size:1rem}
@@ -636,7 +636,7 @@ label.lbl2{display:block}
 /* 이름이 같은 수어 번호·안내(2026-11-20) */
 .wordrow .wmark{flex:none;margin-left:-4px;color:var(--teal);font-weight:800;font-size:1rem}
 .samenote{margin:0;padding:8px 12px;border-radius:10px;background:var(--surface2);font-size:0.9375rem;line-height:1.6;color:var(--ink)}
-.samenote .linkbtn{margin:0 0 0 2px;padding:0;min-height:24px;font-size:0.9375rem}
+.samenote .linkbtn{margin:0 0 0 2px;padding:6px 4px;min-height:36px;font-size:0.9375rem}
 .bplegend{margin:10px 0 0;font-size:0.875rem;line-height:1.6;color:var(--muted)}
 /* 2026-11-21 실사용 평가 반영: 단어장에서 뺀 줄 · 점자 칸 수 옆 복사 · 퀴즈로 돌아가기 · 영상 고르기(고른 뒤 「이 영상으로 답하기」) */
 .wordrow.unfav>summary .wname,.wordrow.unfav>summary .wsub{opacity:.55}
@@ -706,3 +706,7 @@ details.bplegend li b{font-weight:800}
   .hcanbox{order:1}
   .htoday{order:2;margin-top:16px}
 }
+
+/* 누르는 곳은 24px 이상(실사용자 점검 6차): 근거 링크·「글로 붙여 넣어 가져오기」 */
+.lifesrc a{display:inline-block;padding:8px 2px}
+#recPasteOpen{min-height:44px}

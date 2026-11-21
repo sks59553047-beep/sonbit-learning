@@ -108,6 +108,21 @@
   // 세 글자 이상 대문자 단어에 영어 약자(묶음 약자)가 들어갈 수 있는 글자 조합이 있으면(OPEN·STOP 같은 낱말일 수 있음) 바꾸지 않는다
   const roRisky = w => /TH|SH|CH|WH|GH|ED|ER|OU|OW|ST|AR|ING|EN|IN|THE|AND|FOR|OF|WITH/.test(w) || /.(EA|BB|CC|FF|GG)./.test(w) || /^(BE|CON|DIS|COM)/.test(w);
   const isRoL = c => /[A-Za-z]/.test(c || ''), isDg = c => /[0-9]/.test(c || '');
+  // ---- 제65~73항 기호 ----
+  const SUP = '\uE000';   // 위 첨자 표시(내부용): 글자 뒤 SUP + 숫자 = m²
+  const UNIT_SYMS = { '㎡': ['m', SUP, '2'], '㎠': ['c', 'm', SUP, '2'], '㎢': ['k', 'm', SUP, '2'], '㎥': ['m', SUP, '3'], '㎤': ['c', 'm', SUP, '3'], '㎦': ['k', 'm', SUP, '3'], '㎝': ['c', 'm'], '㎞': ['k', 'm'], '㎜': ['m', 'm'], '㎏': ['k', 'g'], '㎎': ['m', 'g'], '㎖': ['m', 'l'], '㎘': ['k', 'l'], '㎗': ['d', 'l'], '㏊': ['h', 'a'], '㎒': ['M', 'H', 'z'], '㎓': ['G', 'H', 'z'], '㎑': ['k', 'H', 'z'], '㎐': ['H', 'z'], '㎳': ['m', 's'] };
+  const expandUnits = arr => arr.flatMap(c => UNIT_SYMS[c] || [c]);
+  // 화폐(제65항)·로마자가 아닌 단위(제69항 붙임 2): 0을 앞세우고, 뒤에 한글이 오면 한 칸 띄어 쓴다
+  const UNIT_BRF = { '￦': '0@w', '₩': '0@w', '$': '0@s', '￠': '0@c', '¢': '0@c', '€': '0@e', '￡': '0@l', '£': '0@l', '₣': '0@f', '￥': '0@y', '¥': '0@y', '%': '0p', '‰': '0pm', '°': '0d', '℃': '0d,c', '℉': '0d,f', '′': '0-', '″': '0--', 'Å': '0*' };
+  const ARROW_BRF = { '→': '3o', '←': '[3', '↔': '[3o', '↓': '^3o', '↑': ';3o' };   // 제70항: 앞뒤를 한 칸씩 띄어 쓴다
+  const SYM71_BRF = { '@': '@a', '^': '@5', '#': '_?', '_': '_-', '\\': '_*', '|': '_\\', '•': '_4' };   // 제71·72항
+  const ROMAN_SYM_BRF = { '&': '@&', '§': '^s', '¶': '^p', '©': '^c', '®': '^r', '™': '^t' };   // 제71항 다만: 한글과 혼동되어 로마자표·종료표와 함께
+  // 대소문자가 섞인 낱말(iPhone·YouTube·eBay·iOS)을 조각으로: 소문자 덩이 · 대문자+소문자 · 맨 끝의 대문자 덩이(2글자 이상)
+  const camelParts = s => { if (/^[A-Z]?[a-z]+$/.test(s) || /^[A-Z]+$/.test(s)) return null; const m = s.match(/[a-z]+|[A-Z][a-z]+|[A-Z]{2,5}(?![a-z])|[A-Z]/g); return m && m.join('') === s && m.length <= 5 && !/^[A-Z]$/.test(m[m.length - 1]) ? m : null; };
+  const CAPS3 = new Set('THE AND FOR YOU ARE OUT NOW HOW OWN'.split(' '));
+  const isCommonCaps = s => (/^[A-Z]{4,}$/.test(s) && !!UEB && UEB.common.has(s.toLowerCase())) || CAPS3.has(s);   // OPEN·STOP·WELCOME: 약어가 아니라 영어 낱말을 대문자로 쓴 것
+  // 조각 하나가 바꿀 수 있는 모양인가: 소문자·첫 글자 대문자 낱말 / 한 글자 / 대문자 낱말 / 대소문자 섞인 낱말
+  const pieceOk = (s, single) => /^[A-Z]?[a-z]+$/.test(s) ? s.length > 1 || single : /^[A-Z]$/.test(s) ? single : isCommonCaps(s) || /^[A-Z]{2,5}$/.test(s) && !roRisky(s) || !!camelParts(s);
   // chars[i]부터 로마자 덩어리(대문자 단어·숫자·단어 사이 빈칸, KBS 1 TV / LP 1장 / D-100)를 읽는다
   function romanRun(chars, i, closingNext) {
     const toks = []; let j = i;
@@ -118,8 +133,12 @@
       // 하이픈·아포스트로피로 이은 낱말(well-known, Wi-Fi, don't, I'm): 부분마다 따로 약자를 적고 사이에 -(3·6번)·'(3번)을 쓴다
       const parts = [{ sep: '', s: wd }];
       while ((chars[j] === '-' || chars[j] === "'" || chars[j] === '’') && isRoL(chars[j + 1])) { let m = j + 1; while (isRoL(chars[m])) m++; parts.push({ sep: chars[j] === '-' ? '-' : "'", s: chars.slice(j + 1, m).join('') }); j = m; }
-      toks.push(parts.length > 1 ? { t: 'w', s: parts.map(q => q.sep + q.s).join(''), parts } : { t: 'w', s: wd });
+      // 숫자 바로 뒤나 m² 앞, 빗금 뒤의 한 글자는 단위(1m·㎡·km/h): 로마자표로 적는다(제69항)
+      const unit = parts.length === 1 && wd.length === 1 && ((toks.length === 0 && isDg(chars[i - 1])) || chars[j] === SUP || (toks.length && toks[toks.length - 1].t === 'slash'));
+      toks.push(parts.length > 1 ? { t: 'w', s: parts.map(q => q.sep + q.s).join(''), parts } : { t: 'w', s: wd, unit });
       if (chars[j] === '.' && isRoL(chars[j + 1])) { let m = j + 1; while (isRoL(chars[m])) m++; return { ok: false, end: m }; }   // a.b — 낱말 사이 마침표는 아직 안 바꿈(덩어리째 지원 안 함)
+      while (chars[j] === SUP && isDg(chars[j + 1])) { toks.push({ t: 'sup', s: chars[j + 1] }); j += 2; }   // m² (제68항)
+      if (chars[j] === '/' && isRoL(chars[j + 1])) { toks.push({ t: 'slash' }); j++; continue; }   // mg/dl (제69항 붙임 3)
       if (chars[j] === ',' && chars[j + 1] === ' ' && isRoL(chars[j + 2]) && toks.length) { toks.push({ t: 'c' }); j++; }   // apples, bananas (규정 제32항 예시)
       if (chars[j] === '-' && isDg(chars[j + 1])) { toks.push({ t: 'h' }); j++; }
       if (isDg(chars[j])) { let m = j; while (isDg(chars[m])) m++; toks.push({ t: 'n', s: chars.slice(j, m).join('') }); j = m; }
@@ -132,10 +151,11 @@
       break;
     }
     const words = toks.filter(t => t.t === 'w');
-    const compoundOk = ps => ps.length <= 3 && ps.every((q, i) => q.sep === "'" ? /^(s|t|m|d|re|ll|ve)$/.test(q.s) : q.s === 'I' ? i === 0 && !!ps[1] && ps[1].sep === "'" : /^[A-Z]?[a-z]+$/.test(q.s) && q.s.length > 1);   // 한 글자 조각(e-mail·T-shirt)은 규칙이 달라 아직 안 바꿈
-    words.forEach(w => { if (w.parts) { w.caps = false; w.eng = compoundOk(w.parts); return; } w.caps = /^[A-Z]+$/.test(w.s); w.eng = !w.caps && /^[A-Z]?[a-z]+$/.test(w.s) && (w.s.length > 1 || w.s === 'a' || w.s === 'I'); });   // 대문자 약어 / 영어 낱말(소문자·첫 글자만 대문자)
+    const compoundOk = ps => ps.length <= 3 && ps.every((q, i) => q.sep === "'" ? /^(s|t|m|d|re|ll|ve)$/.test(q.s) : q.s === 'I' ? i === 0 && !!ps[1] && (ps[1].sep === "'" || ps[1].sep === '-') : pieceOk(q.s, ps.some(x => x.sep === '-')));   // 한 글자 조각(e-mail·T-shirt)은 하이픈이 곁에 있을 때만
+    words.forEach(w => { if (w.unit) { w.caps = false; w.eng = true; return; } if (w.parts) { w.caps = false; w.eng = compoundOk(w.parts); return; } w.caps = /^[A-Z]+$/.test(w.s) && !isCommonCaps(w.s); w.eng = !w.caps && (isCommonCaps(w.s) || !!camelParts(w.s) || /^[A-Z]?[a-z]+$/.test(w.s) && (w.s.length > 1 || w.s === 'a' || w.s === 'I')); });   // 대문자 약어 / 영어 낱말(소문자·첫 글자만 대문자)
     const capsN = words.filter(w => w.caps).length, engN = words.filter(w => w.eng).length;
-    const ok = !!UEB && words.length <= 8 && capsN <= 2 && words.length === capsN + engN && words.length > (words.length === 1 && words[0].s === 'a' ? 1 : 0) && words.every(w => w.eng || (w.s.length <= 5 && (w.s.length < 3 || RO_WORD_OK.has(w.s) || !roRisky(w.s))));
+    const capsWords = words.filter(w => w.caps || isCommonCaps(w.s) || (w.parts && w.parts.some(q => /^[A-Z]{2,}$/.test(q.s)))).length;   // 대문자로만 쓴 덩어리 수(세 개 이상이면 대문자 구절표가 필요해 아직 안 함)
+    const ok = !!UEB && words.length <= 8 && capsWords <= 2 && words.length === capsN + engN && words.length > (words.length === 1 && words[0].s === 'a' ? 1 : 0) && words.every(w => w.eng || (w.s.length <= 5 && (w.s.length < 3 || RO_WORD_OK.has(w.s) || !roRisky(w.s))));
     if (!ok) return { ok: false, end: j };
     const out = [], P = (brf, text, kind, rule) => brfCells(brf).forEach(d => out.push({ dots: d, text, kind, rule }));
     P(RO_SIGN, '로마자표', '로마자표', '제29항');
@@ -143,13 +163,29 @@
       if (t.t === 's') out.push({ dots: [], text: ' ', kind: '띄어쓰기', rule: '' });
       else if (t.t === 'h') P('-', '-', '붙임표', '제32항');
       else if (t.t === 'c') P('1', ',', '쉼표', '제32항');
+      else if (t.t === 'sup') { P('^', '^', '위 첨자', '제68항'); P(NUM_SIGN, '수표', '수표', '제68항'); P(DIGIT[t.s], t.s, '숫자', '제68항'); }
+      else if (t.t === 'slash') P('_/', '/', '빗금', '제69항');
       else if (t.t === 'n') { P(NUM_SIGN, '수표', '수표', '제35항'); for (const d of t.s) P(DIGIT[d], d, '숫자', '제35항'); }
       else if (t.eng) {
-        for (const q of (t.parts || [{ sep: '', s: t.s }])) {   // 영어 낱말: 대문자표 + 약자(통일영어점자 2급). 이은 낱말은 부분마다
-        if (q.sep === '-') P('-', '-', '붙임표', '제32항'); else if (q.sep === "'") P("'", "'", '아포스트로피', '통일영어점자');
-        const segs = UEB.word(q.s, { noAlpha: n === 0 || !!t.parts, noG1: q.sep === "'" });
-        if (/^[A-Z]/.test(q.s)) P(RO_CAP, '대문자', '대문자표', '제28항');
-        for (const sg of segs) sg.cells.forEach((d, k) => out.push({ dots: d, text: k === 0 ? (sg.kind === '1급 점자표' ? '1급표' : sg.s) : '', kind: sg.kind === '영어' ? '로마자' : sg.kind === '1급 점자표' ? '1급 점자표' : '영어 약자', rule: sg.kind === '영어' || sg.kind === '1급 점자표' ? '제28항' : '통일영어점자(' + sg.kind + ')' }));
+        // 영어 낱말: 조각마다 — 한 글자는 1급 점자표(a·i·o 제외, 하이픈 곁) + 대문자표, 대문자 낱말은 대문자 단어표(흔한 낱말이면 약자), 섞인 낱말은 대문자마다 대문자표
+        const emit = (str, text, kind, rule, d) => out.push({ dots: d, text, kind, rule });
+        const letters = (sg, sgRule) => { for (const x of sg) x.cells.forEach((d, k) => out.push({ dots: d, text: k === 0 ? (x.kind === '1급 점자표' ? '1급표' : x.s) : '', kind: x.kind === '영어' ? '로마자' : x.kind === '1급 점자표' ? '1급 점자표' : '영어 약자', rule: x.kind === '영어' || x.kind === '1급 점자표' ? '제28항' : '통일영어점자(' + x.kind + ')' })); };
+        const piece = (str, o) => {
+          if (/^[A-Z]$/.test(str) || /^[a-z]$/.test(str)) {   // 한 글자
+            if (o.hyphen && !'aio'.includes(str.toLowerCase())) P(RO_G1, '1급표', '1급 점자표', '제32항');
+            if (/[A-Z]/.test(str)) P(RO_CAP, '대문자', '대문자표', '제28항');
+            return P(str.toLowerCase(), str, '로마자', '제28항');
+          }
+          if (/^[A-Z]{2,}$/.test(str)) {   // 대문자 낱말: 일반 낱말이면 약자, 약어면 글자 그대로
+            P(RO_CAPW, '대문자', '대문자 단어표', '제28항');
+            return isCommonCaps(str) ? letters(UEB.word(str, { noAlpha: o.noAlpha })) : [...str].forEach(ch => P(ch.toLowerCase(), ch, '로마자', '제28항'));
+          }
+          if (/^[A-Z]?[a-z]+$/.test(str)) { if (/^[A-Z]/.test(str)) P(RO_CAP, '대문자', '대문자표', '제28항'); return letters(UEB.word(str, { noAlpha: o.noAlpha, noG1: o.noG1, part: o.part, noPrefix: o.noPrefix })); }
+          camelParts(str).forEach((seg, ix) => piece(seg, { noAlpha: true, part: true, noPrefix: ix > 0 }));   // 섞인 낱말: 조각마다(대문자 앞에 대문자표)
+        };
+        for (const q of (t.parts || [{ sep: '', s: t.s }])) {   // 이은 낱말은 부분마다
+          if (q.sep === '-') P('-', '-', '붙임표', '제32항'); else if (q.sep === "'") P("'", "'", '아포스트로피', '통일영어점자');
+          piece(q.s, { noAlpha: n === 0 || !!t.parts, noG1: q.sep === "'", hyphen: !!t.parts && t.parts.some(x => x.sep === '-') });
         }
       }
       else {
@@ -160,7 +196,7 @@
         for (const c of t.s) P(c.toLowerCase(), c, '로마자', '제28항');
       }
     });
-    const endsNum = toks[toks.length - 1].t === 'n', nc = chars[j];
+    const endsNum = toks[toks.length - 1].t === 'n' || toks[toks.length - 1].t === 'sup', nc = chars[j];
     const noEnd = endsNum || (nc !== undefined && (',:;―.?!'.includes(nc) || closingNext(nc)));
     if (!noEnd) P(RO_END, '종료표', '로마자 종료표', '제29항');
     return { ok: true, end: j, cells: out, endsNum };
@@ -172,7 +208,7 @@
     const contract = !(opts && opts.contract === false); // 약자·약어 사용(규정 방식). false면 모두 풀어 쓴다(학습용)
     const cells = [], unsupported = [], warnings = [];
     const push = (arr, text0, kind, rule) => { for (const c of arr) cells.push({ dots: c, text: text0, kind, rule }); };
-    const chars = [...String(text)];
+    const chars = expandUnits([...String(text)]);
     let i = 0, inNumber = false, quoteOpen = false, squoteOpen = false, roBadUntil = -1;
     const sylAt = k => (chars[k] !== undefined ? decompose(chars[k]) : null);
     // 로마자 덩어리 바로 뒤가 닫는 따옴표·괄호인지(제34항: 그때는 로마자 종료표를 적지 않는다)
@@ -223,6 +259,22 @@
       // 제8항 단독으로 쓰인 자모
       if (/[ㄱ-ㅎ]/.test(ch) && JONG[ch]) { push(brfCells('=' + JONG[ch]), ch, '단독 자모', '제8항'); i++; continue; }
       if (/[ㅏ-ㅣ]/.test(ch) && JUNG[ch]) { push(brfCells('=' + JUNG[ch]), ch, '단독 자모', '제8항'); i++; continue; }
+      // 제65~72항 기호: 화폐·단위(0을 앞세움), 화살표(앞뒤 한 칸), 자주 쓰는 기호, 로마자표로 적는 기호
+      if (ch === '%' && chars[i + 1] === 'p') { push(brfCells('0pp'), '%p', '단위 기호', '제69항'); i += 2; if (isSyl(chars[i])) cells.push({ dots: [], text: ' ', kind: '띄어쓰기', rule: '제69항' }); continue; }
+      if (UNIT_BRF[ch]) { push(brfCells(UNIT_BRF[ch]), ch, '단위 기호', '제65·69항'); i++; if (isSyl(chars[i])) cells.push({ dots: [], text: ' ', kind: '띄어쓰기', rule: '제65·69항' }); continue; }
+      if (ARROW_BRF[ch]) {
+        const last = cells[cells.length - 1]; if (last && last.kind !== '띄어쓰기' && last.kind !== '줄바꿈') cells.push({ dots: [], text: ' ', kind: '띄어쓰기', rule: '제70항' });
+        push(brfCells(ARROW_BRF[ch]), ch, '화살표', '제70항'); i++;
+        if (chars[i] !== undefined && chars[i] !== ' ' && chars[i] !== '\n') cells.push({ dots: [], text: ' ', kind: '띄어쓰기', rule: '제70항' });
+        continue;
+      }
+      if (SYM71_BRF[ch]) { push(brfCells(SYM71_BRF[ch]), ch, '기호', ch === '•' ? '제72항' : '제71항'); i++; continue; }
+      if (ROMAN_SYM_BRF[ch]) {
+        push(brfCells('0'), '로마자표', '로마자표', '제71항'); push(brfCells(ROMAN_SYM_BRF[ch]), ch, '기호', '제71항');
+        const nc = chars[i + 1];
+        if (!(nc !== undefined && (/[0-9]/.test(nc) || ',:;―.?!'.includes(nc) || closingNext(nc)))) push(brfCells('4'), '종료표', '로마자 종료표', '제29항');
+        i++; continue;
+      }
       // 줄임표(제49항): … 한두 개 → ,,, / 마침표 셋 또는 여섯 → 444
       if (ch === '…') { let n = 1; if (chars[i + 1] === '…') n = 2; push(brfCells(',,,'), '…'.repeat(n), '문장부호', '제49항'); i += n; continue; }
       if (ch === '.' && chars[i + 1] === '.' && chars[i + 2] === '.') { const n = (chars.slice(i, i + 6).join('') === '......') ? 6 : 3; push(brfCells('444'), '.'.repeat(n), '문장부호', '제49항'); i += n; continue; }

@@ -23,14 +23,19 @@ check('E6 규정 제37항: 「enough」는 낱말 약자(⠢) 없이 ⠢⠳⠣(e
 await typeBp('Thank you'); s = await st();
 check('E7 둘째 낱말 「you」는 낱말 약자 ⠽(첫 낱말만 풀어 씀)', s.out === '⠴⠠⠹⠁⠝⠅ ⠽⠲', s.out);
 // ② 못 바꾸는 영어
-for (const [t, why] of [['iPhone', 'iPhone처럼 대소문자가 섞인 낱말'], ['e-mail', 'e-mail처럼 한 글자가 붙은 이은 낱말'], ['b', '한 글자 낱말'], ['OPEN', 'OPEN·STOP처럼']]) {
+for (const [t, why] of [['IoT', 'IoT처럼 대문자 한 글자가 끝에 붙은 낱말'], ['WELCOME TO KOREA', 'WELCOME TO KOREA'], ['b', '한 글자 낱말']]) {
   await typeBp(t); s = await st();
-  check(`E8 「${t}」는 바꾸지 않고 이유 안내(${why})`, /^\?+$|^\?.*\?$/.test(s.out) && new RegExp(why.replace(/[·]/g, '·')).test(s.warn) && (t === 'e-mail' || s.copyOff), s.out + ' | ' + s.warn.slice(0, 80));
+  check(`E8 「${t}」는 바꾸지 않고 이유 안내(${why})`, /^\?+$|^\?.*\?$/.test(s.out) && new RegExp(why.replace(/[·]/g, '·')).test(s.warn) && s.copyOff, s.out + ' | ' + s.warn.slice(0, 80));
 }
 // ②b 하이픈·아포스트로피로 이은 영어(규정 제32항 붙임에 따라 첫 낱말 약자는 풀어 씀)
 for (const [t, exp] of [["don't", '⠴⠙⠕⠝⠄⠞⠲'], ["I'm fine", '⠴⠠⠊⠄⠍ ⠋⠔⠑⠲'], ['Wi-Fi', '⠴⠠⠺⠊⠤⠠⠋⠊⠲'], ['well-known', '⠴⠺⠑⠇⠇⠤⠐⠅⠝⠲'], ["they'll", '⠴⠮⠽⠄⠇⠇⠲'], ["dog's", '⠴⠙⠕⠛⠄⠎⠲'], ["it's", '⠴⠊⠞⠄⠎⠲']]) {
   await typeBp(t); s = await st();
   check(`E8b 「${t}」 → ${exp}`, s.out === exp && !s.copyOff && !/바꿔 주지 않는/.test(s.warn), s.out + ' | ' + s.warn.slice(0, 50));
+}
+// ②c 대소문자가 섞인 낱말·한 글자가 붙은 이은 낱말·대문자 낱말(정답 기준과 같은 점자)
+for (const [t, exp] of [['iPhone', '⠴⠊⠠⠏⠓⠐⠕⠲'], ['YouTube', '⠴⠠⠽⠳⠠⠞⠥⠃⠑⠲'], ['e-mail', '⠴⠰⠑⠤⠍⠁⠊⠇⠲'], ['K-pop', '⠴⠰⠠⠅⠤⠏⠕⠏⠲'], ['OPEN', '⠴⠠⠠⠕⠏⠢⠲'], ['WELCOME', '⠴⠠⠠⠺⠑⠇⠉⠕⠍⠑⠲'], ['USB', '⠴⠠⠠⠥⠎⠃⠲']]) {
+  await typeBp(t); s = await st();
+  check(`E8c 「${t}」 → ${exp}`, s.out === exp && !s.copyOff && !/바꿔 주지 않는/.test(s.warn), s.out + ' | ' + s.warn.slice(0, 50));
 }
 // ③ 한글 속 영어
 await typeBp('오늘 Coffee shop에 갔다'); s = await st();
@@ -40,7 +45,7 @@ const chips = await ev(`[...document.querySelectorAll('#bpExamples [data-ex]')].
 check('E10 예시 단추에 영어 낱말 예시(apples, bananas, grapes)', chips.includes('apples, bananas, grapes'), JSON.stringify(chips));
 await ev(`document.querySelector('#bpExamples [data-ex="apples, bananas, grapes"]').click(); 1`); await sleep(300);
 s = await st(); check('E11 예시 단추를 누르면 바로 바뀜', /⠁⠏⠏⠇⠑⠎/.test(s.out) && !s.copyOff, s.out);
-check('E12 안내 문구: 「영어 낱말(apples)을 바꿔요」', /영어 낱말\(apples\)을 바꿔요/.test(await ev(`document.querySelector('#bp-convert').textContent`)));
+check('E12 안내 문구: 「영어 낱말(apples, OPEN, iPhone)을 바꿔요」', /영어 낱말\(apples, OPEN, iPhone\)을 바꿔요/.test(await ev(`document.querySelector('#bp-convert').textContent`)));
 // ⑤ 점자 표의 영어 칸(엔진 표에서 만든 카드)
 await ev(`document.querySelector('[data-bpanel="table"]').click(); 1`); await sleep(300);
 const chips2 = await ev(`[...document.querySelectorAll('#tableChips [data-tg]')].map(b => b.dataset.tg)`);

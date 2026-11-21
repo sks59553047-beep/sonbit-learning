@@ -28,6 +28,14 @@ for (const t of roman.unsupported) {
 const UEB = createRequire(import.meta.url)('../assets/ueb-g2.js');
 const uebFrozen = JSON.parse(fs.readFileSync(new URL('./ueb-frozen.json', import.meta.url), 'utf8')).words; let uebFail = 0, uebN = 0;
 for (const [w, b] of Object.entries(uebFrozen)) { uebN++; if (UEB.toUnicode(w, { lower: true }) !== b) { uebFail++; if (uebFail <= 10) console.log('불일치(영어 낱말)', w, UEB.toUnicode(w, { lower: true }), b); } }
+// 대소문자가 섞인 낱말·하이픈 낱말·대문자 낱말(변환기 전체 경로): 로마자표·종료표 사이의 점자가 고정본과 같은지
+const piecesFrozen = JSON.parse(fs.readFileSync(new URL('./ueb-frozen-pieces.json', import.meta.url), 'utf8')).pieces; let pcFail = 0, pcN = 0;
+const uniOf = cells => cells.filter(c => c.kind !== '줄바꿈').map(c => c.kind === '띄어쓰기' ? ' ' : c.unsupported ? '?' : String.fromCodePoint(0x2800 + c.dots.reduce((x, d) => x | (1 << (d - 1)), 0))).join('');
+for (const [w, b] of Object.entries(piecesFrozen)) { pcN++; const got = uniOf(KB.convert(w, { contract: true }).cells).replace(/^⠴/, '').replace(/⠲$/, ''); if (got !== b) { pcFail++; if (pcFail <= 10) console.log('불일치(섞인·하이픈·대문자 낱말)', w, got, b); } }
+console.log(`섞인·하이픈·대문자 낱말 ${pcN}개 중 일치 ${pcN - pcFail}, 불일치 ${pcFail}`); fail += pcFail ? 1 : 0;
 console.log(`영어 낱말 ${uebN}개 중 일치 ${uebN - uebFail}, 불일치 ${uebFail}`); fail += uebFail ? 1 : 0;
+// 제65~72항 기호(화폐·단위·화살표·기호): 규정 예시와 점 하나까지 같아야 한다
+const symbols = JSON.parse(fs.readFileSync(new URL('./symbol-cases.json', import.meta.url), 'utf8'));
+for (const c of symbols.cases) { total++; if (norm(c.brf) !== run(c.text)) { fail++; console.log('불일치(기호)', c.ref, c.text, '\n  기대', norm(c.brf), '\n  엔진', run(c.text)); } }
 console.log(`전체 ${total}개 중 일치 ${total - fail}, 불일치 ${fail}`);
 process.exit(fail ? 1 : 0);

@@ -43,9 +43,9 @@ await ev(`document.querySelector('#quizEnd').click(); 1`); await sleep(200); awa
 // ---------- ③ 0칸 복사 ----------
 await ev(`go('braille'); showBraillePanel('convert', true); 1`); await sleep(400);
 const typeBp = async t => { await ev(`(() => { const i = document.querySelector('#bpInput'); i.value = ${JSON.stringify(t)}; i.dispatchEvent(new Event('input', { bubbles: true })); return 1 })()`); await sleep(400); };
-await typeBp('iPhone');
+await typeBp('IoT');
 const z = await ev(`({ dis: document.querySelector('#bpCopyTop').disabled, label: document.querySelector('#bpCopyTop').textContent, wrapHidden: document.querySelector('#bpOutWrap').hidden })`);
-check('R7 안 바뀌는 영어 iPhone(점자 0칸): 위 복사 단추가 꺼지고 「복사할 점자가 없어요」, 아래 점자 문자 칸은 숨김', z.dis && z.label === '복사할 점자가 없어요' && z.wrapHidden, JSON.stringify(z));
+check('R7 안 바뀌는 영어 IoT(점자 0칸): 위 복사 단추가 꺼지고 「복사할 점자가 없어요」, 아래 점자 문자 칸은 숨김', z.dis && z.label === '복사할 점자가 없어요' && z.wrapHidden, JSON.stringify(z));
 await ev(`window.__copied = null; Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: t => { window.__copied = t; return Promise.resolve(); } } }); document.querySelector('#bpCopyTop').click(); 1`); await sleep(300);
 check('R8 꺼진 복사 단추를 눌러도 복사되지 않음', (await ev(`window.__copied`)) === null);
 await typeBp('KTX');

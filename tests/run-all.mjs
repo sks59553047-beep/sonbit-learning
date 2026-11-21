@@ -22,7 +22,7 @@ fs.mkdirSync(OUT, { recursive: true });
 // [이름, 파일, 인자, 브라우저 필요, 오래 걸림, 통과 조건(출력에 이 글이 있어야)]
 // 통과 조건이 없으면 「FAIL 로 시작하는 줄이 없고 종료 코드가 0」이면 통과로 본다.
 const TESTS = [
-  ['점자 규정 예시 283개(한글 227·영어 56) + 범위 밖 영어 5개', '../braille-tests/run-all.mjs', [], false, false, /불일치 0/],
+  ['점자 규정 예시 311개(한글 227·영어 56·기호 28) + 범위 밖 영어 5개', '../braille-tests/run-all.mjs', [], false, false, /불일치 0/],
   ['퀴즈 문제 시뮬레이션(정답 둘·보기 겹침·난이도 배분)', 'quiz-sim.mjs', [], false, false, /모든 점검 통과/],
   ['색 대비(밝은·어두운 화면)', 'contrast.mjs', [], false, false, /기준 미달 0 건/],
   ['의견 게시판 욕설 거르기(막을 말·통과시킬 멀쩡한 말)', 'board-words.mjs', [], false],
@@ -40,6 +40,7 @@ const TESTS = [
   ['실사용 평가 반영 3(크게 보기 영상 조절·0칸 복사·생활 속 점자 뒤로 가기·말끝·전화번호·물다)', 'real-use-fixes3.mjs', [BASE], true],
   ['지피티 평가 반영(공백만 남은 변환 복사 막기·생활 속 점자 돌아올 때 키보드 초점)', 'real-use-fixes4.mjs', [BASE], true],
   ['영어 낱말 점자(약자·규정 예시·못 바꾸는 영어 안내·예시 단추)', 'english-braille.mjs', [BASE], true],
+  ['기호 점자(화폐·단위·화살표·자주 쓰는 기호, 규정 제65~72항)', 'symbol-braille.mjs', [BASE], true],
   ['전체 점검 반영(검색 상자 전체 누르기·이름 뜻 줄 44px·붙여넣은 글 정리)', 'real-use-fixes5.mjs', [BASE], true],
   ['생활 속 점자(카드 12개·근거 링크·예시 점자·글자 바꾸기 연결·좁은 화면 버튼)', 'life-braille.mjs', [BASE], true],
   ['키보드만으로 퀴즈 풀기', 'keyboard.mjs', [BASE, 'desktop'], true],

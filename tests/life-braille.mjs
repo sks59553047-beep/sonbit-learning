@@ -47,11 +47,11 @@ const ex = await ev(`!![...document.querySelectorAll('#bpExamples [data-ex]')].f
 await ev(`[...document.querySelectorAll('#bpExamples [data-ex]')].find(b => b.dataset.ex === 'KTX, 새마을호').click(); 1`); await sleep(300);
 const en = await ev(`({ brf: KB.toBrf(KB.convert(document.querySelector('#bpInput').value).cells).replace(/ /g, '\`'), labels: [...new Set([...document.querySelectorAll('#bpCells .ccell small')].map(e => e.textContent))], legend: document.querySelector('#bpLegend').textContent, warn: document.querySelector('#bpWarn').hidden, copy: document.querySelector('#bpOut').textContent.length })`);
 check('L8 예시 단추 「KTX, 새마을호」 → 규정 제33항 예시와 같은 점자, 칸 이름(로마자표·대문자들·로마자)과 풀이, 경고 없음', ex && en.brf.startsWith('0,,ktx"') && ['로마자표', '대문자들', '로마자'].every(k => en.labels.includes(k)) && /로마자표: 여기부터 영어/.test(en.legend) && en.warn && en.copy > 0, JSON.stringify(en));
-await ev(`(() => { const i = document.querySelector('#bpInput'); i.value = '그는 iPhone으로 갔다'; i.dispatchEvent(new Event('input', { bubbles: true })); return 1 })()`); await sleep(300);
+await ev(`(() => { const i = document.querySelector('#bpInput'); i.value = '그는 IoT로 갔다'; i.dispatchEvent(new Event('input', { bubbles: true })); return 1 })()`); await sleep(300);
 const w = await ev(`document.querySelector('#bpWarn').hidden ? '' : document.querySelector('#bpWarn').textContent`);
-check('L9 대소문자가 섞인 영어(iPhone)는 바꾸지 않고 안내', /iPhone처럼 대소문자가 섞인 낱말/.test(w) && !/그리스/.test(w), w);
+check('L9 아직 안 바꾸는 영어(IoT)는 바꾸지 않고 안내', /IoT처럼 대문자 한 글자가 끝에 붙은 낱말/.test(w) && !/그리스/.test(w), w);
 const note = await ev(`document.querySelector('#bp-convert').textContent`);
-check('L10 점자 바꾸기 안내: 「예시 283개」와 영어 안내', /예시 283개/.test(note) && /영어 낱말\(apples\)을 바꿔요/.test(note), '');
+check('L10 점자 바꾸기 안내: 「예시 311개」와 영어 안내', /예시 311개/.test(note) && /영어 낱말\(apples, OPEN, iPhone\)을 바꿔요/.test(note), '');
 check('JS 오류 없음', !c.errs.length, c.errs.join(' | '));
 await ev(`localStorage.clear(); 1`);
 await c.close(); process.exit(0);

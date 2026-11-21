@@ -23,9 +23,14 @@ check('E6 규정 제37항: 「enough」는 낱말 약자(⠢) 없이 ⠢⠳⠣(e
 await typeBp('Thank you'); s = await st();
 check('E7 둘째 낱말 「you」는 낱말 약자 ⠽(첫 낱말만 풀어 씀)', s.out === '⠴⠠⠹⠁⠝⠅ ⠽⠲', s.out);
 // ② 못 바꾸는 영어
-for (const [t, why] of [['iPhone', 'iPhone처럼 대소문자가 섞인 낱말'], ['e-mail', 'e-mail처럼 부호가 든 낱말'], ['b', '한 글자 낱말'], ['OPEN', 'OPEN·STOP처럼']]) {
+for (const [t, why] of [['iPhone', 'iPhone처럼 대소문자가 섞인 낱말'], ['e-mail', 'e-mail처럼 한 글자가 붙은 이은 낱말'], ['b', '한 글자 낱말'], ['OPEN', 'OPEN·STOP처럼']]) {
   await typeBp(t); s = await st();
   check(`E8 「${t}」는 바꾸지 않고 이유 안내(${why})`, /^\?+$|^\?.*\?$/.test(s.out) && new RegExp(why.replace(/[·]/g, '·')).test(s.warn) && (t === 'e-mail' || s.copyOff), s.out + ' | ' + s.warn.slice(0, 80));
+}
+// ②b 하이픈·아포스트로피로 이은 영어(규정 제32항 붙임에 따라 첫 낱말 약자는 풀어 씀)
+for (const [t, exp] of [["don't", '⠴⠙⠕⠝⠄⠞⠲'], ["I'm fine", '⠴⠠⠊⠄⠍ ⠋⠔⠑⠲'], ['Wi-Fi', '⠴⠠⠺⠊⠤⠠⠋⠊⠲'], ['well-known', '⠴⠺⠑⠇⠇⠤⠐⠅⠝⠲'], ["they'll", '⠴⠮⠽⠄⠇⠇⠲'], ["dog's", '⠴⠙⠕⠛⠄⠎⠲'], ["it's", '⠴⠊⠞⠄⠎⠲']]) {
+  await typeBp(t); s = await st();
+  check(`E8b 「${t}」 → ${exp}`, s.out === exp && !s.copyOff && !/바꿔 주지 않는/.test(s.warn), s.out + ' | ' + s.warn.slice(0, 50));
 }
 // ③ 한글 속 영어
 await typeBp('오늘 Coffee shop에 갔다'); s = await st();

@@ -82,7 +82,7 @@
       if (!best[i] || cells < best[i].cells || (cells === best[i].cells && lw < best[i].low) || (cells === best[i].cells && lw === best[i].low && len > best[i].len)) best[i] = { cells, low: lw, len, br, kind };
     }
     const out = []; for (let i = 0; i < n; i += best[i].len) out.push({ s: w.slice(i, i + best[i].len), cells: cellsOf(best[i].br), kind: best[i].kind });
-    if (!tail && out.every(x => x.kind === '영어') && letterLike.has(out.map(x => x.cells.map(d => d.join('')).join('-')).join('-'))) out.unshift({ s: '', cells: [[5, 6]], kind: '1급 점자표' });
+    if (!tail && !opt.noG1 && out.every(x => x.kind === '영어') && letterLike.has(out.map(x => x.cells.map(d => d.join('')).join('-')).join('-'))) out.unshift({ s: '', cells: [[5, 6]], kind: '1급 점자표' });
     if (!tail && out.length === 1 && out[0].s.length > 1 && /묶음|끝글자/.test(out[0].kind)) return [...w].map(c => ({ s: c, cells: cellsOf(LETTER[c]), kind: '영어' }));   // 낱말 하나가 묶음 약자 하나면(st·ch·ar·en…) 글자로
     return out;
   }

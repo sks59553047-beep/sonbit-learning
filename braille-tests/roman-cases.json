@@ -1,27 +1,292 @@
 {
- "note": "「한국 점자 규정」(2024) 제4장 로마자 예시 가운데 대문자 약어만 쓴 것(엔진이 바꾸는 범위). 점자는 규정 본문 ASCII 표기 그대로(source/regulation-2024.txt). unsupported: 범위 밖이라 「지원 안 함」으로 나와야 하는 글(틀린 점자를 만들지 않음).",
+ "note": "「한국 점자 규정」(2024) 제4장 로마자 예시 가운데 대문자 약어만 쓴 것(엔진이 바꾸는 범위). 점자는 규정 본문 ASCII 표기 그대로(source/regulation-2024.txt). unsupported: 범위 밖이라 「지원 안 함」으로 나와야 하는 글(틀린 점자를 만들지 않음). 2026-11-21: 소문자·첫 글자만 대문자인 영어 낱말(통일영어점자 2급 약자)도 바꾼다 — 규정 제32·37항 예시.",
  "cases": [
-  { "ref": "제33항", "text": "우리나라 기차에는 KTX, 새마을호, 무궁화호 등이 있다.", "brf": "m\"oc\"<`@o;<ncz`0,,ktx\"`,re<!``ju\"`em@m7jvju`i{7o`o/i4" },
-  { "ref": "제33항", "text": "WHO: 세계 보건 기구", "brf": "0,,who\"1`,n@/`~u@)`@o@m" },
-  { "ref": "제33항 다만", "text": "KTX/새마을호/무궁화호", "brf": "0,,ktx4_/,re<!ju_/em@m7jvju" },
-  { "ref": "제33항 다만", "text": "U-도서관", "brf": "0,u4-iu,s@v3" },
-  { "ref": "제35항", "text": "MP3 플레이어", "brf": "0,,mp#c`d!\"nos" },
-  { "ref": "제35항", "text": "A4용지", "brf": "0,a#d+7.o" },
-  { "ref": "제35항", "text": "LP 1장", "brf": "0,,lp`#a.7" },
-  { "ref": "제35항", "text": "요즘에는 KF94 마스크가 필수입니다.", "brf": "+.{5ncz`0,,kf#id`e,{f{$`do1,m`obcoi4" },
-  { "ref": "제35항", "text": "2023학년도 수능 D-100일 학습 전략", "brf": "#bjbc`jac*iu`,mc{7`0,d-#ajjo1`ja,{b`.)\">a" },
-  { "ref": "제35항", "text": "KBS 1 TV 좀 켜 주세요.", "brf": "0,,kbs`#a`,,tv4`.u5`f:`.m,n+4" },
-  { "ref": "제35항", "text": "CD 1장을 구하려 합니다.", "brf": "0;,,cd`#a.7!`@mj\":`jbcoi4" },
-  { "ref": "제36항", "text": "I", "brf": "0,i4" },
-  { "ref": "제36항", "text": "II", "brf": "0,,ii4" },
-  { "ref": "제36항", "text": "III", "brf": "0,,iii4" },
-  { "ref": "제36항", "text": "V", "brf": "0,v4" },
-  { "ref": "제36항", "text": "IX", "brf": "0,,ix4" },
-  { "ref": "제36항", "text": "X", "brf": "0,x4" },
-  { "ref": "제36항", "text": "XV", "brf": "0,,xv4" },
-  { "ref": "제36항", "text": "XX", "brf": "0,,xx4" },
-  { "ref": "제36항", "text": "가영이는 미적분학 II 과목을 수강하고 있다.", "brf": "$]ocz`eo.?^gja`0,,ii4`@vex!`,m$7j@u`o/i4" },
-  { "ref": "제45항 붙임(단위)", "text": "최근 USB 메모리 256GB는 5만 원대 가격이다.", "brf": ";y@z`0,,usb4`eneu\"o`#bef0,,gb4cz`#e`e3`p3ir`$@:aoi4" }
+  {
+   "ref": "제33항",
+   "text": "우리나라 기차에는 KTX, 새마을호, 무궁화호 등이 있다.",
+   "brf": "m\"oc\"<`@o;<ncz`0,,ktx\"`,re<!``ju\"`em@m7jvju`i{7o`o/i4"
+  },
+  {
+   "ref": "제33항",
+   "text": "WHO: 세계 보건 기구",
+   "brf": "0,,who\"1`,n@/`~u@)`@o@m"
+  },
+  {
+   "ref": "제33항 다만",
+   "text": "KTX/새마을호/무궁화호",
+   "brf": "0,,ktx4_/,re<!ju_/em@m7jvju"
+  },
+  {
+   "ref": "제33항 다만",
+   "text": "U-도서관",
+   "brf": "0,u4-iu,s@v3"
+  },
+  {
+   "ref": "제35항",
+   "text": "MP3 플레이어",
+   "brf": "0,,mp#c`d!\"nos"
+  },
+  {
+   "ref": "제35항",
+   "text": "A4용지",
+   "brf": "0,a#d+7.o"
+  },
+  {
+   "ref": "제35항",
+   "text": "LP 1장",
+   "brf": "0,,lp`#a.7"
+  },
+  {
+   "ref": "제35항",
+   "text": "요즘에는 KF94 마스크가 필수입니다.",
+   "brf": "+.{5ncz`0,,kf#id`e,{f{$`do1,m`obcoi4"
+  },
+  {
+   "ref": "제35항",
+   "text": "2023학년도 수능 D-100일 학습 전략",
+   "brf": "#bjbc`jac*iu`,mc{7`0,d-#ajjo1`ja,{b`.)\">a"
+  },
+  {
+   "ref": "제35항",
+   "text": "KBS 1 TV 좀 켜 주세요.",
+   "brf": "0,,kbs`#a`,,tv4`.u5`f:`.m,n+4"
+  },
+  {
+   "ref": "제35항",
+   "text": "CD 1장을 구하려 합니다.",
+   "brf": "0;,,cd`#a.7!`@mj\":`jbcoi4"
+  },
+  {
+   "ref": "제36항",
+   "text": "I",
+   "brf": "0,i4"
+  },
+  {
+   "ref": "제36항",
+   "text": "II",
+   "brf": "0,,ii4"
+  },
+  {
+   "ref": "제36항",
+   "text": "III",
+   "brf": "0,,iii4"
+  },
+  {
+   "ref": "제36항",
+   "text": "V",
+   "brf": "0,v4"
+  },
+  {
+   "ref": "제36항",
+   "text": "IX",
+   "brf": "0,,ix4"
+  },
+  {
+   "ref": "제36항",
+   "text": "X",
+   "brf": "0,x4"
+  },
+  {
+   "ref": "제36항",
+   "text": "XV",
+   "brf": "0,,xv4"
+  },
+  {
+   "ref": "제36항",
+   "text": "XX",
+   "brf": "0,,xx4"
+  },
+  {
+   "ref": "제36항",
+   "text": "가영이는 미적분학 II 과목을 수강하고 있다.",
+   "brf": "$]ocz`eo.?^gja`0,,ii4`@vex!`,m$7j@u`o/i4"
+  },
+  {
+   "ref": "제45항 붙임(단위)",
+   "text": "최근 USB 메모리 256GB는 5만 원대 가격이다.",
+   "brf": ";y@z`0,,usb4`eneu\"o`#bef0,,gb4cz`#e`e3`p3ir`$@:aoi4"
+  },
+  {
+   "ref": "제32항",
+   "text": "그는 Canada로 여행을 떠났다.",
+   "brf": "@{cz`0,canada4\"u`:jr7!`,isc/i4"
+  },
+  {
+   "ref": "제32항",
+   "text": "Los Angeles의 한인",
+   "brf": "0,los`,angeles4w`j3q"
+  },
+  {
+   "ref": "제32항",
+   "text": "식탁 위에 apples, bananas, grapes 등이 있다.",
+   "brf": ",oaha`mrn`0apples1`bananas1```grapes4`i{7o`o/i4"
+  },
+  {
+   "ref": "제33항",
+   "text": "George V였다.",
+   "brf": "0,george`;,v4:/i4"
+  },
+  {
+   "ref": "제34항",
+   "text": "Summary~연습 문제",
+   "brf": "0,summ>y4@9*,{b`eg.n"
+  },
+  {
+   "ref": "제32항 붙임",
+   "text": "be는 am, are, is의 원형 동사이다.",
+   "brf": "0be4cz`0am1`>e1`is4w`p3j}`i=loi4"
+  },
+  {
+   "ref": "제37항",
+   "text": "but",
+   "brf": "0but4"
+  },
+  {
+   "ref": "제37항",
+   "text": "people",
+   "brf": "0people4"
+  },
+  {
+   "ref": "제37항",
+   "text": "be",
+   "brf": "0be4"
+  },
+  {
+   "ref": "제37항",
+   "text": "can",
+   "brf": "0can4"
+  },
+  {
+   "ref": "제37항",
+   "text": "quite",
+   "brf": "0quite4"
+  },
+  {
+   "ref": "제37항",
+   "text": "enough",
+   "brf": "05\\<4"
+  },
+  {
+   "ref": "제37항",
+   "text": "do",
+   "brf": "0do4"
+  },
+  {
+   "ref": "제37항",
+   "text": "rather",
+   "brf": "0ra!r4"
+  },
+  {
+   "ref": "제37항",
+   "text": "his",
+   "brf": "0his4"
+  },
+  {
+   "ref": "제37항",
+   "text": "every",
+   "brf": "0\"ey4"
+  },
+  {
+   "ref": "제37항",
+   "text": "so",
+   "brf": "0so4"
+  },
+  {
+   "ref": "제37항",
+   "text": "in",
+   "brf": "0in4"
+  },
+  {
+   "ref": "제37항",
+   "text": "from",
+   "brf": "0from4"
+  },
+  {
+   "ref": "제37항",
+   "text": "that",
+   "brf": "0?at4"
+  },
+  {
+   "ref": "제37항",
+   "text": "was",
+   "brf": "0was4"
+  },
+  {
+   "ref": "제37항",
+   "text": "go",
+   "brf": "0go4"
+  },
+  {
+   "ref": "제37항",
+   "text": "us",
+   "brf": "0us4"
+  },
+  {
+   "ref": "제37항",
+   "text": "were",
+   "brf": "0w}e4"
+  },
+  {
+   "ref": "제37항",
+   "text": "have",
+   "brf": "0have4"
+  },
+  {
+   "ref": "제37항",
+   "text": "very",
+   "brf": "0v}y4"
+  },
+  {
+   "ref": "제37항",
+   "text": "just",
+   "brf": "0ju/4"
+  },
+  {
+   "ref": "제37항",
+   "text": "will",
+   "brf": "0will4"
+  },
+  {
+   "ref": "제37항",
+   "text": "knowledge",
+   "brf": "0\"kl$ge4"
+  },
+  {
+   "ref": "제37항",
+   "text": "it",
+   "brf": "0it4"
+  },
+  {
+   "ref": "제37항",
+   "text": "like",
+   "brf": "0like4"
+  },
+  {
+   "ref": "제37항",
+   "text": "you",
+   "brf": "0y\\4"
+  },
+  {
+   "ref": "제37항",
+   "text": "more",
+   "brf": "0more4"
+  },
+  {
+   "ref": "제37항",
+   "text": "as",
+   "brf": "0as4"
+  },
+  {
+   "ref": "제37항",
+   "text": "not",
+   "brf": "0not4"
+  }
  ],
- "unsupported": ["그는 Canada로 여행을 떠났다.", "IoT", "iOS", "McDonald", "WELCOME TO KOREA", "Summary~연습 문제", "문 앞에 OPEN이라고 쓰여 있다.", "영국의 왕은 George V였다.", "be는 am, are, is의 원형 동사이다."]
+ "unsupported": [
+  "IoT",
+  "iOS",
+  "McDonald",
+  "WELCOME TO KOREA",
+  "문 앞에 OPEN이라고 쓰여 있다."
+ ]
 }

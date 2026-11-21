@@ -1,5 +1,5 @@
 // 지피티 평가 반영(2026-11-21)
-// ① 점자 복사: 띄어쓰기 칸만 남은 변환(ktx tv·a b c·공백만)은 복사가 꺼진다 / 일부만 바뀐 것(ktx 3)은 안내와 함께 복사 가능
+// ① 점자 복사: 띄어쓰기 칸만 남은 변환(iPhone X·a b c·공백만)은 복사가 꺼진다 / 일부만 바뀐 것(iPhone 3)은 안내와 함께 복사 가능
 // ② 생활 속 점자: 「돌아가기」·크롬 뒤로 가기로 돌아오면 방금 누른 낱말 단추에 키보드 초점이 돌아온다
 // 사용: node real-use-fixes4.mjs <주소>
 import { open, check } from './lib/cdp.mjs';
@@ -12,14 +12,14 @@ await c.fresh(BASE + '?r4=' + Date.now(), 3000);
 await ev(`go('braille'); showBraillePanel('convert', true); 1`); await sleep(400);
 const typeBp = async t => { await ev(`(() => { const i = document.querySelector('#bpInput'); i.value = ${JSON.stringify(t)}; i.dispatchEvent(new Event('input', { bubbles: true })); return 1 })()`); await sleep(350); };
 const st = () => ev(`({ off: document.querySelector('#bpCopyTop').hidden || document.querySelector('#bpCopyTop').disabled, hidden: document.querySelector('#bpCopyTop').hidden, label: document.querySelector('#bpCopyTop').textContent, wrapHidden: document.querySelector('#bpOutWrap').hidden, out: document.querySelector('#bpOut').textContent, sum: document.querySelector('#bpSummary').textContent, note: !document.querySelector('#bpOutNote').hidden })`);
-for (const t of ['ktx', 'ktx tv', 'ktx tv ', 'a b c']) {
+for (const t of ['iPhone', 'iPhone XR', 'iPhone XR ', 'a b c']) {
   await typeBp(t); const s = await st();
   check(`C1 「${t}」: 바뀐 점자가 없어서 복사가 꺼지고 점자 문자 칸이 숨음`, s.off && s.label === '복사할 점자가 없어요' && s.wrapHidden && /바뀐 점자가 없어요/.test(s.sum) && !/1칸|띄어쓰기/.test(s.sum), JSON.stringify(s));
 }
 await typeBp('   '); { const s = await st(); check('C2 공백만 넣으면 복사 단추가 숨고 「글자를 입력하면…」 안내', s.hidden && /글자를 입력하면/.test(s.sum), JSON.stringify(s)); }
-await typeBp('ktx 3'); { const s = await st(); check('C3 「ktx 3」: 숫자는 바뀌었으므로 복사는 켜지고, 「?로 들어가요」 안내가 보임', !s.off && s.note && /⠼⠉/.test(s.out), JSON.stringify(s)); }
-await typeBp('KTX tv'); { const s = await st(); check('C4 「KTX tv」: 대문자+소문자 영어 덩어리는 통째로 안 바뀌므로 복사 꺼짐', s.off && /바뀐 점자가 없어요/.test(s.sum), JSON.stringify(s)); }
-await typeBp('KTX 안녕 tv'); { const s = await st(); check('C4b 「KTX 안녕 tv」: 일부(KTX·안녕)만 바뀜 → 복사 켜짐 + ? 안내, 앞부분은 KTX 점자', !s.off && s.note && s.out === '⠴⠠⠠⠅⠞⠭⠲ ⠣⠒⠉⠻ ??', JSON.stringify(s)); }
+await typeBp('iPhone 3'); { const s = await st(); check('C3 「iPhone 3」: 숫자는 바뀌었으므로 복사는 켜지고, 「?로 들어가요」 안내가 보임', !s.off && s.note && /⠼⠉/.test(s.out), JSON.stringify(s)); }
+await typeBp('KTX 안녕 iPhone'); { const s = await st(); check('C4 「KTX 안녕 iPhone」: 일부만 바뀜 → 복사 켜짐 + ? 안내, 앞부분은 KTX 점자', !s.off && s.note && s.out.startsWith('⠴⠠⠠⠅⠞⠭') && s.out.endsWith('??????'), JSON.stringify(s)); }
+await typeBp('ktx tv'); { const s = await st(); check('C4b 소문자 「ktx tv」: 영어 낱말로 바뀌어 복사 켜짐(⠅⠞⠭ ⠞⠧)', !s.off && !s.note && s.out === '⠴⠅⠞⠭ ⠞⠧⠲', JSON.stringify(s)); }
 await typeBp('KTX'); { const s = await st(); check('C5 「KTX」 7칸 그대로 복사 가능', !s.off && !s.note && /점자 7칸/.test(s.sum), JSON.stringify(s)); }
 await typeBp('TV 안녕'); { const s = await st(); check('C6 「TV 안녕」 띄어쓰기 1칸 포함으로 정상', !s.off && /띄어쓰기 1칸 포함/.test(s.sum), JSON.stringify(s)); }
 // ---------- ② 생활 속 점자 키보드 초점 ----------

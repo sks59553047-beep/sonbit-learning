@@ -24,5 +24,10 @@ for (const t of roman.unsupported) {
   total++; const r = KB.convert(t);
   if (!r.unsupported.length || r.cells.some(c => /로마자|대문자|1급/.test(c.kind))) { fail++; console.log('지원 안 함이어야 함(로마자)', t); }
 }
+// 통일영어점자 2급 낱말(assets/ueb-g2.js): 공개 변환기 결과와 같게 나오는지(고정본)
+const UEB = createRequire(import.meta.url)('../assets/ueb-g2.js');
+const uebFrozen = JSON.parse(fs.readFileSync(new URL('./ueb-frozen.json', import.meta.url), 'utf8')).words; let uebFail = 0, uebN = 0;
+for (const [w, b] of Object.entries(uebFrozen)) { uebN++; if (UEB.toUnicode(w, { lower: true }) !== b) { uebFail++; if (uebFail <= 10) console.log('불일치(영어 낱말)', w, UEB.toUnicode(w, { lower: true }), b); } }
+console.log(`영어 낱말 ${uebN}개 중 일치 ${uebN - uebFail}, 불일치 ${uebFail}`); fail += uebFail ? 1 : 0;
 console.log(`전체 ${total}개 중 일치 ${total - fail}, 불일치 ${fail}`);
 process.exit(fail ? 1 : 0);

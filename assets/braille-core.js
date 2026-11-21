@@ -4,6 +4,7 @@
 // 지원하지 않는 글자(소문자가 섞인 영어 단어·그리스 문자·옛 글자·수식 기호 등)는 점자를 추측해서 만들지 않고 '지원 안 함'으로 표시한다.
 (function (root) {
   'use strict';
+  const UEB = typeof module !== 'undefined' && module.exports && typeof require === 'function' ? require('./ueb-g2.js') : root.UEB;   // 통일영어점자 2급(영어 약자)
   // ---- ASCII 점자(규정 본문 표기) ↔ 점 번호. 소문자 기호 { | } ~ 는 [ \ ] ^ 와 같은 점이다. ----
   const BRF_DOTS = {
     ' ': '', '!': '2346', '"': '5', '#': '3456', '$': '1246', '%': '146', '&': '12346', "'": '3', '(': '12356', ')': '23456', '*': '16', '+': '346', ',': '6', '-': '36', '.': '46', '/': '34',
@@ -114,6 +115,8 @@
       if (!isRoL(chars[j])) break;
       let k = j; while (isRoL(chars[k])) k++;
       toks.push({ t: 'w', s: chars.slice(j, k).join('') }); j = k;
+      if ((chars[j] === "'" || chars[j] === '’' || chars[j] === '.' || chars[j] === '-') && isRoL(chars[j + 1])) { let m = j + 1; while (isRoL(chars[m])) m++; return { ok: false, end: m }; }   // it's·e-mail·a.b — 낱말 사이 부호는 아직 안 바꿈(덩어리째 지원 안 함)
+      if (chars[j] === ',' && chars[j + 1] === ' ' && isRoL(chars[j + 2]) && toks.length) { toks.push({ t: 'c' }); j++; }   // apples, bananas (규정 제32항 예시)
       if (chars[j] === '-' && isDg(chars[j + 1])) { toks.push({ t: 'h' }); j++; }
       if (isDg(chars[j])) { let m = j; while (isDg(chars[m])) m++; toks.push({ t: 'n', s: chars.slice(j, m).join('') }); j = m; }
       if (chars[j] === ' ' && isRoL(chars[j + 1])) { toks.push({ t: 's' }); j++; continue; }
@@ -125,14 +128,22 @@
       break;
     }
     const words = toks.filter(t => t.t === 'w');
-    const ok = words.length <= 2 && words.every(w => /^[A-Z]+$/.test(w.s) && w.s.length <= 5 && (w.s.length < 3 || RO_WORD_OK.has(w.s) || !roRisky(w.s)));
+    words.forEach(w => { w.caps = /^[A-Z]+$/.test(w.s); w.eng = !w.caps && /^[A-Z]?[a-z]+$/.test(w.s) && (w.s.length > 1 || w.s === 'a' || w.s === 'I'); });   // 대문자 약어 / 영어 낱말(소문자·첫 글자만 대문자)
+    const capsN = words.filter(w => w.caps).length, engN = words.filter(w => w.eng).length;
+    const ok = !!UEB && words.length <= 8 && capsN <= 2 && words.length === capsN + engN && words.length > (words.length === 1 && words[0].s === 'a' ? 1 : 0) && words.every(w => w.eng || (w.s.length <= 5 && (w.s.length < 3 || RO_WORD_OK.has(w.s) || !roRisky(w.s))));
     if (!ok) return { ok: false, end: j };
     const out = [], P = (brf, text, kind, rule) => brfCells(brf).forEach(d => out.push({ dots: d, text, kind, rule }));
     P(RO_SIGN, '로마자표', '로마자표', '제29항');
     toks.forEach((t, n) => {
       if (t.t === 's') out.push({ dots: [], text: ' ', kind: '띄어쓰기', rule: '' });
       else if (t.t === 'h') P('-', '-', '붙임표', '제32항');
+      else if (t.t === 'c') P('1', ',', '쉼표', '제32항');
       else if (t.t === 'n') { P(NUM_SIGN, '수표', '수표', '제35항'); for (const d of t.s) P(DIGIT[d], d, '숫자', '제35항'); }
+      else if (t.eng) {
+        const segs = UEB.word(t.s, { noAlpha: n === 0 });   // 영어 낱말: 대문자표 + 약자(통일영어점자 2급)
+        if (/^[A-Z]/.test(t.s)) P(RO_CAP, '대문자', '대문자표', '제28항');
+        for (const sg of segs) sg.cells.forEach((d, k) => out.push({ dots: d, text: k === 0 ? (sg.kind === '1급 점자표' ? '1급표' : sg.s) : '', kind: sg.kind === '영어' ? '로마자' : sg.kind === '1급 점자표' ? '1급 점자표' : '영어 약자', rule: sg.kind === '영어' || sg.kind === '1급 점자표' ? '제28항' : '통일영어점자(' + sg.kind + ')' }));
+      }
       else {
         const nx = toks[n + 1], alone = !nx || nx.t === 's';   // 뒤에 숫자·붙임표가 붙지 않고 홀로
         const one = t.s.length === 1;

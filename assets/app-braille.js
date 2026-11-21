@@ -162,12 +162,13 @@ function renderBraillePanel() {
   $('#bpSummary').textContent = text.trim() && !made ? `바뀐 점자가 없어요${bad ? ` · 바꾸지 못한 글자 ${bad}개` : ''}` : text.trim() ? `점자 ${real.length}칸${spaces ? `(띄어쓰기 ${spaces}칸 포함)` : ''}으로 바뀌었어요${bad ? ` · 바꾸지 못한 글자 ${bad}개` : ''}${full ? ` · 한 번에 ${BP_MAX}자까지만 바꿀 수 있어요` : ''}` : '글자를 입력하면 여기에 몇 칸인지 나와요';
   const warn = r.warnings.slice();
   if (r.unsupported.length) {
-    // 영어: 대문자 약어(KTX·TV 등)만 바꾼다(2026-11-21). 소문자가 섞인 단어는 통일영어점자 약자 규칙이 많아 아직 바꾸지 않는다
+    // 영어: 대문자 약어(KTX·TV)와 영어 낱말(소문자·첫 글자만 대문자, 통일영어점자 2급 약자)을 바꾼다(2026-11-21)
     const en = r.unsupported.some(c => /[A-Za-z]/.test(c)), other = r.unsupported.some(c => !/[A-Za-z]/.test(c));
-    const why = [en ? '영어는 KTX·TV 같은 대문자 약어만 바꿔요. 소문자가 섞인 영어 단어나 OPEN·STOP처럼 영어 약자가 들어갈 수 있는 낱말, 세 단어 넘게 이어진 대문자는 통일영어점자의 약자 규칙이 많아 아직 바꾸지 않아요.' : '',
+    const why = [en ? '영어는 KTX 같은 대문자 약어와 apples 같은 영어 낱말(소문자, 또는 첫 글자만 대문자)만 바꿔요. iPhone처럼 대소문자가 섞인 낱말, it\'s·e-mail처럼 부호가 든 낱말, 한 글자 낱말, 여덟 단어를 넘는 영어, OPEN·STOP처럼 영어 약자가 들어갈 수 있는 대문자 낱말은 아직 바꾸지 않아요.' : '',
       other ? '그리스 문자·수식 기호·옛 글자 등은 규정이 따로 있어 지원하지 않아요.' : ''].filter(Boolean).join(' ');
     warn.unshift(`바꿔 주지 않는 글자가 있어요: ${[...new Set(r.unsupported)].join(' ')} (${why} 점선 칸으로 표시했어요.)`);
   }
+  if (cells.some(c => c.kind === '영어 약자')) warn.push('영어 낱말은 통일영어점자 약자(2급)로 적었어요. 규정 예시와 흔한 영어 낱말 1만 개로 확인했지만, 합성어처럼 낱말 뜻을 알아야 정해지는 곳은 다를 수 있어요.');
   $('#bpWarn').hidden = !warn.length; $('#bpWarn').textContent = warn.join(' ');
   $('#bpCells').innerHTML = cells.map(c => {
     const label = c.kind === '띄어쓰기' ? '␣' : (c.text || '');
@@ -191,11 +192,11 @@ function kindPlain(k) { const b = String(k).replace(/\(.*\)/, ''); return KIND_W
 const KIND_HELP = {
   '첫소리': '글자 맨 앞 자음(초성)', '모음': 'ㅏ·ㅓ 같은 가운데 소리(중성)', '받침': '글자 아래 자음(종성)',
   '약자': '자주 쓰는 글자를 줄여 쓴 것(대부분 한 칸, 것·성·정·청은 두 칸)', '약어': '「그래서」 같은 낱말을 두 칸으로 줄여 쓴 것',
-  '된소리표': 'ㄲ·ㄸ처럼 된소리 앞에 붙이는 칸', '로마자표': '여기부터 영어(로마자)', '로마자 끝': '영어가 끝났다는 표시', '로마자': '영어 알파벳(통일영어점자)', '대문자표': '다음 한 글자가 대문자', '대문자들': '이어지는 글자가 모두 대문자', '그대로표': '영어 줄임말이 아니라 글자 그대로 읽으라는 표시(1급 점자표)', '붙임표': '영어와 숫자를 잇는 -', '수표': '여기부터 숫자라는 표시', '자릿점': '숫자 사이 쉼표', '소수점': '숫자 사이 마침표', '낱자': '글자 없이 따로 쓴 자음·모음'
+  '된소리표': 'ㄲ·ㄸ처럼 된소리 앞에 붙이는 칸', '로마자표': '여기부터 영어(로마자)', '로마자 끝': '영어가 끝났다는 표시', '로마자': '영어 알파벳(통일영어점자)', '영어 약자': '영어 낱말을 줄여 쓴 것(통일영어점자 2급: ing·the·tion 같은 묶음 약자, but 같은 낱말 약자, 앞가지 be·con·dis)', '대문자표': '다음 한 글자가 대문자', '대문자들': '이어지는 글자가 모두 대문자', '그대로표': '영어 줄임말이 아니라 글자 그대로 읽으라는 표시(1급 점자표)', '붙임표': '영어와 숫자를 잇는 -', '수표': '여기부터 숫자라는 표시', '자릿점': '숫자 사이 쉼표', '소수점': '숫자 사이 마침표', '낱자': '글자 없이 따로 쓴 자음·모음'
 };
 $('#bpInput').addEventListener('input', renderBraillePanel);
 $('#bpContract').addEventListener('change', renderBraillePanel);
-const BP_EXAMPLES = ['그래서 가나다', '성정청 억울한 것', '2025년 3월 1일', '안녕하세요.', 'KTX, 새마을호'];   // 마지막은 규정 제33항 예시(영어 대문자 약어)
+const BP_EXAMPLES = ['그래서 가나다', '성정청 억울한 것', '2025년 3월 1일', '안녕하세요.', 'KTX, 새마을호', 'apples, bananas, grapes'];   // 마지막은 규정 제33항 예시(영어 대문자 약어)
 $('#bpExamples').innerHTML = BP_EXAMPLES.map(t => `<button class="chip" type="button" data-ex="${esc(t)}">${esc(t)}</button>`).join('');
 $('#bpExamples').addEventListener('click', e => { const b = e.target.closest('[data-ex]'); if (!b) return; $('#bpInput').value = b.dataset.ex; renderBraillePanel(); });
 // 복사 단추는 둘: 결과 맨 아래(점자 문자 옆)와 칸 수 안내 옆(2026-11-21 실사용 평가: 긴 글은 아래 단추가 화면 몇 쪽 아래에 있음)

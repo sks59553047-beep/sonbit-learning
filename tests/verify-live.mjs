@@ -12,8 +12,8 @@ for (const f of files) {
   const local = fs.readFileSync(ROOT + f);
   const r = await fetch(LIVE + f + '?v=' + Date.now(), { cache: 'no-store' });
   const live = Buffer.from(await r.arrayBuffer());
-  // index.html 은 두 군데가 달라도 정상: ① 올릴 때 버전 표시(sonbit-version)에 커밋 번호를 넣음 ② Cloudflare 방문 통계(Web Analytics)가 </body> 앞에 자기 스크립트를 붙임
-  const norm = b => f === 'index.html' ? Buffer.from(b.toString('utf8').replace(/(name="sonbit-version" content=")[^"]*/, '$1').replace(/<!-- Cloudflare Pages Analytics -->[\s\S]*?<!-- Cloudflare Pages Analytics -->/, '')) : b;
+  // index.html 은 세 군데가 달라도 정상: ⓪ 올릴 때 js·css 주소에 붙는 ?v=판-시각 ① 올릴 때 버전 표시(sonbit-version)에 커밋 번호를 넣음 ② Cloudflare 방문 통계(Web Analytics)가 </body> 앞에 자기 스크립트를 붙임
+  const norm = b => f === 'index.html' ? Buffer.from(b.toString('utf8').split(/\?v=[0-9a-f]+-[0-9]+/).join('').replace(/(name="sonbit-version" content=")[^"]*/, '$1').replace(/<!-- Cloudflare Pages Analytics -->[\s\S]*?<!-- Cloudflare Pages Analytics -->/, '')) : b;
   const same = r.status === 200 && norm(live).equals(norm(local));
   if (!same) bad++;
   console.log((same ? 'OK   ' : 'FAIL ') + f.padEnd(26) + r.status + '  내 컴퓨터 ' + sha(local) + ' / 실제 주소 ' + sha(live) + '  (' + local.length + ' 바이트)');

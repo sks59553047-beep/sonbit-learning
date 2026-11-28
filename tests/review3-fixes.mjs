@@ -61,13 +61,14 @@ check('R10 주소창에 다른 영상 번호를 넣으면 그 영상으로 바�
 // ---------- ③ 더 보기 ----------
 await c.fresh(BASE + '?r3g=' + Date.now(), 2500);
 await ev(`go('sign')`); await sleep(300);
-await ev(`document.querySelector('#signTopics [data-topic="일반 단어"]').click()`); await sleep(600);
-const total = await ev(`ALL_WORDS.filter(w => w.t === '일반 단어').length`);
+// 2026-11-28 주제 재정비 뒤에는 150개가 넘는 주제가 없어, 결과가 긴 검색(초성 ㅇ)으로 확인한다
+await ev(`(() => { const i = document.querySelector('#signSearch'); i.value = 'ㅇ'; i.dispatchEvent(new Event('input', { bubbles: true })) })()`); await sleep(900);
+const total = await ev(`searchWords('ㅇ').length`);
 const btnText = () => ev(`document.querySelector('#signList [data-signmore]')?.textContent || ''`);
 const rows = () => ev(`document.querySelectorAll('#signList .wordrow').length`);
-check(`R11 「일반 단어」(${total}개): 처음 150개와 「더 보기 (150 / ${total}개)」`, (await rows()) === 150 && (await btnText()) === `더 보기 (150 / ${total}개)` && !/검색어를 더 자세히/.test(await ev(`document.querySelector('#signList').textContent`)), await btnText());
+check(`R11 긴 목록(${total}개): 처음 150개와 「더 보기 (150 / ${total}개)」`, (await rows()) === 150 && (await btnText()) === `더 보기 (150 / ${total}개)` && !/검색어를 더 자세히/.test(await ev(`document.querySelector('#signList').textContent`)), await btnText());
 await ev(`document.querySelector('#signList .wordrow').open = true`); await sleep(300);
-const id151 = await ev(`(() => { const all = ALL_WORDS.filter(w => w.t === '일반 단어').sort(byName); return String(all[150].id) })()`);
+const id151 = await ev(`String(searchWords('ㅇ')[150].id)`);
 await c.click('#signList [data-signmore]'); await sleep(500);
 check('R12 「더 보기」 → 다음 150개가 뒤에 붙고, 펼쳐 둔 첫 단어는 그대로, 초점은 새로 붙은 첫 단어', (await rows()) === Math.min(300, total) && (await ev(`document.querySelector('#signList .wordrow').open`)) && (await ev(`document.activeElement?.closest('.wordrow')?.dataset.wid`)) === id151, `${await rows()} ${await ev(`document.activeElement?.closest('.wordrow')?.dataset.wid`)} / ${id151}`);
 while (await ev(`!!document.querySelector('#signList [data-signmore]')`)) { await c.click('#signList [data-signmore]'); await sleep(400); }

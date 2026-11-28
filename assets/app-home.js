@@ -140,14 +140,15 @@ function renderHomeReview() {
 //   퀴즈 「쉬움·보통」 생활 낱말(어려운 주제 나라·지명·법·사건·사회·제도는 이미 빠짐)에서 숫자·돈 단위와 일반 단어(뜻이 어렵거나 흔하지 않은 말이 많음)를 빼고,
 //   첫 화면에 나오면 어색한 낱말(욕·몸·술·범죄·무기 등)을 뺀다. 이 목록을 정해진 씨앗으로 한 번 섞어 하루에 하나씩 차례로 → 한 바퀴(약 480일) 돌기 전엔 겹치지 않고,
 //   같은 날에는 누구에게나 같은 낱말이 나온다.
-const TODAY_SKIP_TOPICS = new Set(['일반 단어', '숫자·돈 단위']);
+const TODAY_SKIP_TOPICS = new Set(['자주 쓰는 말', '숫자·순서']);
+const TODAY_SKIP_OLD = new Set(['일반 단어', '숫자·돈 단위']);   // 자료의 옛 주제(t0): 뜻이 어렵거나 흔하지 않다고 빼 오던 낱말은 새 주제로 옮겨도 계속 뺀다
 const TODAY_SKIP = new Set(('석유 알콜중독 취하다 소주 술 이혼 소변 대변 방귀 아프리카 브래지어 팬티 스타킹 감옥 총 탱크 교통사고 ' +
   '사기 거짓 허풍 쇼하다 말다툼 추궁 혼내다 멍청이 미치다 의욕상실 원한 역겹다 속셈 무시 꺼지다 괴팍하다 뻔뻔하다 밉다 짜증 꼴찌').split(' '));
 let todayPool = null;
 function todayList() {
   if (todayPool) return todayPool;
   const ok = new Set(QZ.eligible.filter(w => w.tier <= 2 && !TODAY_SKIP_TOPICS.has(w.t) && !TODAY_SKIP.has(w.w)).map(w => String(w.id)));
-  const list = ALL_WORDS.filter(w => ok.has(String(w.id)) && hasRealVideo(w)).sort((a, b) => String(a.id).localeCompare(String(b.id)));
+  const list = ALL_WORDS.filter(w => ok.has(String(w.id)) && hasRealVideo(w) && !TODAY_SKIP_OLD.has(w.t0)).sort((a, b) => String(a.id).localeCompare(String(b.id)));
   let s = 20261121;   // 정해진 씨앗(바꾸면 순서 전체가 바뀜)
   const rnd = () => { s = (s + 0x6D2B79F5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   for (let i = list.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [list[i], list[j]] = [list[j], list[i]]; }

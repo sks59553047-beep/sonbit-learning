@@ -150,7 +150,7 @@ function renderSign() {
     if (signPinId) { const k = list.findIndex(x => String(x.id) === String(signPinId)); if (k > 0) list.unshift(list.splice(k, 1)[0]); }
   } else if (signTopic === FAV_TOPIC) list = favWords();
   else if (signTopic === NUM_TOPIC) list = basicNumberWords();
-  else list = ALL_WORDS.filter(w => w.t === signTopic).sort(byName);
+  else list = ALL_WORDS.filter(w => w.t === signTopic).sort(bySignOrder);
   if (inTopic) {
     $('#signTopicName').textContent = (signTopic === FAV_TOPIC ? '★ ' : TOPIC_ICON[signTopic] ? TOPIC_ICON[signTopic] + ' ' : '') + signTopic;
     if (signTopic === FAV_TOPIC && list.length) { $('#signActions').hidden = false; $('#signActions').innerHTML = favQuizBtnHtml(list.length); }
@@ -168,8 +168,9 @@ function renderSign() {
     else $('#signList').innerHTML = '<div class="empty">이 주제에는 단어가 없어요.</div>';
     return;
   }
-  signShown = { list, searching, n: Math.min(SIGN_PAGE, list.length) };
-  $('#signList').innerHTML = list.slice(0, signShown.n).map(w => wordRowHtml(w, searching)).join('') + moreBtnHtml();
+  const grouped = inTopic && signTopic !== FAV_TOPIC && signTopic !== NUM_TOPIC;   // 주제 화면에서만 작은 묶음 제목
+  signShown = { list, searching, grouped, n: Math.min(SIGN_PAGE, list.length) };
+  $('#signList').innerHTML = signRowsHtml(list.slice(0, signShown.n), '') + moreBtnHtml();
 }
 function favQuizBtnHtml(n) { return `<button class="btn primary small" type="button" data-act="quizkind" data-arg="fav">단어장 퀴즈 풀기 (${n}개)</button>`; }
 // 「내 단어장」 목록에서 단어를 빼면(2026-11-21 실사용 평가: 뺀 뒤에도 단어·「퀴즈 풀기(3개)」가 그대로) 퀴즈 개수·단어 수는 바로 바꾸고,
@@ -183,19 +184,27 @@ function markUnfav(row, off) {
   $('#signActions').hidden = !n; $('#signActions').innerHTML = n ? favQuizBtnHtml(n) : '';
   $('#signCount').textContent = `${n}개 단어 · 눌러서 뜻과 영상 보기`;
 }
-// 목록은 150개씩 보여 주고, 끝에 「더 보기」(2026-11-20 외부 평가: 「일반 단어」 342개 중 150개만 보이던 것)
+// 목록은 150개씩 보여 주고, 끝에 「더 보기」(2026-11-20 외부 평가: 긴 목록이 150개만 보이던 것)
 const SIGN_PAGE = 150;
-let signShown = { list: [], searching: false, n: 0 };
+let signShown = { list: [], searching: false, grouped: false, n: 0 };
+// 단어 줄들. 주제 화면에서는 작은 묶음(sg)이 바뀌는 곳에 제목을 넣는다. prev = 바로 앞에 이미 그린 단어의 묶음
+function signRowsHtml(words, prev) {
+  return words.map(w => {
+    const head = signShown.grouped && w.sg && w.sg !== prev ? `<h3 class="wgroup">${esc(w.sg)}</h3>` : '';
+    prev = w.sg;
+    return head + wordRowHtml(w, signShown.searching);
+  }).join('');
+}
 function moreBtnHtml() {
   const { list, n } = signShown, left = list.length - n;
   return left > 0 ? `<button type="button" class="btn line block signmore" data-signmore>더 보기 (${n.toLocaleString('ko-KR')} / ${list.length.toLocaleString('ko-KR')}개)</button>` : '';
 }
 // 이미 펼친 단어는 그대로 두고, 다음 150개를 뒤에 붙인 뒤 새로 붙은 첫 단어로 초점을 옮긴다
 function showMoreWords() {
-  const { list, searching, n } = signShown, next = list.slice(n, n + SIGN_PAGE);
+  const { list, n } = signShown, next = list.slice(n, n + SIGN_PAGE);
   if (!next.length) return;
   const btn = $('#signList [data-signmore]');
-  btn.insertAdjacentHTML('beforebegin', next.map(w => wordRowHtml(w, searching)).join(''));
+  btn.insertAdjacentHTML('beforebegin', signRowsHtml(next, n ? list[n - 1].sg : ''));
   signShown.n = n + next.length;
   const first = $(`#signList .wordrow[data-wid="${CSS.escape(String(next[0].id))}"] summary`);
   btn.outerHTML = moreBtnHtml();

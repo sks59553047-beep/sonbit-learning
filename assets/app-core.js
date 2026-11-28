@@ -160,10 +160,11 @@ $('.skiplink').addEventListener('click', e => {
 });
 
 // ================= 수어 데이터 =================
-const ALL_WORDS = KSL_WORDS.concat(KSL_EXTRA.map(x => ({ id: 'N' + x.i, w: x.w, t: x.t, x: true, g: x.g, e: x.e, k: '/signFile/video/' + x.m })));
+const ALL_WORDS = KSL_WORDS.concat(KSL_EXTRA.map(x => ({ id: 'N' + x.i, w: x.w, t: x.t, t0: x.t0, sg: x.sg, so: x.so, x: true, g: x.g, e: x.e, k: '/signFile/video/' + x.m })));
 const WORD_BY_ID = new Map(ALL_WORDS.map(w => [String(w.id), w]));
-const TOPIC_ORDER = ['몸·건강·긴급', '인사·예절', '대답·질문', '사람·가족', '감정', '마음·생각', '성격·태도', '음식', '돈·쇼핑', '장소·이동', '시간·날짜', '날씨·색·크기', '하루 생활', '물건·소지품', '열기·시작·찾기', '말·소통', '학교·일·직업', '사회·제도', '법·사건', '자연·동식물', '나라·지명', '숫자·돈 단위', '일반 단어'];
-const TOPIC_ICON = { '몸·건강·긴급': '🚑', '인사·예절': '👋', '대답·질문': '💬', '사람·가족': '👨‍👩‍👧', '감정': '😊', '마음·생각': '💭', '성격·태도': '🙂', '음식': '🍚', '돈·쇼핑': '🛍️', '장소·이동': '🏫', '시간·날짜': '⏰', '날씨·색·크기': '🌤️', '하루 생활': '🏠', '물건·소지품': '🎒', '열기·시작·찾기': '🔑', '말·소통': '🗣️', '학교·일·직업': '🎓', '사회·제도': '🏛️', '법·사건': '⚖️', '자연·동식물': '🌳', '나라·지명': '🗺️', '숫자·돈 단위': '🔢', '일반 단어': '📖' };
+// 주제의 순서·아이콘·단어 배치는 assets/sign-topics.js 가 기준이다(2026-11-28).
+const TOPIC_ORDER = SIGN_TOPICS.map(x => x[0]);
+const TOPIC_ICON = Object.fromEntries(SIGN_TOPICS.map(x => [x[0], x[1]]));
 const TOPICS = TOPIC_ORDER.filter(t => ALL_WORDS.some(w => w.t === t)).concat([...new Set(ALL_WORDS.map(w => w.t))].filter(t => !TOPIC_ORDER.includes(t)));
 const NUM_TOPIC = '기본 숫자';
 const FAV_TOPIC = '내 단어장';
@@ -186,6 +187,7 @@ function choOf(str) {
 }
 function firstCho(w) { const c = choOf(w.w).charAt(0); return CHO_FOLD[c] || c; }
 function byName(a, b) { return a.w.localeCompare(b.w, 'ko'); }
+function bySignOrder(a, b) { return a.so - b.so || byName(a, b); }   // 주제 안의 순서(sign-topics.js 에 적힌 순서)
 function normQ(q) { return String(q).replace(/\s+/g, ''); }
 function hasRealVideo(w) { return !!w.k; }
 // ---- 말끝이 바뀐 꼴로도 찾기(2026-11-20 실사용 평가: 「고마워요」·「괜찮아요」·「배고파요」 → 결과 없음) ----
@@ -264,9 +266,9 @@ function rankWord(w, q) {
   const lens = wordForms(w).toks.map(f => f.raw).filter(x => x.includes(qn)).map(x => x.length);
   return 4 + Math.min(0.9, (lens.length ? Math.min(...lens) : 90) / 100);
 }
-// 이름이 같은 수어(예: 「십」 2개, 「없다」 10개)는 사전 순서대로 ①②…를 붙여 목록·앞뒤 단추에서 구분한다(2026-11-20 실사용 평가)
+// 이름이 같은 수어(예: 「십」 2개, 「없다」 10개)는 화면에 놓이는 순서대로 ①②…를 붙여 목록·앞뒤 단추에서 구분한다(2026-11-20 실사용 평가)
 const SAME_NAME = new Map();   // id → [몇 번째, 같은 이름 개수]
-(() => { const g = new Map(); ALL_WORDS.forEach(w => { if (!g.has(w.w)) g.set(w.w, []); g.get(w.w).push(w); }); g.forEach(l => { if (l.length > 1) l.forEach((w, i) => SAME_NAME.set(String(w.id), [i + 1, l.length])); }); })();
+(() => { const g = new Map(); ALL_WORDS.forEach(w => { if (!g.has(w.w)) g.set(w.w, []); g.get(w.w).push(w); }); g.forEach(l => { l.sort((a, b) => a.so - b.so); if (l.length > 1) l.forEach((w, i) => SAME_NAME.set(String(w.id), [i + 1, l.length])); }); })();
 const CIRCLED = '①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳';
 function sameMark(w) { const s = SAME_NAME.get(String(w.id)); return s ? (CIRCLED[s[0] - 1] || `(${s[0]})`) : ''; }
 function wordLabel(w) { const m = sameMark(w); return m ? `${w.w} ${m}` : w.w; }
@@ -310,12 +312,11 @@ function officialBlockHtml(w) {
   const o = officialOf(w); if (!o) return '';
   return `<p class="lbl">동작 설명</p><p class="motion">${esc(fingerNames(o[0]))}</p>${officialNoteHtml(w)}`;
 }
-// 기본 숫자 바로가기: '숫자·돈 단위' 주제의 영·일~구·십·백·천·만·억·조(같은 말의 여러 수어 포함)를 차례대로
-const BASIC_NUM_ORDER = ['일', '이', '삼', '사', '오', '육', '칠', '팔', '구', '십', '백', '천', '만', '억', '조'];
+// 기본 숫자 바로가기: 「숫자·순서」 주제의 영·일~구·십·백·천·만(일만)·억·조(같은 말의 여러 수어 포함)를 차례대로
+const BASIC_NUM_ORDER = ['영', '일', '이', '삼', '사', '오', '육', '칠', '팔', '구', '십', '백', '천', '일만', '억', '조'];
 function basicNumberWords() {
-  const out = [], zero = WORD_BY_ID.get('N901'); // 영·공(0) 은 '일반 단어' 주제에 있어 따로 넣는다
-  if (zero) out.push(zero);
-  for (const n of BASIC_NUM_ORDER) ALL_WORDS.filter(w => w.w === n && w.t === '숫자·돈 단위' && w.id !== 'N457').forEach(w => out.push(w)); // N457 '일'은 '유일하다'라는 뜻이라 뺀다
+  const out = [];
+  for (const n of BASIC_NUM_ORDER) ALL_WORDS.filter(w => w.w === n && w.t === '숫자·순서').sort(bySignOrder).forEach(w => out.push(w));
   return out;
 }
 

@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 const REPO = fileURLToPath(new URL('../', import.meta.url)).replace(/\\/g, '/');
 const ROOT = REPO;
 const LIVE = 'https://sonbit.pages.dev/';
-const files = ['index.html', 'assets/app-core.js', 'assets/app-home.js', 'assets/app-sign.js', 'assets/app-braille.js', 'assets/app-quiz.js', 'assets/app-player.js', 'assets/app-board.js', 'admin.html', 'assets/app-start.js', 'assets/error-report.js', 'assets/app.css', 'assets/quiz-engine.js', 'assets/ueb-g2.js', 'assets/braille-core.js', 'assets/braille.js', 'assets/video-data.js', 'assets/ksl-data.js', 'assets/ksl2-data.js', 'assets/ksl3-data.js', 'assets/ksl5-data.js', 'assets/ksl6-data.js', 'assets/media-index.js'];
+const files = ['index.html', 'assets/app-core.js', 'assets/app-home.js', 'assets/app-sign.js', 'assets/sign-topics.js', 'assets/app-braille.js', 'assets/app-quiz.js', 'assets/app-player.js', 'assets/app-board.js', 'admin.html', 'assets/app-start.js', 'assets/error-report.js', 'assets/app.css', 'assets/quiz-engine.js', 'assets/ueb-g2.js', 'assets/braille-core.js', 'assets/braille.js', 'assets/video-data.js', 'assets/ksl-data.js', 'assets/ksl2-data.js', 'assets/ksl3-data.js', 'assets/ksl5-data.js', 'assets/ksl6-data.js', 'assets/media-index.js'];
 let bad = 0;
 const sha = b => crypto.createHash('sha256').update(b).digest('hex').slice(0, 12);
 for (const f of files) {

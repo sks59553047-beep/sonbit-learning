@@ -150,6 +150,8 @@ button.rbox{width:100%;text-align:left;font:inherit;color:inherit;background:var
 .backbtn{background:var(--surface2)}
 .signactions{display:flex;gap:8px;flex-wrap:wrap}
 .wordlist{display:flex;flex-direction:column;gap:8px}
+.wordlist .wgroup{font-size:0.875rem;font-weight:800;color:var(--teal);margin:12px 2px 0}
+.wordlist .wgroup:first-child{margin-top:0}
 .wordrow{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);box-shadow:var(--shadow)}
 .wordrow summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:14px;font-weight:800;font-size:1rem}
 .wordrow summary::-webkit-details-marker{display:none}

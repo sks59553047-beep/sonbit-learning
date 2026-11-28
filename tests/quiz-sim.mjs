@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 const REPO = fileURLToPath(new URL('../', import.meta.url)).replace(/\\/g, '/');
 const A = REPO + 'assets/';
 const ctx = { console }; vm.createContext(ctx);
-for (const f of ['ksl-data.js', 'ksl2-data.js', 'ksl3-data.js', 'media-index.js', 'braille.js', 'ueb-g2.js', 'braille-core.js', 'quiz-engine.js']) vm.runInContext(fs.readFileSync(A + f, 'utf8'), ctx, { filename: f });
+for (const f of ['ksl-data.js', 'ksl2-data.js', 'ksl3-data.js', 'media-index.js', 'sign-topics.js', 'braille.js', 'ueb-g2.js', 'braille-core.js', 'quiz-engine.js']) vm.runInContext(fs.readFileSync(A + f, 'utf8'), ctx, { filename: f });
 const QZ = vm.runInContext('QZ', ctx), KB = vm.runInContext('KB', ctx);
 const mul = s => () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
 let fails = 0; const bad = [];
